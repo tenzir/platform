@@ -1,0 +1,121 @@
+# A completely self-contained configuration using a bundled
+# postgres database and a bundled identity provider with one
+# hardcoded user.
+#
+# Useful for prototyping or local development with no available
+# infrastructure. Container ports are mapped to the range 3000-3004.
+
+
+
+services:
+  platform:
+    image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION:-latest}
+    command: ["tenant_manager/rest/server/local.py"]
+    environment:
+      - BASE_PATH=
+      - GATEWAY_WS_ENDPOINT=${TENZIR_PLATFORM_CONTROL_ENDPOINT}
+      - GATEWAY_HTTP_ENDPOINT=http://websocket-gateway:5000
+      - TENZIR_DEMO_NODE_IMAGE=${TENZIR_PLATFORM_DEMO_NODE_IMAGE:-tenzir/tenzir-demo:latest}
+      - TENANT_MANAGER_APP_API_KEY=${TENZIR_PLATFORM_INTERNAL_APP_API_KEY}
+      - TENANT_MANAGER_TENANT_TOKEN_ENCRYPTION_KEY=${TENZIR_PLATFORM_INTERNAL_TENANT_TOKEN_ENCRYPTION_KEY}
+      - TENANT_MANAGER_AUTH__ENABLE_SELF_SIGNED=false
+      - TENANT_MANAGER_AUTH__TRUSTED_AUDIENCES=${TENZIR_PLATFORM_OIDC_TRUSTED_AUDIENCES}
+      - TENANT_MANAGER_AUTH__ADMIN_FUNCTIONS=${TENZIR_PLATFORM_OIDC_ADMIN_RULES}
+      - STORE__TYPE=${TENZIR_PLATFORM_STORE_TYPE}
+      - STORE__POSTGRES_URI=postgresql://${TENZIR_PLATFORM_POSTGRES_USER}:${TENZIR_PLATFORM_POSTGRES_PASSWORD}@${TENZIR_PLATFORM_POSTGRES_HOSTNAME}/${TENZIR_PLATFORM_POSTGRES_DB}
+      # seaweedfs s3 connection
+      - TENANT_MANAGER_SIDEPATH_BUCKET_NAME=${TENZIR_PLATFORM_INTERNAL_BUCKET_NAME}
+      - BLOB_STORAGE__ENDPOINT_URL=http://seaweed:8333
+      - BLOB_STORAGE__PUBLIC_ENDPOINT_URL=${TENZIR_PLATFORM_BLOBS_ENDPOINT}
+      - BLOB_STORAGE__ACCESS_KEY_ID=${TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID}
+      - BLOB_STORAGE__SECRET_ACCESS_KEY=${TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY}
+    volumes:
+      # The docker socket gets mapped into the container in order to enable spawning new
+      # demo nodes.
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 3001:5000
+    depends_on:
+      - websocket-gateway
+      - postgres
+
+  websocket-gateway:
+    image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION:-latest}
+    environment:
+      - BASE_PATH=
+      - TENZIR_PROXY_TIMEOUT=60
+      - TENANT_MANAGER_APP_API_KEY=${TENZIR_PLATFORM_INTERNAL_APP_API_KEY}
+      - TENANT_MANAGER_TENANT_TOKEN_ENCRYPTION_KEY=${TENZIR_PLATFORM_INTERNAL_TENANT_TOKEN_ENCRYPTION_KEY}
+      - STORE__TYPE=${TENZIR_PLATFORM_STORE_TYPE}
+      - STORE__POSTGRES_URI=postgresql://${TENZIR_PLATFORM_POSTGRES_USER}:${TENZIR_PLATFORM_POSTGRES_PASSWORD}@${TENZIR_PLATFORM_POSTGRES_HOSTNAME}/${TENZIR_PLATFORM_POSTGRES_DB}
+    depends_on:
+      - postgres
+    command: ["tenant_manager/ws/server/local.py"]
+    ports:
+      - 3002:5000
+
+  postgres:
+    image: postgres:14.5
+    restart: always
+    environment:
+      - POSTGRES_USER=${TENZIR_PLATFORM_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${TENZIR_PLATFORM_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${TENZIR_PLATFORM_POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Note the ~25 seconds startup delay before the seaweed server
+  # becomes ready.
+  seaweed:
+    image: chrislusf/seaweedfs
+    environment:
+      - TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID
+      - TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY
+      - TENZIR_PLATFORM_INTERNAL_BUCKET_NAME
+    entrypoint: ["/tenzir-entrypoint.sh"]
+    command: ["server", "-dir=/var/lib/seaweedfs", "-s3", "-s3.config=/config.json"]
+    volumes:
+      - ./config/seaweed.tenzir-entrypoint.sh:/tenzir-entrypoint.sh
+      - seaweed_data:/var/lib/seaweedfs
+    ports:
+      - '3003:8333'
+
+  dex:
+    image: ghcr.io/tenzir/tenzir-dex:${TENZIR_PLATFORM_VERSION:-latest}
+    environment:
+      - TENZIR_PLATFORM_DOMAIN
+      - TENZIR_PLATFORM_OIDC_PROVIDER_CLIENT_SECRET
+      - TENZIR_PLATFORM_OIDC_PROVIDER_ISSUER_URL
+      - DEX_USER=admin
+      - DEX_EMAIL=admin@example.org
+      # escaped bcrypt hash of the arbitary random password "062c73c4cf36ba07c0ab5f205ce3d011", generated with
+      #     echo 062c73c4cf36ba07c0ab5f205ce3d011 | htpasswd -BinC 10 admin | cut -d: -f2 | sed 's,\$,$$,g'
+      - DEX_PASSWORD_HASH=$$2y$$10$$cXl69JddxraqvWN5Ae01xuSSNJ5ONoJfMJIr058bXzIAIfwhj7k3C
+    ports:
+      - "3004:5556"
+    command: ['dex', 'serve', '/etc/dex/tenzir-config.yaml']
+
+  app:
+    image: ghcr.io/tenzir/app:${TENZIR_PLATFORM_VERSION:-latest}
+    environment:
+      - AUTH_TRUST_HOST=true
+      - PUBLIC_ENABLE_HIGHLIGHT=false
+      - ORIGIN=${TENZIR_PLATFORM_DOMAIN}
+      - PRIVATE_OIDC_PROVIDER_CLIENT_ID=${TENZIR_PLATFORM_OIDC_PROVIDER_CLIENT_ID}
+      - PRIVATE_OIDC_PROVIDER_CLIENT_SECRET=${TENZIR_PLATFORM_OIDC_PROVIDER_CLIENT_SECRET}
+      - PRIVATE_OIDC_PROVIDER_ISSUER_URL=${TENZIR_PLATFORM_OIDC_PROVIDER_ISSUER_URL}
+      - PRIVATE_OIDC_PROVIDER_NAME=${TENZIR_PLATFORM_OIDC_PROVIDER_NAME}
+      - PUBLIC_OIDC_PROVIDER_ID=${TENZIR_PLATFORM_OIDC_PROVIDER_NAME}
+      - PRIVATE_USER_ENDPOINT=http://platform:5000/user
+      - PRIVATE_WEBAPP_ENDPOINT=http://platform:5000/webapp
+      - PRIVATE_WEBAPP_KEY=${TENZIR_PLATFORM_INTERNAL_APP_API_KEY}
+      - AUTH_SECRET=${TENZIR_PLATFORM_INTERNAL_AUTH_SECRET}
+
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
+    driver: local
+  seaweed_data:
+    driver: local

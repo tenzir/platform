@@ -1,0 +1,68 @@
+name: Build and Push all containers for one platform release
+
+on:
+  release:
+    types: [released]
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        name: Check out code
+
+      - uses: mr-smithers-excellent/docker-build-push@v6
+        name: Build & push Docker image
+        with:
+          image: tenzir-dex
+          tags: platform-${{ github.event.release.tag_name }}
+          registry: ghcr.io
+          directory: components/dex
+          dockerfile: components/dex/Dockerfile
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: mr-smithers-excellent/docker-build-push@v6
+        name: Build & push Docker image
+        with:
+          image: tenzir-seaweed
+          tags: platform-${{ github.event.release.tag_name }}
+          registry: ghcr.io
+          directory: components/seaweed
+          dockerfile: components/seaweed/Dockerfile
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: mr-smithers-excellent/docker-build-push@v6
+        name: Build & push Docker image
+        with:
+          image: platform
+          tags: platform-${{ github.event.release.tag_name }}
+          registry: ghcr.io
+          directory: components/tenant-manager/platform/tenant_manager
+          dockerfile: components/tenant-manager/platform/tenant_manager/Dockerfile
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+
+      - uses: mr-smithers-excellent/docker-build-push@v6
+        name: Build & push Docker image
+        with:
+          image: platform
+          tags: platform-${{ github.event.release.tag_name }}
+          registry: ghcr.io
+          directory: components/tenant-manager/platform/public_cli
+          dockerfile: components/tenant-manager/platform/public_cli/Dockerfile
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: mr-smithers-excellent/docker-build-push@v6
+        name: Build & push Docker image
+        with:
+          image: platform
+          tags: platform-${{ github.event.release.tag_name }}
+          registry: ghcr.io
+          directory: components/app
+          dockerfile: components/app/Dockerfile
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
