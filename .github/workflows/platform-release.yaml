@@ -1,11 +1,65 @@
-name: Build and Push all containers for one platform release
+name: Create Sovereign Edition containers and also push a new production Cloud Deployment
 
 on:
   release:
-    types: [released]
+    types: [created]
 
 jobs:
-  build_and_push:
+  cloud_deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Get app submodule commit hash
+        id: app-commit
+        run: |
+          cd ./components/app
+          echo "::set-output name=commit::$(git rev-parse HEAD)"
+          
+      - name: Get tenant-manager submodule commit hash
+        id: tenant-manager-commit
+        run: |
+          cd ./components/tenant-manager
+          echo "::set-output name=commit::$(git rev-parse HEAD)"
+
+      - name: Deploy tenant manager
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: tzcp-deploy-production.yaml
+          repo: tenzir/event-horizon
+          token: "${{ secrets.REPO_SCOPE_ACCESS_TOKEN }}"
+          ref: ${{ steps.tenant-manager-commit.outputs.commit }}"
+          # inputs: '{ "message": "blah blah", "something": false }'
+
+      - name: Deploy app
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: push-to-production.yaml
+          repo: tenzir/app
+          ref: ${{ steps.app-commit.outputs.commit }}"
+          # inputs: '{ "message": "blah blah", "something": false }'
+
+  attach_release_artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create tarball
+        run: |
+          tar cf platform.tar README.md LICENSE examples/ 
+      - name: Publish tenzir.spdx.json to GitHub Release
+        if: ${{ github.event_name == 'release' }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: "platform.tar"
+          asset_name: "platform.tar"
+          asset_content_type: application/x-tar
+
+  build_and_push_containers:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,11 +98,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-
       - uses: mr-smithers-excellent/docker-build-push@v6
         name: Build & push Docker image
         with:
-          image: platform
+          image: tenzir-platform
           tags: platform-${{ github.event.release.tag_name }}
           registry: ghcr.io
           directory: components/tenant-manager/platform/public_cli
@@ -59,7 +112,7 @@ jobs:
       - uses: mr-smithers-excellent/docker-build-push@v6
         name: Build & push Docker image
         with:
-          image: platform
+          image: tenzir-app
           tags: platform-${{ github.event.release.tag_name }}
           registry: ghcr.io
           directory: components/app

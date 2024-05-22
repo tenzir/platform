@@ -1,0 +1,37 @@
+name: Deploy submodule updates to the staging environment
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  cloud_deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+          
+      - name: Get tenant-manager submodule commit hash
+        id: tenant-manager-commit
+        run: |
+          cd ./components/tenant-manager
+          echo "::set-output name=commit::$(git rev-parse HEAD)"
+
+      - name: Deploy tenant manager
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: tzcp-deploy-staging.yaml
+          repo: tenzir/event-horizon
+          token: "${{ secrets.REPO_SCOPE_ACCESS_TOKEN }}"
+          ref: ${{ steps.tenant-manager-commit.outputs.commit }}"
+          # inputs: '{ "message": "blah blah", "something": false }'
+
+      # App deployments to staging are done automatically by Vercel atm.
+      # - name: Deploy app
+      #   uses: benc-uk/workflow-dispatch@v1
+      #   with:
+      #     workflow: deploy-staging.yaml
+      #     repo: tenzir/app
+      #     ref: ${{ steps.app-commit.outputs.commit }}"
