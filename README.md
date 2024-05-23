@@ -1,6 +1,6 @@
 # Tenzir Platform
 
-On-premise version of the Tenzir Platform
+On-premise version of the Tenzir Platform.
 
 **NOTE**: The examples and files in this repository are only
 usable in combination with Sovereign Edition access token.
@@ -21,4 +21,4 @@ docker compose logs -f
 ```
 
 
-For Tenzir employees, its instead recommended to start with [this version](https://github.com/tenzir/event-horizon/tree/main/platform/compose) that ties into our deployed infrastructure.
+For Tenzir employees, it's instead recommended to start with [this version](https://github.com/tenzir/event-horizon/tree/main/platform/compose) that ties into our deployed infrastructure.
