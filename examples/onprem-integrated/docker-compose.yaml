@@ -1,6 +1,6 @@
 # Docker Compose setup for a platform deployment that integrates
-# with existing local infrastructure, eg. a dedicated auth provider and
-# a centrally managed database.
+# with existing local infrastructure, in particular a dedicated
+# auth provider.
 #
 # Assumptions:
 #
@@ -10,23 +10,17 @@
 #       TENZIR_PLATFORM_OIDC_PROVIDER_CLIENT_ID
 #       TENZIR_PLATFORM_OIDC_PROVIDER_CLIENT_SECRET
 #
-#  - An external postgres database exists and is accessible
-#    via TCP connection.
-#       TENZIR_PLATFORM_POSTGRES_USER
-#       TENZIR_PLATFORM_POSTGRES_PASSWORD
-#       TENZIR_PLATFORM_POSTGRES_HOSTNAME
-#       TENZIR_PLATFORM_POSTGRES_DB
-#
 #  - A reverse proxy is configured to terminate TLS for the
 #    domains under which the platform is reachable.
 #       TENZIR_PLATFORM_DOMAIN
 #       TENZIR_PLATFORM_CONTROL_ENDPOINT
-#       TENZIR_PLATFORM_BLOBS_ENDPOINT
+#       TENZIR_PLATFORM_DOWNLOADS_ENDPOINT
 #       TENZIR_PLATFORM_API_ENDPOINT      [only used by the CLI]
 
 services:
   platform:
     image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION:-latest}
+    restart: unless-stopped
     command: ["tenant_manager/rest/server/local.py"]
     environment:
       - BASE_PATH=
@@ -38,12 +32,13 @@ services:
       - TENANT_MANAGER_AUTH__ENABLE_SELF_SIGNED=false
       - TENANT_MANAGER_AUTH__TRUSTED_AUDIENCES=${TENZIR_PLATFORM_OIDC_TRUSTED_AUDIENCES}
       - TENANT_MANAGER_AUTH__ADMIN_FUNCTIONS=${TENZIR_PLATFORM_OIDC_ADMIN_RULES}
+      # Database backend configuration
       - STORE__TYPE=${TENZIR_PLATFORM_STORE_TYPE}
       - STORE__POSTGRES_URI=postgresql://${TENZIR_PLATFORM_POSTGRES_USER}:${TENZIR_PLATFORM_POSTGRES_PASSWORD}@${TENZIR_PLATFORM_POSTGRES_HOSTNAME}/${TENZIR_PLATFORM_POSTGRES_DB}
-      # seaweedfs connection
+      # Download button configuration
       - TENANT_MANAGER_SIDEPATH_BUCKET_NAME=${TENZIR_PLATFORM_INTERNAL_BUCKET_NAME}
       - BLOB_STORAGE__ENDPOINT_URL=http://seaweed:8333
-      - BLOB_STORAGE__PUBLIC_ENDPOINT_URL=${TENZIR_PLATFORM_BLOBS_ENDPOINT}
+      - BLOB_STORAGE__PUBLIC_ENDPOINT_URL=${TENZIR_PLATFORM_DOWNLOADS_ENDPOINT}
       - BLOB_STORAGE__ACCESS_KEY_ID=${TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID}
       - BLOB_STORAGE__SECRET_ACCESS_KEY=${TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY}
     depends_on:
@@ -55,6 +50,7 @@ services:
 
   websocket-gateway:
     image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION:-latest}
+    restart: unless-stopped
     environment:
       - BASE_PATH=
       - TENZIR_PROXY_TIMEOUT=60
@@ -68,6 +64,7 @@ services:
 
   app:
     image: ghcr.io/tenzir/app:${TENZIR_PLATFORM_VERSION:-latest}
+    restart: unless-stopped
     environment:
       AUTH_TRUST_HOST: true
       PUBLIC_ENABLE_HIGHLIGHT: false
@@ -85,10 +82,23 @@ services:
     ports:
       - "3000:3000"
 
+  # For production deployments, we suggest to replace this by an external
+  # postgres instance that is centrally managed and backed up regularly.
+  postgres:
+    image: postgres:14.5
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${TENZIR_PLATFORM_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${TENZIR_PLATFORM_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${TENZIR_PLATFORM_POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   # Note the ~25 seconds startup delay before the seaweed server
   # becomes ready.
   seaweed:
     image: ghcr.io/tenzir/tenzir-seaweedfs:${TENZIR_PLATFORM_VERSION:-latest}
+    restart: unless-stopped
     environment:
       - TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID
       - TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY
@@ -112,6 +122,8 @@ services:
       - TENZIR_PLATFORM_CLI_CLIENT_ID=${TENZIR_PLATFORM_CLI_CLIENT_ID}
 
 volumes:
+  postgres_data:
+    driver: local
   seaweed_data:
     driver: local
   cli_cache:
