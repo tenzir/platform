@@ -97,7 +97,7 @@ services:
   # Note the ~25 seconds startup delay before the seaweed server
   # becomes ready.
   seaweed:
-    image: ghcr.io/tenzir/tenzir-seaweedfs:${TENZIR_PLATFORM_VERSION:-latest}
+    image: ghcr.io/tenzir/tenzir-seaweed:${TENZIR_PLATFORM_VERSION:-latest}
     restart: unless-stopped
     environment:
       - TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID
