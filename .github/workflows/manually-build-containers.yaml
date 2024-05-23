@@ -1,7 +1,7 @@
-name: Build and publish the repo-internal containers
+name: Manually build containers
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       docker-tag:
         description: The tag of the generated docker containers
