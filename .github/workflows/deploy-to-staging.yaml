@@ -1,3 +1,4 @@
+---
 name: Deploy submodule updates to the staging environment
 
 on:
@@ -11,22 +12,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          submodules: true
-          
-      - name: Get tenant-manager submodule commit hash
-        id: tenant-manager-commit
+          submodules: false
+
+      - name: Set up files changed
+        id: files
         run: |
-          cd ./components/tenant-manager
-          echo "::set-output name=commit::$(git rev-parse HEAD)"
+          echo "::set-output name=files-changed::$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})"
+          echo "::set-output name=app-commit::$(git ls-tree HEAD components/app | awk '{print $3}')"
+          echo "::set-output name=tenant-manager-commit::$(git ls-tree HEAD components/tenant-manager | awk '{print $3}')"
 
       - name: Deploy tenant manager
         uses: benc-uk/workflow-dispatch@v1
+        if: contains(steps.files.outputs.files-changed, 'components/tenant-manager')
         with:
           workflow: tzcp-deploy-staging.yaml
           repo: tenzir/event-horizon
           token: "${{ secrets.REPO_SCOPE_ACCESS_TOKEN }}"
-          ref: ${{ steps.tenant-manager-commit.outputs.commit }}"
-          # inputs: '{ "message": "blah blah", "something": false }'
+          ref: ${{ steps.files.tenant-manager-commit }}"
+          # inputs: '{ "example_payload": "value" }'
 
       # App deployments to staging are done automatically by Vercel atm.
       # - name: Deploy app
