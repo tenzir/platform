@@ -1,4 +1,4 @@
-name: Bump component submodules
+name: Bump component submodules to latest main
 
 on:
   workflow_call:
@@ -17,10 +17,16 @@ jobs:
   update_submodules:
     runs-on: ubuntu-latest
     steps:
+      - name: Sanity check
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "This workflow updates only the main branch."
+          exit 1
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           submodules: false
+          persist-credentials: false
       - name: Generate a token
         id: generate_token
         uses: actions/create-github-app-token@v1
@@ -39,7 +45,6 @@ jobs:
         run: |
           git config --global user.name 'tenzir-bot'
           git config --global user.email 'engineering@tenzir.com'
-
           git remote set-url origin https://x-access-token:$GITHUB_APP_TOKEN@github.com/tenzir/platform.git
       - name: Configure ssh-agent for app submodule
         uses: webfactory/ssh-agent@v0.9.0
@@ -47,8 +52,6 @@ jobs:
           ssh-private-key: ${{ secrets.TENZIR_APP_DEPLOY_KEY }}
       - name: Update app submodule
         if: ${{ inputs.bump-app }}
-        env:
-          GITHUB_APP_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           git submodule update --init components/app
           current_sha=$(git -C components/app rev-parse HEAD)
@@ -67,10 +70,7 @@ jobs:
             git -C components/app checkout main
             git add components/app
             git commit -F commitmsg
-            git remote set-url origin https://x-access-token:$GITHUB_APP_TOKEN@github.com/tenzir/platform.git
-            git remote -v
-            python -c "import os; token = os.environ.get('GITHUB_APP_TOKEN', 'unknown'); print(f'{token}')"
-            git push -u origin main
+            git push -u origin main:main
           fi
       - name: Configure ssh-agent for tenant-manager submodule
         uses: webfactory/ssh-agent@v0.9.0
@@ -94,6 +94,6 @@ jobs:
             git -C components/tenant-manager rebase origin/main
             git add components/tenant-manager
             git commit -F commitmsg
-            git push
+            git push -u origin main:main
           fi
 
