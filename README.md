@@ -5,7 +5,8 @@ On-premise version of the Tenzir Platform.
 **NOTE**: The examples and files in this repository are only
 usable in combination with Sovereign Edition access token.
 Please [contact sales](https://tenzir.com/pricing) for more
-information.
+information. Visit [app.tenzir.com](https://app.tenzir.com) for
+a free, hosted version.
 
 ## Quick Start
 
