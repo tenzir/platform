@@ -19,8 +19,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+      - name: Configure ssh-agent
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          submodules: true
+          ssh-private-key: ${{ secrets.TENZIR_APP_DEPLOY_KEY }}
+      - name: Checkout app submodule
+        run: |
+          git submodule update --init components/app
       - name: Update app submodule
         if: ${{ inputs.bump-app }}
         run: |
@@ -41,6 +46,13 @@ jobs:
             git commit -F commitmsg
             git push
           fi
+      - name: Configure ssh-agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.TENZIR_EVENT_HORIZON_DEPLOY_KEY }}
+      - name: Checkout app submodule
+        run: |
+          git submodule update --init components/tenant-manager
       - name: Update tenant-manager submodule
         if: ${{ inputs.bump-tenant-manager }}
         run: |
