@@ -19,28 +19,26 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          submodules: false
       - name: Configure ssh-agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.TENZIR_APP_DEPLOY_KEY }}
-      - name: Checkout app submodule
-        run: |
-          git submodule update --init components/app
       - name: Update app submodule
         if: ${{ inputs.bump-app }}
         run: |
-          git -C components/app fetch
-          current_sha=$(git -C components/app rev-parse main)
+          git submodule update --init components/app
+          current_sha=$(git -C components/app rev-parse HEAD)
           upstream_sha=$(git -C components/app rev-parse origin/main)
-          if [${current_sha} != ${upstream_sha}]; then
+          if [ ${current_sha} != ${upstream_sha} ]; then
             # Collect all files in the `changelog` directory that
             # were added since the last bump.
-            names=$(git -C components/app diff --name-status origin/main main -- changelog/ | grep '^A' | awk '{print $2}')
+            names=$(git -C components/app diff --name-status HEAD origin/main -- changelog/ | grep '^A' | awk '{print $2}')
             echo -e "Bump app component from ${current_sha} to ${upstream_sha}\n\nChanges:\n" > commitmsg
             for name in names; do
               cat ${name} >> commitmsg
             done
-            git -C components/app checkout main
             git -C components/app rebase origin/main
             git add components/app
             git commit -F commitmsg
@@ -50,22 +48,18 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.TENZIR_EVENT_HORIZON_DEPLOY_KEY }}
-      - name: Checkout app submodule
-        run: |
-          git submodule update --init components/tenant-manager
       - name: Update tenant-manager submodule
         if: ${{ inputs.bump-tenant-manager }}
         run: |
-          git -C components/tenant-manager fetch
+          git submodule update --init components/tenant-manager
           current_sha=$(git -C components/tenant-manager rev-parse main)
           upstream_sha=$(git -C components/tenant-manager rev-parse origin/main)
-          if [${current_sha} != ${upstream_sha}]; then
-            names=$(git -C components/tenant-manager diff --name-status origin/main main -- changelog/ | grep '^A' | awk '{print $2}')
+          if [ ${current_sha} != ${upstream_sha} ]; then
+            names=$(git -C components/tenant-manager diff --name-status HEAD origin/main -- changelog/ | grep '^A' | awk '{print $2}')
             echo -e "Bump tenant-manager component from ${current_sha} to ${upstream_sha}\n\nChanges:\n" > commitmsg
             for name in names; do
               cat ${name} >> commitmsg
             done
-            git -C components/tenant-manager checkout main
             git -C components/tenant-manager rebase origin/main
             git add components/tenant-manager
             git commit -F commitmsg
