@@ -39,6 +39,7 @@ jobs:
         run: |
           git config --global user.name 'tenzir-bot'
           git config --global user.email 'engineering@tenzir.com'
+
           git remote set-url origin https://x-access-token:$GITHUB_APP_TOKEN@github.com/tenzir/platform.git
       - name: Configure ssh-agent for app submodule
         uses: webfactory/ssh-agent@v0.9.0
@@ -46,6 +47,8 @@ jobs:
           ssh-private-key: ${{ secrets.TENZIR_APP_DEPLOY_KEY }}
       - name: Update app submodule
         if: ${{ inputs.bump-app }}
+        env:
+          GITHUB_APP_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           git submodule update --init components/app
           current_sha=$(git -C components/app rev-parse HEAD)
@@ -64,6 +67,9 @@ jobs:
             git -C components/app checkout main
             git add components/app
             git commit -F commitmsg
+            git remote set-url origin https://x-access-token:$GITHUB_APP_TOKEN@github.com/tenzir/platform.git
+            git remote -v
+            python -c "import os; token = os.environ.get('GITHUB_APP_TOKEN', 'unknown'); print(f'{token}')"
             git push -u origin main
           fi
       - name: Configure ssh-agent for tenant-manager submodule
