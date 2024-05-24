@@ -22,7 +22,6 @@ jobs:
         with:
           submodules: false
       - name: Generate a token
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: generate_token
         uses: actions/create-github-app-token@v1
         with:
