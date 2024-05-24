@@ -1,0 +1,62 @@
+name: Bump component submodules
+
+on:
+  workflow_call:
+    inputs:
+      bump-app:
+        description: Bump the app submodule
+        type: boolean
+        default: true
+      bump-tenant-manager:
+        description: Bump the tenant manager submodule
+        type: boolean
+        default: true
+
+
+jobs:
+  update_submodules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Update app submodule
+        if: ${{ inputs.bump-app }}
+        run: |
+          git -C components/app fetch
+          current_sha=$(git -C components/app rev-parse main)
+          upstream_sha=$(git -C components/app rev-parse origin/main)
+          if [${current_sha} != ${upstream_sha}]; then
+            # Collect all files in the `changelog` directory that
+            # were added since the last bump.
+            names=$(git -C components/app diff --name-status origin/main main -- changelog/ | grep '^A' | awk '{print $2}')
+            echo -e "Bump app component from ${current_sha} to ${upstream_sha}\n\nChanges:\n" > commitmsg
+            for name in names; do
+              cat ${name} >> commitmsg
+            done
+            git -C components/app checkout main
+            git -C components/app rebase origin/main
+            git add components/app
+            git commit -F commitmsg
+            git push
+          fi
+      - name: Update tenant-manager submodule
+        if: ${{ inputs.bump-tenant-manager }}
+        run: |
+          git -C components/tenant-manager fetch
+          current_sha=$(git -C components/tenant-manager rev-parse main)
+          upstream_sha=$(git -C components/tenant-manager rev-parse origin/main)
+          if [${current_sha} != ${upstream_sha}]; then
+            names=$(git -C components/tenant-manager diff --name-status origin/main main -- changelog/ | grep '^A' | awk '{print $2}')
+            echo -e "Bump tenant-manager component from ${current_sha} to ${upstream_sha}\n\nChanges:\n" > commitmsg
+            for name in names; do
+              cat ${name} >> commitmsg
+            done
+            git -C components/tenant-manager checkout main
+            git -C components/tenant-manager rebase origin/main
+            git add components/tenant-manager
+            git commit -F commitmsg
+            git push
+          fi
+
