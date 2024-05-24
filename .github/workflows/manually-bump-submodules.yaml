@@ -1,0 +1,24 @@
+name: Manually bump submodules containers
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump-app:
+        description: Bump the app submodule
+        type: boolean
+        default: true
+      bump-tenant-manager:
+        description: Bump the tenant manager submodule
+        type: boolean
+        default: true
+
+jobs:
+  call-bump:
+    uses: ./.github/workflows/update-submodules.yaml
+    with:
+      bump-app: ${{ inputs.bump-app }}
+      bump-tenant-manager: ${{ inputs.bump-tenant-manager }}
+    secrets: inherit
+    concurrency: bump-submodules
+    permissions:
+      contents: write
