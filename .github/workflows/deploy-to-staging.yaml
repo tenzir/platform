@@ -66,6 +66,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
+          git submodule update --init components/tenant-manager
           git -C components/tenant-manager checkout platform-staging
           git -C components/tenant-manager reset --hard ${{ steps.files.outputs.tenant-manager-commit }}
           git -C components/tenant-manager push -f
