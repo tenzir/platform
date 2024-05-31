@@ -25,6 +25,7 @@ jobs:
         with:
           submodules: false
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Set up files changed
         id: files
