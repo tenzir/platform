@@ -43,22 +43,6 @@ jobs:
           private-key: ${{ secrets.TENZIR_AUTOBUMPER_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
-      - name: Prepare git push
-        env:
-          GITHUB_APP_TOKEN: ${{ steps.generate_token.outputs.token }}
-        run: |
-          git config --global user.name 'tenzir-bot'
-          git config --global user.email 'engineering@tenzir.com'
-          git remote set-url origin https://x-access-token:$GITHUB_APP_TOKEN@github.com/tenzir/platform.git
-
-      # - name: Configure ssh-agent for tenant-manager submodule
-      #   if: |
-      #     (github.event_type == 'workflow_dispatch' && inputs.deploy-tenant-manager) || 
-      #     (github.event_type == 'push' && contains(${{ steps.files.outputs.files-changed }}, 'components/tenant-manager')
-      #   uses: webfactory/ssh-agent@v0.9.0
-      #   with:
-      #     ssh-private-key: ${{ secrets.TENZIR_EVENT_HORIZON_DEPLOY_KEY }}
-
       - name: Deploy tenant-manager
         if: |
           (github.event_type == 'workflow_dispatch' && inputs.deploy-tenant-manager) || 
@@ -75,14 +59,6 @@ jobs:
             --ref platform-staging
             
 
-      - name: Configure ssh-agent for app submodule
-        if: |
-          (github.event_type == 'workflow_dispatch' && inputs.deploy-app) || 
-          (github.event_type == 'push' && contains(${{ steps.files.outputs.files-changed }}, 'components/app')
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.TENZIR_APP_DEPLOY_KEY }}
-
       - name: Deploy app
         if: |
           (github.event_type == 'workflow_dispatch' && inputs.deploy-app) || 
@@ -90,6 +66,9 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
+          git submodule set-url components/app https://x-access-token:$GH_TOKEN@github.com/tenzir/app.git/
+          git submodule update --init components/app
+          git -C components/app push -f origin ${{ steps.files.outputs.app-commit }}:platform-staging
           gh workflow -R tenzir/app run deploy-to-vercel.yaml \
-            --ref ${{ steps.files.outputs.app-commit }} \
+            --ref platform-staging \
             -f deploy-staging=true
