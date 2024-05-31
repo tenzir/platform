@@ -24,6 +24,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: false
+          persist-credentials: false
 
       - name: Set up files changed
         id: files
@@ -42,6 +43,22 @@ jobs:
           private-key: ${{ secrets.TENZIR_AUTOBUMPER_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
+      - name: Prepare git push
+        env:
+          GITHUB_APP_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          git config --global user.name 'tenzir-bot'
+          git config --global user.email 'engineering@tenzir.com'
+          git remote set-url origin https://x-access-token:$GITHUB_APP_TOKEN@github.com/tenzir/platform.git
+
+      - name: Configure ssh-agent for tenant-manager submodule
+        if: |
+          (github.event_type == 'workflow_dispatch' && inputs.deploy-tenant-manager) || 
+          (github.event_type == 'push' && contains(${{ steps.files.outputs.files-changed }}, 'components/tenant-manager')
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.TENZIR_EVENT_HORIZON_DEPLOY_KEY }}
+
       - name: Deploy tenant-manager
         if: |
           (github.event_type == 'workflow_dispatch' && inputs.deploy-tenant-manager) || 
@@ -49,8 +66,21 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
+          git -C components/tenant-manager checkout platform-staging
+          git -C components/tenant-manager reset --hard ${{ steps.files.outputs.tenant-manager-commit }}
+          git -C components/tenant-manager push -f
+          # The workflow_dispatch only supports tags or branches as targets,
+          # not direct commit hashes.
           gh workflow -R tenzir/event-horizon run tzcp-deploy-staging.yaml \
-            --ref ${{ steps.files.outputs.tenant-manager-commit }}
+            --ref platform-staging
+
+      - name: Configure ssh-agent for app submodule
+        if: |
+          (github.event_type == 'workflow_dispatch' && inputs.deploy-app) || 
+          (github.event_type == 'push' && contains(${{ steps.files.outputs.files-changed }}, 'components/app')
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.TENZIR_APP_DEPLOY_KEY }}
 
       - name: Deploy app
         if: |
