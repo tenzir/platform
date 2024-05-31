@@ -14,32 +14,30 @@ jobs:
           submodules: true
 
       - name: Get app submodule commit hash
-        id: app-commit
+        id: component-commits
         run: |
           cd ./components/app
-          echo "::set-output name=commit::$(git rev-parse HEAD)"
-          
-      - name: Get tenant-manager submodule commit hash
-        id: tenant-manager-commit
-        run: |
+          echo "::set-output name=tenant-manager-commit::$(git rev-parse HEAD)"
           cd ./components/tenant-manager
-          echo "::set-output name=commit::$(git rev-parse HEAD)"
-
-      - name: Deploy tenant manager
-        uses: benc-uk/workflow-dispatch@v1
+          echo "::set-output name=app-commit::$(git rev-parse HEAD)"
+          
+      - name: Generate a token
+        id: generate_token
+        uses: actions/create-github-app-token@v1
         with:
-          workflow: tzcp-deploy-production.yaml
-          repo: tenzir/event-horizon
-          token: "${{ secrets.REPO_SCOPE_ACCESS_TOKEN }}"
-          ref: ${{ steps.tenant-manager-commit.outputs.commit }}"
+          app-id: ${{ vars.TENZIR_AUTOBUMPER_APP_ID }}
+          private-key: ${{ secrets.TENZIR_AUTOBUMPER_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
 
-      - name: Deploy app
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: push-to-production.yaml
-          repo: tenzir/app
-          token: "${{ secrets.REPO_SCOPE_ACCESS_TOKEN }}"
-          ref: ${{ steps.app-commit.outputs.commit }}"
+      - name: Deploy components to production
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          gh workflow -R tenzir/event-horizon run tzcp-deploy-production.yaml \
+            --ref ${{ steps.component-commits.outputs.tenant-manager-commit }}
+          gh workflow -R tenzir/app run push-to-vercel.yaml \
+            -f deploy-production=true \
+            --ref ${{ steps.component-commits.outputs.app-commit }}
 
   attach_release_artifacts:
     runs-on: ubuntu-latest
