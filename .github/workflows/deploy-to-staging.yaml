@@ -17,6 +17,8 @@ jobs:
       - name: Set up files changed
         id: files
         run: |
+          echo "before: ${{ github.event.before }}"
+          echo "now: ${{ github.sha }}"
           echo "::set-output name=files-changed::$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})"
           echo "::set-output name=app-commit::$(git ls-tree HEAD components/app | awk '{print $3}')"
           echo "::set-output name=tenant-manager-commit::$(git ls-tree HEAD components/tenant-manager | awk '{print $3}')"
