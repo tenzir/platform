@@ -1,6 +1,16 @@
 name: Bump component submodules to latest main
 
 on:
+  workflow_dispatch:
+    inputs:
+      bump-app:
+        description: Bump the app submodule
+        type: boolean
+        default: true
+      bump-tenant-manager:
+        description: Bump the tenant manager submodule
+        type: boolean
+        default: true
   workflow_call:
     inputs:
       bump-app:
