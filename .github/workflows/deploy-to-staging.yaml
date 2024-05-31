@@ -52,9 +52,6 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          echo ${{ github.event_type }}
-          echo ${{ github.event_type == 'workflow_dispatch' && inputs.deploy-tenant-manager }}
-          echo ${{ github.event_type == 'push' && contains(steps.files.outputs.files-changed, 'components/tenant-manager') }}
           # The workflow_dispatch only supports tags or branches as targets,
           # not direct commit hashes, so we push a branch first.
           git submodule set-url components/tenant-manager https://x-access-token:$GH_TOKEN@github.com/tenzir/event-horizon.git/
@@ -67,10 +64,13 @@ jobs:
       - name: Deploy app
         if: |
           (github.event_type == 'workflow_dispatch' && inputs.deploy-app) || 
-          (github.event_type == 'push' && contains(${{ steps.files.outputs.files-changed }}, 'components/app'))
+          (github.event_type == 'push' && contains(steps.files.outputs.files-changed, 'components/app'))
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
+          echo ${{ github.event_type }}
+          echo ${{ github.event_type == 'workflow_dispatch' && inputs.deploy-tenant-manager }}
+          echo ${{ github.event_type == 'push' && contains(steps.files.outputs.files-changed, 'components/tenant-manager') }}
           git submodule set-url components/app https://x-access-token:$GH_TOKEN@github.com/tenzir/app.git/
           git submodule update --init components/app
           git -C components/app push -f origin ${{ steps.files.outputs.app-commit }}:refs/heads/platform-staging
