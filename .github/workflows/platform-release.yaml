@@ -11,16 +11,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          submodules: true
+          submodules: false
+          persist-credentials: false
+          fetch-depth: 0
 
-      - name: Get app submodule commit hash
-        id: component-commits
-        run: |
-          cd ./components/app
-          echo "::set-output name=tenant-manager-commit::$(git rev-parse HEAD)"
-          cd ./components/tenant-manager
-          echo "::set-output name=app-commit::$(git rev-parse HEAD)"
-          
       - name: Generate a token
         id: generate_token
         uses: actions/create-github-app-token@v1
@@ -29,15 +23,32 @@ jobs:
           private-key: ${{ secrets.TENZIR_AUTOBUMPER_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
-      - name: Deploy components to production
+      - name: Deploy tenant-manager
+        if: |
+          (github.event_type == 'workflow_dispatch' && inputs.deploy-tenant-manager) || 
+          (github.event_type == 'push' && contains(steps.files.outputs.files-changed, 'components/tenant-manager'))
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
+          # The workflow_dispatch only supports tags or branches as targets,
+          # not direct commit hashes, so we push a branch first.
+          git submodule set-url components/tenant-manager https://x-access-token:$GH_TOKEN@github.com/tenzir/event-horizon.git/
+          git submodule update --init components/tenant-manager
+          git -C components/tenant-manager push -f origin ${{ steps.files.outputs.tenant-manager-commit }}:refs/heads/platform-prod
           gh workflow -R tenzir/event-horizon run tzcp-deploy-production.yaml \
-            --ref ${{ steps.component-commits.outputs.tenant-manager-commit }}
-          gh workflow -R tenzir/app run push-to-vercel.yaml \
-            -f deploy-production=true \
-            --ref ${{ steps.component-commits.outputs.app-commit }}
+            --ref platform-prod
+            
+
+      - name: Deploy app
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          git submodule set-url components/app https://x-access-token:$GH_TOKEN@github.com/tenzir/app.git/
+          git submodule update --init components/app
+          git -C components/app push -f origin ${{ steps.files.outputs.app-commit }}:refs/heads/platform-prod
+          gh workflow -R tenzir/app run deploy-to-vercel.yaml \
+            --ref platform-prod \
+            -f deploy-production=true
 
   attach_release_artifacts:
     runs-on: ubuntu-latest

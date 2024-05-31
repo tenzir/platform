@@ -30,9 +30,6 @@ jobs:
       - name: Set up files changed
         id: files
         run: |
-          echo "before: ${{ github.event.before }}"
-          echo "now: ${{ github.sha }}"
-          git diff --name-only ${{ github.event.before }} ${{ github.sha }}
           echo "::set-output name=files-changed::$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})"
           echo "::set-output name=app-commit::$(git ls-tree HEAD components/app | awk '{print $3}')"
           echo "::set-output name=tenant-manager-commit::$(git ls-tree HEAD components/tenant-manager | awk '{print $3}')"
@@ -68,9 +65,6 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          echo ${{ github.event_type }}
-          echo ${{ github.event_type == 'workflow_dispatch' && inputs.deploy-tenant-manager }}
-          echo ${{ github.event_type == 'push' && contains(steps.files.outputs.files-changed, 'components/tenant-manager') }}
           git submodule set-url components/app https://x-access-token:$GH_TOKEN@github.com/tenzir/app.git/
           git submodule update --init components/app
           git -C components/app push -f origin ${{ steps.files.outputs.app-commit }}:refs/heads/platform-staging
