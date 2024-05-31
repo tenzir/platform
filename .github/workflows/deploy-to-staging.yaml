@@ -68,7 +68,7 @@ jobs:
         run: |
           # The workflow_dispatch only supports tags or branches as targets,
           # not direct commit hashes, so we push a branch first.
-          git submodule set-url components/tenant-manager https://x-access-token:$GITHUB_APP_TOKEN@github.com/tenzir/event-horizon.git/
+          git submodule set-url components/tenant-manager https://x-access-token:$GH_TOKEN@github.com/tenzir/event-horizon.git/
           git submodule update --init components/tenant-manager
           git -C components/tenant-manager push -f origin ${{ steps.files.outputs.tenant-manager-commit }}:platform-staging
           gh workflow -R tenzir/event-horizon run tzcp-deploy-staging.yaml \
