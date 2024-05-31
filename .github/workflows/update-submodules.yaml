@@ -65,8 +65,6 @@ jobs:
             # were added since the last bump.
             names=$(git -C components/app diff --name-status HEAD origin/main -- changelog/ | grep '^A' | awk '{print $2}')
             echo -e "Bump app component from ${current_sha_short} to ${upstream_sha_short}\n\nChanges:\n" > commitmsg
-            ls -la .
-            ls -la components/app/changelog
             for name in ${names}; do
               cat components/app/${name} >> commitmsg
             done
