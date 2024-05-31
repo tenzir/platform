@@ -4,6 +4,17 @@ name: Deploy submodule updates to the staging environment
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy-app:
+        description: Deloy the app to staging
+        type: boolean
+        default: true
+      deploy-tenant-manager:
+        description: Deploy the tenant manager to staging
+        type: boolean
+        default: true
+
 
 jobs:
   cloud_deployment:
@@ -23,20 +34,31 @@ jobs:
           echo "::set-output name=app-commit::$(git ls-tree HEAD components/app | awk '{print $3}')"
           echo "::set-output name=tenant-manager-commit::$(git ls-tree HEAD components/tenant-manager | awk '{print $3}')"
 
-      - name: Deploy tenant manager
-        uses: benc-uk/workflow-dispatch@v1
-        if: contains(steps.files.outputs.files-changed, 'components/tenant-manager')
+      - name: Generate a token
+        id: generate_token
+        uses: actions/create-github-app-token@v1
         with:
-          workflow: tzcp-deploy-staging.yaml
-          repo: tenzir/event-horizon
-          token: "${{ secrets.REPO_SCOPE_ACCESS_TOKEN }}"
-          ref: ${{ steps.files.tenant-manager-commit }}"
-          # inputs: '{ "example_payload": "value" }'
+          app-id: ${{ vars.TENZIR_AUTOBUMPER_APP_ID }}
+          private-key: ${{ secrets.TENZIR_AUTOBUMPER_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
 
-      # App deployments to staging are done automatically by Vercel atm.
-      # - name: Deploy app
-      #   uses: benc-uk/workflow-dispatch@v1
-      #   with:
-      #     workflow: deploy-staging.yaml
-      #     repo: tenzir/app
-      #     ref: ${{ steps.app-commit.outputs.commit }}"
+      - name: Deploy tenant-manager
+        if: |
+          (github.event_type == 'workflow_dispatch' && inputs.deploy-tenant-manager) || 
+          (github.event_type == 'push' && contains(${{ steps.files.outputs.files-changed }}, 'components/tenant-manager')
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          gh workflow -R tenzir/event-horizon run tzcp-deploy-staging.yaml \
+            --ref ${{ steps.files.outputs.tenant-manager-commit }}
+
+      - name: Deploy app
+        if: |
+          (github.event_type == 'workflow_dispatch' && inputs.deploy-app) || 
+          (github.event_type == 'push' && contains(${{ steps.files.outputs.files-changed }}, 'components/app')
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          gh workflow -R tenzir/app run deploy-to-vercel.yaml \
+            --ref ${{ steps.files.outputs.app-commit }} \
+            -f deploy-staging=true
