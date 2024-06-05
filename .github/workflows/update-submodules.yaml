@@ -54,7 +54,6 @@ jobs:
         if: ${{ inputs.bump-app }}
         run: |
           git submodule update --init components/app
-          git -C components/app fetch
           current_sha=$(git -C components/app rev-parse HEAD)
           current_sha_short=$(git -C components/app rev-parse --short HEAD)
           upstream_sha=$(git -C components/app rev-parse origin/main)
@@ -81,8 +80,7 @@ jobs:
         if: ${{ inputs.bump-tenant-manager }}
         run: |
           git submodule update --init components/tenant-manager
-          git -C components/tenant-manager fetch
-          current_sha=$(git -C components/tenant-manager rev-parse main)
+          current_sha=$(git -C components/tenant-manager rev-parse HEAD)
           current_sha_short=$(git -C components/app rev-parse --short HEAD)
           upstream_sha=$(git -C components/tenant-manager rev-parse origin/main)
           upstream_sha_short=$(git -C components/app rev-parse --short origin/main)
