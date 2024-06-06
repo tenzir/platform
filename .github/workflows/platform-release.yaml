@@ -79,7 +79,6 @@ jobs:
           ssh-private-key: ${{ secrets.TENZIR_APP_DEPLOY_KEY }}
 
       - name: Update app submodule
-        if: ${{ inputs.bump-app }}
         run: |
           git submodule update --init components/app
 
@@ -87,8 +86,8 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.TENZIR_EVENT_HORIZON_DEPLOY_KEY }}
+
       - name: Update tenant-manager submodule
-        if: ${{ inputs.bump-tenant-manager }}
         run: |
           git submodule update --init components/tenant-manager
 
