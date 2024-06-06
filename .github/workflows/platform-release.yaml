@@ -4,6 +4,9 @@ on:
   release:
     types: [created]
 
+permissions:
+  packages: write
+
 jobs:
   cloud_deployment:
     runs-on: ubuntu-latest
