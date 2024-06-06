@@ -24,9 +24,6 @@ jobs:
           owner: ${{ github.repository_owner }}
 
       - name: Deploy tenant-manager
-        if: |
-          (github.event_type == 'workflow_dispatch' && inputs.deploy-tenant-manager) || 
-          (github.event_type == 'push' && contains(steps.files.outputs.files-changed, 'components/tenant-manager'))
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
@@ -34,10 +31,9 @@ jobs:
           # not direct commit hashes, so we push a branch first.
           git submodule set-url components/tenant-manager https://x-access-token:$GH_TOKEN@github.com/tenzir/event-horizon.git/
           git submodule update --init components/tenant-manager
-          git -C components/tenant-manager push -f origin ${{ steps.files.outputs.tenant-manager-commit }}:refs/heads/platform-prod
+          git -C components/tenant-manager push -f origin HEAD:refs/heads/platform-prod
           gh workflow -R tenzir/event-horizon run tzcp-deploy-production.yaml \
             --ref platform-prod
-            
 
       - name: Deploy app
         env:
@@ -45,14 +41,18 @@ jobs:
         run: |
           git submodule set-url components/app https://x-access-token:$GH_TOKEN@github.com/tenzir/app.git/
           git submodule update --init components/app
-          git -C components/app push -f origin ${{ steps.files.outputs.app-commit }}:refs/heads/platform-prod
-          gh workflow -R tenzir/app run deploy-to-vercel.yaml \
+          git -C components/app push -f origin HEAD:refs/heads/platform-prod
+          gh workflow -R tenzir/app run push-to-vercel.yaml \
             --ref platform-prod \
             -f deploy-production=true
 
   attach_release_artifacts:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: false
       - name: Create tarball
         run: |
           tar cf platform.tar README.md LICENSE examples/ 
@@ -73,11 +73,30 @@ jobs:
       - uses: actions/checkout@v4
         name: Check out code
 
+      - name: Configure ssh-agent for app submodule
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.TENZIR_APP_DEPLOY_KEY }}
+
+      - name: Update app submodule
+        if: ${{ inputs.bump-app }}
+        run: |
+          git submodule update --init components/app
+
+      - name: Configure ssh-agent for tenant-manager submodule
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.TENZIR_EVENT_HORIZON_DEPLOY_KEY }}
+      - name: Update tenant-manager submodule
+        if: ${{ inputs.bump-tenant-manager }}
+        run: |
+          git submodule update --init components/tenant-manager
+
       - uses: mr-smithers-excellent/docker-build-push@v6
         name: Build & push Docker image
         with:
           image: tenzir-dex
-          tags: platform-${{ github.event.release.tag_name }}
+          tags: ${{ github.event.release.tag_name }}
           registry: ghcr.io
           directory: components/dex
           dockerfile: components/dex/Dockerfile
@@ -88,7 +107,7 @@ jobs:
         name: Build & push Docker image
         with:
           image: tenzir-seaweed
-          tags: platform-${{ github.event.release.tag_name }}
+          tags: ${{ github.event.release.tag_name }}
           registry: ghcr.io
           directory: components/seaweed
           dockerfile: components/seaweed/Dockerfile
@@ -99,7 +118,7 @@ jobs:
         name: Build & push Docker image
         with:
           image: platform
-          tags: platform-${{ github.event.release.tag_name }}
+          tags: ${{ github.event.release.tag_name }}
           registry: ghcr.io
           directory: components/tenant-manager/platform/tenant_manager
           dockerfile: components/tenant-manager/platform/tenant_manager/Dockerfile
@@ -110,7 +129,7 @@ jobs:
         name: Build & push Docker image
         with:
           image: tenzir-platform
-          tags: platform-${{ github.event.release.tag_name }}
+          tags: ${{ github.event.release.tag_name }}
           registry: ghcr.io
           directory: components/tenant-manager/platform/public_cli
           dockerfile: components/tenant-manager/platform/public_cli/Dockerfile
@@ -121,7 +140,7 @@ jobs:
         name: Build & push Docker image
         with:
           image: tenzir-app
-          tags: platform-${{ github.event.release.tag_name }}
+          tags: ${{ github.event.release.tag_name }}
           registry: ghcr.io
           directory: components/app
           dockerfile: components/app/Dockerfile
