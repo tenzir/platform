@@ -142,7 +142,7 @@ jobs:
       - uses: mr-smithers-excellent/docker-build-push@v6
         name: Build & push Docker image
         with:
-          image: tenzir-app
+          image: app
           tags: ${{ github.event.release.tag_name }}
           registry: ghcr.io
           directory: components/app
