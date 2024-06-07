@@ -15,6 +15,7 @@ services:
       - BASE_PATH=
       - GATEWAY_WS_ENDPOINT=${TENZIR_PLATFORM_CONTROL_ENDPOINT}
       - GATEWAY_HTTP_ENDPOINT=http://websocket-gateway:5000
+      - TENANT_MANAGER_DISABLE_LOCAL_DEMO_NODES=${TENZIR_PLATFORM_DISABLE_LOCAL_DEMO_NODES}
       - TENZIR_DEMO_NODE_IMAGE=${TENZIR_PLATFORM_DEMO_NODE_IMAGE:-tenzir/tenzir-demo:latest}
       - TENANT_MANAGER_APP_API_KEY=${TENZIR_PLATFORM_INTERNAL_APP_API_KEY}
       - TENANT_MANAGER_TENANT_TOKEN_ENCRYPTION_KEY=${TENZIR_PLATFORM_INTERNAL_TENANT_TOKEN_ENCRYPTION_KEY}
@@ -30,8 +31,7 @@ services:
       - BLOB_STORAGE__ACCESS_KEY_ID=${TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID}
       - BLOB_STORAGE__SECRET_ACCESS_KEY=${TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY}
     volumes:
-      # The docker socket gets mapped into the container in order to enable spawning new
-      # demo nodes.
+      # Mounting the docker socket is only required if local demo nodes are enabled.
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - 3001:5000
@@ -67,15 +67,13 @@ services:
   # Note the ~25 seconds startup delay before the seaweed server
   # becomes ready.
   seaweed:
-    image: chrislusf/seaweedfs
+    image: ghcr.io/tenzir/tenzir-seaweed:${TENZIR_PLATFORM_VERSION:-latest}
     environment:
       - TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID
       - TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY
       - TENZIR_PLATFORM_INTERNAL_BUCKET_NAME
-    entrypoint: ["/tenzir-entrypoint.sh"]
     command: ["server", "-dir=/var/lib/seaweedfs", "-s3", "-s3.config=/config.json"]
     volumes:
-      - ./config/seaweed.tenzir-entrypoint.sh:/tenzir-entrypoint.sh
       - seaweed_data:/var/lib/seaweedfs
     ports:
       - '3003:8333'
@@ -110,7 +108,7 @@ services:
       - PRIVATE_WEBAPP_ENDPOINT=http://platform:5000/webapp
       - PRIVATE_WEBAPP_KEY=${TENZIR_PLATFORM_INTERNAL_APP_API_KEY}
       - AUTH_SECRET=${TENZIR_PLATFORM_INTERNAL_AUTH_SECRET}
-
+      - PUBLIC_DISABLE_DEMO_NODE_AND_TOUR=${TENZIR_PLATFORM_DISABLE_LOCAL_DEMO_NODES}
     ports:
       - "3000:3000"
 
