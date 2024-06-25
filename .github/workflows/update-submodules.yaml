@@ -63,11 +63,11 @@ jobs:
             # Collect all files in the `changelog` directory that
             # were added since the last bump.
             names=$(git -C components/app diff --name-status HEAD origin/main -- changelog/ | grep -E '^(A|M)' | awk '{print $2}')
+            git -C components/app checkout origin/main
             echo -e "Bump app component from ${current_sha_short} to ${upstream_sha_short}\n\nChanges:\n" > commitmsg
             for name in ${names}; do
               cat components/app/${name} >> commitmsg
             done
-            git -C components/app checkout main
             git add components/app
             git commit -F commitmsg
             git push -u origin main:main
@@ -88,6 +88,7 @@ jobs:
           if [ ${current_sha} != ${upstream_sha} ]; then
             git -C components/tenant-manager diff --name-status HEAD origin/main -- platform/changelog/
             names=$(git -C components/tenant-manager diff --name-status HEAD origin/main -- platform/changelog/ | grep -E '^(A|M)' | awk '{print $2}')
+            git -C components/tenant-manager checkout origin/main
             echo -e "Bump tenant-manager component from ${current_sha_short} to ${upstream_sha_short}\n\nChanges:\n" > commitmsg
             echo "Found changelog files: ${names}"
             for name in ${names}; do
