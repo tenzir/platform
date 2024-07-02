@@ -100,6 +100,7 @@ jobs:
         with:
           image: tenzir-dex
           tags: ${{ github.event.release.tag_name }}
+          addLatest: true
           registry: ghcr.io
           directory: components/dex
           dockerfile: components/dex/Dockerfile
@@ -111,6 +112,7 @@ jobs:
         with:
           image: tenzir-seaweed
           tags: ${{ github.event.release.tag_name }}
+          addLatest: true
           registry: ghcr.io
           directory: components/seaweed
           dockerfile: components/seaweed/Dockerfile
@@ -122,6 +124,7 @@ jobs:
         with:
           image: platform
           tags: ${{ github.event.release.tag_name }}
+          addLatest: true
           registry: ghcr.io
           directory: components/tenant-manager/platform/tenant_manager
           dockerfile: components/tenant-manager/platform/tenant_manager/Dockerfile
@@ -133,6 +136,7 @@ jobs:
         with:
           image: tenzir-platform
           tags: ${{ github.event.release.tag_name }}
+          addLatest: true
           registry: ghcr.io
           directory: components/tenant-manager/platform/public_cli
           dockerfile: components/tenant-manager/platform/public_cli/Dockerfile
@@ -144,6 +148,7 @@ jobs:
         with:
           image: app
           tags: ${{ github.event.release.tag_name }}
+          addLatest: true
           registry: ghcr.io
           directory: components/app
           dockerfile: components/app/Dockerfile
