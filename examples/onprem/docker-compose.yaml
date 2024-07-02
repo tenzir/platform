@@ -19,7 +19,7 @@
 
 services:
   platform:
-    image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION:-latest}
+    image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION}
     restart: unless-stopped
     command: ["tenant_manager/rest/server/local.py"]
     environment:
