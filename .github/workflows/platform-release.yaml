@@ -58,8 +58,15 @@ jobs:
         with:
           submodules: false
       - name: Create tarball
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
         run: |
-          tar cf platform.tar README.md LICENSE examples/ 
+          # Replace "latest" version in examples
+          sed -i \
+            "s/^TENZIR_PLATFORM_VERSION=.*$/\TENZIR_PLATFORM_VERSION=${VERSION}/" \
+            examples/*/env.example
+          # Build deliverable
+          tar cf platform.tar README.md LICENSE examples/
       - name: Publish tarball to the GitHub Release
         if: ${{ github.event_name == 'release' }}
         uses: actions/upload-release-asset@v1
