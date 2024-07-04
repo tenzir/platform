@@ -9,7 +9,7 @@
 
 services:
   platform:
-    image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION:-latest}
+    image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION}
     command: ["tenant_manager/rest/server/local.py"]
     environment:
       - BASE_PATH=
