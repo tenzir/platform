@@ -48,4 +48,4 @@ git tag -s "${tag}" -m "${title}"
 git push --follow-tags origin
 
 # Prompt to cut the release.
-gh release create "${tag}" --title "${title}" --generate-notes
+gh release create "${tag}" --title "${title}" --generate-notes --draft
