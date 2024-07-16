@@ -2,7 +2,7 @@ name: Create Sovereign Edition containers and also push a new production Cloud D
 
 on:
   release:
-    types: [created]
+    types: [published]
 
 permissions:
   packages: write
