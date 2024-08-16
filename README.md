@@ -6,13 +6,11 @@
 </a>
 
 <h3 align="center">
-Data Pipelines for Security Teams
+The data pipeline engine for security teams.
 </h3>
 </p>
 
 ## What is Tenzir?
-
-Tenzir is the data pipeline engine for security teams.
 
 If you need to collect, parse, shape, normalize, aggregate, store, query, and
 route security telemetry data at scale, you'll love how our pipelines manage
@@ -28,15 +26,14 @@ command-line utility for managing workspaces and nodes on the Tenzir Platform.
 If you are a customer of the **Sovereign Edition**, deploy the Tenzir Platform
 locally by following our [Deploy the platform][guide] setup guide step by step.
 
-If you have access to the full source code of the Tenzir Platform and want to
-develop it or make modifications, we recommend starting with the [Development
-version][dev-version] instead that ties into the infrastructure behind
-[app.tenzir.com][app].
+If you are a developer and want to work on the code base of the Tenzir
+Platform, we recommend starting with the [Development version][dev-version]
+instead that ties into the infrastructure behind [app.tenzir.com][app].
 
 > [!NOTE]
 > To get more information about the **Sovereign Edition**, please [contact
-> sales](https://tenzir.com/pricing). Visit [app.tenzir.com][app] for a free,
-> cloud-hosted version.
+> sales](mailto://sales@tenzir.com). Visit [app.tenzir.com][app] to enjoy the
+> free, cloud-hosted version of the Tenzir Platform.
 
 [app]: https://app.tenzir.com
 [guide]: https://docs.tenzir.com/setup-guides/deploy-the-platform
