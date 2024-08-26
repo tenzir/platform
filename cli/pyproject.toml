@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "tenzir-platform"
+version = "0.0.0" # The actual version is set in the CLI during a release
+description = "Tenzir CLI"
+license = "BSD-3-Clause"
+authors = ["Tenzir <engineering@tenzir.com>"]
+readme = "README.md"
+packages = [{ include = "tenzir_platform" }]
+
+[tool.poetry.scripts]
+tenzir-platform = "tenzir_platform.tenzir_platform:main"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+structlog = "^23.1.0"
+requests = "^2.31.0"
+docopt = "^0.6.2"
+types-docopt = "^0.6.11.4"
+pydantic-settings = "^2.2.1"
+pyjwt = {extras = ["crypto"], version = "^2.8.0"}
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.1.1"
+isort = "^5.12.0"
+mypy = "^1.5.1"
+werkzeug = "^2.3.7"
+
+# Additional type stubs for mypy.
+[tool.poetry.group.types.dependencies]
+types-requests = "^2.31.0.2"
+
+[tool.mypy]
+python_version = "3.10"
+warn_unused_configs = true
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
