@@ -7,7 +7,8 @@
 
 services:
   platform:
-    build: ../tenant_manager
+    # image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION:-latest}
+    build: ../../components/tenant-manager/platform/tenant_manager/
     command: ["tenant_manager/rest/server/local.py"]
     environment:
       - BASE_PATH=
@@ -36,7 +37,8 @@ services:
       - postgres
 
   websocket-gateway:
-    build: ../tenant_manager
+    # image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION:-latest}
+    build: ../../components/tenant-manager/platform/tenant_manager/
     environment:
       - BASE_PATH=
       - TENZIR_PROXY_TIMEOUT=60
@@ -51,7 +53,8 @@ services:
       - 3002:5000
 
   app:
-    build: ../app
+    # image: ghcr.io/tenzir/app:${TENZIR_PLATFORM_VERSION:-latest}
+    build: ../../components/app
     environment:
       - AUTH_TRUST_HOST=true
       - PUBLIC_ENABLE_HIGHLIGHT=false
@@ -65,12 +68,12 @@ services:
       - PRIVATE_WEBAPP_ENDPOINT=http://platform:5000/webapp
       - PRIVATE_WEBAPP_KEY=${TENZIR_PLATFORM_INTERNAL_APP_API_KEY}
       - AUTH_SECRET=${TENZIR_PLATFORM_INTERNAL_AUTH_SECRET}
-
     ports:
       - "3000:3000"
 
   cli:
-    build: ../public_cli
+    # image: ghcr.io/tenzir/tenzir-platform:${TENZIR_PLATFORM_VERSION:-latest}
+    build: ../../components/tenant-manager/platform/public_cli
     profiles:
       - donotstart
     volumes:
@@ -90,25 +93,25 @@ services:
       - POSTGRES_DB=${TENZIR_PLATFORM_POSTGRES_DB}
     ports:
       # This is only exposed for debugging convenience.
-      - '3003:5432'
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   # Note the ~25 seconds startup delay before the seaweed server
   # becomes ready.
   seaweed:
-    image: chrislusf/seaweedfs
+    image: ghcr.io/tenzir/tenzir-seaweed:${TENZIR_PLATFORM_VERSION:-latest}
+    restart: unless-stopped
     environment:
       - TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID
       - TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY
       - TENZIR_PLATFORM_INTERNAL_BUCKET_NAME
-    entrypoint: ["/tenzir-entrypoint.sh"]
     command: ["server", "-dir=/var/lib/seaweedfs", "-s3", "-s3.config=/config.json"]
     volumes:
-      - ./config/seaweed.tenzir-entrypoint.sh:/tenzir-entrypoint.sh
       - seaweed_data:/var/lib/seaweedfs
     ports:
-      - '3004:8333'
+      - '3003:8333'
+
 
 
   # To use dex as a completely local auth, uncomment the service below and
