@@ -73,7 +73,7 @@ services:
 
   cli:
     # image: ghcr.io/tenzir/tenzir-platform:${TENZIR_PLATFORM_VERSION:-latest}
-    build: ../../components/tenant-manager/platform/public_cli
+    build: ../../cli
     profiles:
       - donotstart
     volumes:
