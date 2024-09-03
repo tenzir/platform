@@ -132,8 +132,7 @@ jobs:
         name: Build & push Docker image
         with:
           image: tenzir-dex
-          tags: ${{ github.event.release.tag_name }}
-          addLatest: true
+          tags: ${{ github.event.release.tag_name }},latest
           registry: ghcr.io
           directory: components/dex
           dockerfile: components/dex/Dockerfile
@@ -144,8 +143,7 @@ jobs:
         name: Build & push Docker image
         with:
           image: tenzir-seaweed
-          tags: ${{ github.event.release.tag_name }}
-          addLatest: true
+          tags: ${{ github.event.release.tag_name }},latest
           registry: ghcr.io
           directory: components/seaweed
           dockerfile: components/seaweed/Dockerfile
@@ -156,8 +154,7 @@ jobs:
         name: Build & push Docker image
         with:
           image: platform
-          tags: ${{ github.event.release.tag_name }}
-          addLatest: true
+          tags: ${{ github.event.release.tag_name }},latest
           registry: ghcr.io
           directory: components/tenant-manager/platform/tenant_manager
           dockerfile: components/tenant-manager/platform/tenant_manager/Dockerfile
@@ -168,8 +165,7 @@ jobs:
         name: Build & push Docker image
         with:
           image: tenzir-platform
-          tags: ${{ github.event.release.tag_name }}
-          addLatest: true
+          tags: ${{ github.event.release.tag_name }},latest
           registry: ghcr.io
           directory: cli
           dockerfile: cli/Dockerfile
@@ -180,8 +176,7 @@ jobs:
         name: Build & push Docker image
         with:
           image: app
-          tags: ${{ github.event.release.tag_name }}
-          addLatest: true
+          tags: ${{ github.event.release.tag_name }},latest
           registry: ghcr.io
           directory: components/app
           dockerfile: components/app/Dockerfile
