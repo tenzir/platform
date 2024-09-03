@@ -171,8 +171,8 @@ jobs:
           tags: ${{ github.event.release.tag_name }}
           addLatest: true
           registry: ghcr.io
-          directory: components/tenant-manager/platform/public_cli
-          dockerfile: components/tenant-manager/platform/public_cli/Dockerfile
+          directory: cli
+          dockerfile: cli/Dockerfile
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
