@@ -8,6 +8,7 @@ API_ENDPOINT = "https://rest.tenzir.app/production-v1"
 ISSUER_URL = "https://tenzir.eu.auth0.com/"
 CLIENT_ID = "vzRh8grIVu1bwutvZbbpBDCOvSzN8AXh"
 
+
 # All values can be set using environment variables like
 #
 #   `TENZIR_PLATFORM_CLI_API_ENDPOINT=https://tenzir.example`

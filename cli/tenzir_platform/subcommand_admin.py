@@ -43,6 +43,7 @@ from tenzir_platform.helpers.auth_rule import (
 from pydantic import BaseModel
 from typing import Optional
 from docopt import docopt
+import json
 
 
 def _get_global_workspaces(client: AppClient):
@@ -82,7 +83,7 @@ def list_auth_rules(client: AppClient, workspace_id: str):
     resp.raise_for_status()
     for t in resp.json():
         if t["id"] == workspace_id:
-            print(t["auth_functions"])
+            print(json.dumps(t["auth_functions"], indent=4))
 
 
 def create_workspace(client: AppClient, name: str, owner: str, owner_namespace: str):
@@ -111,7 +112,8 @@ def delete_workspace(client: AppClient, workspace_id: str):
         },
     )
     resp.raise_for_status()
-    print(resp.json())
+    response = resp.json()
+    print(json.dumps(response, indent=4))
 
 
 def update_workspace(
@@ -136,12 +138,12 @@ def update_workspace(
         },
     )
     resp.raise_for_status()
-    print(f"updated workspace {workspace_id}")
+    print(f"Updated workspace {workspace_id}")
 
 
 def list_global_workspaces(client: AppClient):
     tenants = _get_global_workspaces(client)
-    print(tenants)
+    print(json.dumps(tenants, indent=4))
 
 
 def spawn_node(client: AppClient, workspace_id: str, image: str, lifetime: int):
@@ -157,7 +159,8 @@ def spawn_node(client: AppClient, workspace_id: str, image: str, lifetime: int):
         },
     )
     resp.raise_for_status()
-    print(resp.json())
+    result = resp.json()
+    print(json.dumps(result, indent=4))
 
 
 def auth_rule_from_arguments(arguments) -> AuthRule:
