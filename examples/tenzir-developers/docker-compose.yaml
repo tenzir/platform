@@ -1,7 +1,6 @@
-# Docker Compose setup for developers who want a completely
-# self-contained instance of the platform on their local machines.
-# Note that we're not currently bundling a local IdP, so
-# this will usually be running against the staging instance of Auth0.
+# A self-contained instance of the platform running on the
+# local machine, which uses the staging instance of Auth0
+# as auth provider. 
 
 # Container ports are mapped to the range 3000-3004
 
@@ -50,7 +49,7 @@ services:
       - postgres
     command: ["tenant_manager/ws/server/local.py"]
     ports:
-      - 3002:5000
+      - 3099:5000
 
   app:
     # image: ghcr.io/tenzir/app:${TENZIR_PLATFORM_VERSION:-latest}
@@ -64,6 +63,7 @@ services:
       - PRIVATE_OIDC_PROVIDER_ISSUER_URL=${TENZIR_PLATFORM_OIDC_PROVIDER_ISSUER_URL}
       - PRIVATE_OIDC_PROVIDER_NAME=${TENZIR_PLATFORM_OIDC_PROVIDER_NAME}
       - PUBLIC_OIDC_PROVIDER_ID=${TENZIR_PLATFORM_OIDC_PROVIDER_NAME}
+      - PUBLIC_WEBSOCKET_GATEWAY_ENDPOINT=${TENZIR_PLATFORM_CONTROL_ENDPOINT}
       - PRIVATE_USER_ENDPOINT=http://platform:5000/user
       - PRIVATE_WEBAPP_ENDPOINT=http://platform:5000/webapp
       - PRIVATE_WEBAPP_KEY=${TENZIR_PLATFORM_INTERNAL_APP_API_KEY}
