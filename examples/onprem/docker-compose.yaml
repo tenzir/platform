@@ -80,6 +80,9 @@ services:
       PRIVATE_WEBAPP_KEY: ${TENZIR_PLATFORM_INTERNAL_APP_API_KEY}
       AUTH_SECRET: ${TENZIR_PLATFORM_INTERNAL_AUTH_SECRET}
       PUBLIC_DISABLE_DEMO_NODE_AND_TOUR: true
+      PRIVATE_DRIZZLE_DATABASE_URL: postgres://${TENZIR_PLATFORM_POSTGRES_USER}:${TENZIR_PLATFORM_POSTGRES_PASSWORD}@${TENZIR_PLATFORM_POSTGRES_HOSTNAME}/${TENZIR_PLATFORM_POSTGRES_DB}
+    depends_on:
+      - postgres
     ports:
       - "3000:3000"
 
@@ -94,6 +97,13 @@ services:
       - POSTGRES_DB=${TENZIR_PLATFORM_POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - 'CMD-SHELL'
+        - 'pg_isready -U postgres'
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Note the ~25 seconds startup delay before the seaweed server
   # becomes ready.
