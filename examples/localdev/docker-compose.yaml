@@ -6,7 +6,6 @@
 # infrastructure. Container ports are mapped to the range 3000-3004.
 
 
-
 services:
   platform:
     image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION}

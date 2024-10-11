@@ -16,7 +16,7 @@ web:
 staticClients:
   - id: tenzir-app
     redirectURIs:
-      - '${TENZIR_PLATFORM_DOMAIN}/auth/callback/dex'
+      - '${TENZIR_PLATFORM_DOMAIN}/login/oauth/callback'
     name: 'Tenzir App'
     secret: ${TENZIR_PLATFORM_OIDC_PROVIDER_CLIENT_SECRET}
 
