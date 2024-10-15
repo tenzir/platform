@@ -6,7 +6,6 @@
 # infrastructure. Container ports are mapped to the range 3000-3004.
 
 
-
 services:
   platform:
     image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION}
@@ -119,7 +118,8 @@ services:
       - PUBLIC_DISABLE_DEMO_NODE_AND_TOUR=${TENZIR_PLATFORM_DISABLE_LOCAL_DEMO_NODES}
       - PRIVATE_DRIZZLE_DATABASE_URL=postgres://${TENZIR_PLATFORM_POSTGRES_USER}:${TENZIR_PLATFORM_POSTGRES_PASSWORD}@${TENZIR_PLATFORM_POSTGRES_HOSTNAME}/${TENZIR_PLATFORM_POSTGRES_DB}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     ports:
       - "3000:3000"
 
