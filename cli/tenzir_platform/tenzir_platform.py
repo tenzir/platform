@@ -14,6 +14,7 @@ Commands:
    auth       Authenticate the current user
    workspace  Select the currently used workspace
    node       Interact with nodes
+   alert      Configure alerts for disconnected nodes.
    admin      Administer local on-prem platform infrastructure.
 
 See 'tenzir-platform <command> --help' for more information on a specific command.
@@ -29,6 +30,7 @@ import time
 import importlib.metadata
 
 from tenzir_platform.subcommand_auth import auth_subcommand
+from tenzir_platform.subcommand_alert import alert_subcommand
 from tenzir_platform.subcommand_workspace import workspace_subcommand
 from tenzir_platform.subcommand_node import node_subcommand
 from tenzir_platform.subcommand_admin import admin_subcommand
@@ -47,6 +49,8 @@ def main():
     argv = [arguments["<command>"]] + arguments["<args>"]
     if arguments["<command>"] == "auth":
         auth_subcommand(platform, argv)
+    elif arguments["<command>"] == "alert":
+        alert_subcommand(platform, argv)
     elif arguments["<command>"] == "workspace":
         workspace_subcommand(platform, argv)
     elif arguments["<command>"] == "node":

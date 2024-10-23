@@ -685,6 +685,20 @@ files = [
 cli = ["click (>=5.0)"]
 
 [[package]]
+name = "pytimeparse2"
+version = "1.7.1"
+description = "Time expression parser."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "pytimeparse2-1.7.1-py3-none-any.whl", hash = "sha256:a162ea6a7707fd0bb82dd99556efb783935f51885c8bdced0fce3fffe85ab002"},
+    {file = "pytimeparse2-1.7.1.tar.gz", hash = "sha256:98668cdcba4890e1789e432e8ea0059ccf72402f13f5d52be15bdfaeb3a8b253"},
+]
+
+[package.extras]
+dateutil = ["python-dateutil (>=2.8.2,<2.9.0)"]
+
+[[package]]
 name = "requests"
 version = "2.32.3"
 description = "Python HTTP for Humans."
@@ -806,4 +820,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "6c12857a30fec16e69fc88b0a37b1f9b9c44cebb4e8cc77fbd3deb14b772003f"
+content-hash = "ab499818170c1ddd1485fcad69e8f550b7cbbd1142d50be5c20ddf97742a237e"
