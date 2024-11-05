@@ -2,14 +2,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Usage:
-  tenzir-platform alert add <node> <duration> <webhook_url>
+  tenzir-platform alert add <node> <duration> <webhook_url> [<webhook_body>]
   tenzir-platform alert delete <alert_id>
   tenzir-platform alert list
 
 Options:
-  <node>       The node to 
-  <duration>   The amount of time to wait before triggering the alert.
-  <webhook>    The URL to ping when the alert triggers
+  <node>         The node to be monitored.
+  <duration>     The amount of time to wait before triggering the alert.
+  <webhook_url>  The URL to call when the alert triggers
+  <webhook_body> The body to send along with the webhook. Must be valid JSON.
 
 Description:
   tenzir-platform alert add <node> <duration> <webhook>
@@ -155,8 +156,8 @@ def alert_subcommand(platform: PlatformEnvironment, argv):
             node = args["<node>"]
             duration = args["<duration>"]
             webhook_url = args["<webhook_url>"]
-            # TODO: Make body configurable.
-            webhook_body = f'{{"text": "Node disconnected for more than {duration}s"}}'
+            webhook_body = args.get("<webhook_body>", f'{{"text": "Node $NODE_ID disconnected for more than {duration}s"}}')
+            assert json.loads(webhook_body), "body must be valid json"
             add(client, workspace_id, node, duration, webhook_url, webhook_body)
         elif args["delete"]:
             alert = args["<alert_id>"]
