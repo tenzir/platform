@@ -156,7 +156,9 @@ def alert_subcommand(platform: PlatformEnvironment, argv):
             node = args["<node>"]
             duration = args["<duration>"]
             webhook_url = args["<webhook_url>"]
-            webhook_body = args.get("<webhook_body>", f'{{"text": "Node $NODE_ID disconnected for more than {duration}s"}}')
+            webhook_body = args["<webhook_body>"]
+            if webhook_body is None:
+                webhook_body = f'{{"text": "Node $NODE_ID disconnected for more than {duration}s"}}'
             assert json.loads(webhook_body), "body must be valid json"
             add(client, workspace_id, node, duration, webhook_url, webhook_body)
         elif args["delete"]:
