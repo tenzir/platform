@@ -79,7 +79,6 @@ def add(
 ):
     node_id = _resolve_node_identifier(client, workspace_id, node)
     seconds = parse_duration(duration)
-    print(type(seconds))
     if not seconds:
         print(f"invalid duration: {duration}")
         return
@@ -158,7 +157,7 @@ def alert_subcommand(platform: PlatformEnvironment, argv):
             webhook_url = args["<webhook_url>"]
             webhook_body = args["<webhook_body>"]
             if webhook_body is None:
-                webhook_body = f'{{"text": "Node $NODE_ID disconnected for more than {duration}s"}}'
+                webhook_body = f'{{"text": "Node $NODE_NAME disconnected for more than {duration}s"}}'
             assert json.loads(webhook_body), "body must be valid json"
             add(client, workspace_id, node, duration, webhook_url, webhook_body)
         elif args["delete"]:
