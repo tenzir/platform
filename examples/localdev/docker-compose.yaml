@@ -84,20 +84,18 @@ services:
     ports:
       - '3003:8333'
 
-  dex:
-    image: ghcr.io/tenzir/tenzir-dex:${TENZIR_PLATFORM_VERSION:-latest}
+  keycloak:
+    image: keycloak/keycloak
     environment:
-      - TENZIR_PLATFORM_DOMAIN
-      - TENZIR_PLATFORM_OIDC_PROVIDER_CLIENT_SECRET
-      - TENZIR_PLATFORM_OIDC_PROVIDER_ISSUER_URL
-      - DEX_USER=admin
-      - DEX_EMAIL=admin@example.org
-      # escaped bcrypt hash of the arbitary random password "062c73c4cf36ba07c0ab5f205ce3d011", generated with
-      #     echo 062c73c4cf36ba07c0ab5f205ce3d011 | htpasswd -BinC 10 admin | cut -d: -f2 | sed 's,\$,$$,g'
-      - DEX_PASSWORD_HASH=$$2y$$10$$cXl69JddxraqvWN5Ae01xuSSNJ5ONoJfMJIr058bXzIAIfwhj7k3C
+     - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+     - KC_BOOTSTRAP_ADMIN_PASSWORD=changeme
+     - KC_DB=postgres
+     - KC_DB_URL=jdbc:postgresql://${TENZIR_PLATFORM_POSTGRES_HOSTNAME}/${TENZIR_PLATFORM_POSTGRES_DB}
+     - KC_DB_USERNAME=postgres
+     - KC_DB_PASSWORD=postgres
+    command: ["start-dev"]
     ports:
-      - "3004:5556"
-    command: ['dex', 'serve', '/etc/dex/tenzir-config.yaml']
+     - '3004:8080'
 
   app:
     image: ghcr.io/tenzir/app:${TENZIR_PLATFORM_VERSION:-latest}
