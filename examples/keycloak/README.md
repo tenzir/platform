@@ -20,7 +20,8 @@ Navigate to the keycloak instance and log in as a user with admin permissions.
 If you use the bundled keycloak instance, the initial username is `admin`
 and password is `changeme`.
 
-Remember to change the default password after logging in for the first time.
+Remember to change the default password after logging in for the first time,
+and to set up 2-factor authentication for your admin user.
 
 ### Create a new `tenzir` realm (optional)
 
@@ -28,7 +29,7 @@ This step is not required. It can make sense if you already have
 an existing keycloak realm configured that you want to keep separate,
 or if you want to change the name of the default `master` realm.
 
-If you do, you'll need to update the TENZIR_PLATFORM_OIDC_ISSUER_URL
+If you do, you'll need to update the `TENZIR_PLATFORM_OIDC_ISSUER_URL`
 in the docker compose config to point to the new realm instead.
 
 ![Configuration 0](images/create_realm.png)
