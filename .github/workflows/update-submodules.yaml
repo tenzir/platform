@@ -50,8 +50,19 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.TENZIR_APP_DEPLOY_KEY }}
+      - name: Authenticate with google cloud
+        id: gcloud-login
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: ${{ secrets.GCS_SERVICE_ACCOUNT_CREDENTIALS }}
+          token_format: "access_token"
       - name: Update app submodule
         if: ${{ inputs.bump-app }}
+        env:
+          LOCATION: europe-west3
+          MODEL: gemini-1.5-pro
+          PROJECT_ID: ${{ steps.gcloud-login.outputs.project_id }}
+          GCLOUD_ACCESS_TOKEN: ${{ steps.gcloud-login.outputs.access_token }}
         run: |
           git submodule update --init components/app
           current_sha=$(git -C components/app rev-parse HEAD)
@@ -60,14 +71,9 @@ jobs:
           upstream_sha_short=$(git -C components/app rev-parse --short origin/main)
 
           if [ ${current_sha} != ${upstream_sha} ]; then
-            # Collect all files in the `changelog` directory that
-            # were added since the last bump.
-            names=$(git -C components/app diff --name-status HEAD origin/main -- changelog/ | grep -E '^(A|M)' | awk '{print $2}')
             git -C components/app checkout origin/main
-            echo -e "Bump app component from ${current_sha_short} to ${upstream_sha_short}\n\nChanges:\n" > commitmsg
-            for name in ${names}; do
-              cat components/app/${name} >> commitmsg
-            done
+            echo -e "Bump app component from ${current_sha_short} to ${upstream_sha_short}\n\n" > commitmsg
+            ./scripts/describe-component-bump components/app ${current_sha} ${upstream_sha} >> commitmsg
             git add components/app
             git commit -F commitmsg
             git push -u origin main:main
