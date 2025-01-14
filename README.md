@@ -26,7 +26,7 @@ command-line utility for managing workspaces and nodes on the Tenzir Platform.
 If you are a customer of the **Sovereign Edition**, deploy the Tenzir Platform
 locally by following our [Deploy the platform][guide] setup guide step by step.
 
-If you are a developer and want to work on the code base of the Tenzir
+If you are a Tenzir employee and want to work on the code base of the Tenzir
 Platform, we recommend starting with the [Development version][dev-version]
 instead that ties into the infrastructure behind [app.tenzir.com][app].
 
