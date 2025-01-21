@@ -8,7 +8,7 @@ This document is intended to guide you through this process.
 
 We assume that you already have a Keycloak instance up
 and running that is reachable with a browser, for example
-by running the `keycloak` service from the docker compose file
+by running the `keycloak` service from the Docker Compose file
 in this example. The same configuration steps apply when using
 an external instance.
 
@@ -16,8 +16,8 @@ an external instance.
 
 ### Admin Login
 
-Navigate to the keycloak instance and log in as a user with admin permissions.
-If you use the bundled keycloak instance, the initial username is `admin`
+Navigate to the Keycloak instance and log in as a user with admin permissions.
+If you use the bundled Keycloak instance, the initial username is `admin`
 and password is `changeme`.
 
 Remember to change the default password after logging in for the first time,
@@ -26,11 +26,11 @@ and to set up 2-factor authentication for your admin user.
 ### Create a new `tenzir` realm (optional)
 
 This step is not required. It can make sense if you already have
-an existing keycloak realm configured that you want to keep separate,
+an existing Keycloak realm configured that you want to keep separate,
 or if you want to change the name of the default `master` realm.
 
 If you do, you'll need to update the `TENZIR_PLATFORM_OIDC_ISSUER_URL`
-in the docker compose config to point to the new realm instead.
+in the Docker Compose config to point to the new realm instead.
 
 ![Configuration 0](images/create_realm.png)
 
@@ -42,7 +42,8 @@ client should be configured as follows:
 Under "General settings", set the client type to "OpenID Connect" and the
 client id to `tenzir-app`. If you use a different client id,
 remember to update the `TENZIR_PLATFORM_OIDC_PROVIDER_CLIENT_ID` variable
-in your platform config accordingly.
+in your [Tenzir Platform config](https://docs.tenzir.com/installation/deploy-the-platform#configure-the-platform)
+config accordingly.
 
 ![Configuration 0](images/create_app_client_0.png)
 
@@ -52,14 +53,14 @@ access method.
 ![Configuration 1](images/create_app_client_1.png)
 
 Under "Login settings", enter a redirect URL that points to `${TENZIR_PLATFORM_DOMAIN}/login/oauth/callback`, where
-`TENZIR_PLATFORM_DOMAIN` is the domain that is configured in your platform configuration.
+`TENZIR_PLATFORM_DOMAIN` is the domain that is configured in your Tenzir Platform configuration.
 For example, if the app is running under `https://tenzir-app.example.org` then this should be
 `https://tenzir-app.example.org/login/oauth/callback`
 
 ![Configuration 2](images/create_app_client_2.png)
 
 Finally, in the client view, go to the Credentials tab and copy the value of
-the generated client secret. This must be added to the platform configuration
+the generated client secret. This must be added to the Tenzir Platform configuration
 under `TENZIR_PLATFORM_OIDC_PROVIDER_CLIENT_SECRET`
 
 ![Configuration 2](images/create_app_client_3.png)
@@ -80,22 +81,22 @@ setting and enable the "OAuth 2.0 Device Authorization Grant" authentication flo
 
 ### Custom Scopes
 
-By default, the platform requests the `profile email oidc offline_access` scopes
+By default, the Tenzir Platform requests the `profile email oidc offline_access` scopes
 when logging in. To adjust this, set the `PUBLIC_OIDC_SCOPES` environment variable
 to a space-separated list of scope names.
 
 ### Profile Pictures
 
 To include custom profile pictures, include a `picture` claim in the returned
-id token containing an URL to the image file.
+ID token containing an URL to the image file.
 
-The frontend will read that claim and use it as the profile picture in the top
-right corner of the app, or fall back to a default image if the claim is not
-present.
+The Tenzir Platform will read that claim and use it as the profile picture in
+the top right corner of user interface, or fall back to a default image if the
+claim is not present.
 
 ### Refresh Tokens
 
-The platform supports the use of refresh tokens and will by default request
+The Tenzir Platform supports the use of refresh tokens and will by default request
 the `offline_access` scope to automatically refresh sessions after the initial
 id token has expired. To this end, the `offline_access` scope is requested by
 default.
@@ -109,5 +110,5 @@ is requested.
 Therefore, some organizations forbid the use of tokens with `offline_access`
 permissions for security reasons. In that case, add an environment variable
 `PUBLIC_OIDC_SCOPES=profile email oidc` to the `app` environment in order to explicitly
-remove the scope request. (this is already done by default when using the
-docker compose file in this directory)
+remove the scope request. The bundled Docker Compose file in this directory does this
+by default.

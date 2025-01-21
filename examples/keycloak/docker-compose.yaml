@@ -1,10 +1,11 @@
 # A completely self-contained configuration using a bundled
-# postgres database and a bundled identity provider with one
-# hardcoded user.
+# postgres database and a bundled keycloak identity provider.
 #
-# Useful for prototyping or local development with no available
-# infrastructure. Container ports are mapped to the range 3000-3004.
-
+# Useful for test deployments with multiple users, or for
+# wrapping non-OIDC authentication backends like LDAP via
+# Keycloak.
+#
+# Container ports are mapped to the range 3000-3004.
 
 services:
   platform:
@@ -71,8 +72,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Note the ~25 seconds startup delay before the seaweed server
-  # becomes ready.
+  # Note that this service takes ~25 seconds to start completely.
   seaweed:
     image: ghcr.io/tenzir/tenzir-seaweed:${TENZIR_PLATFORM_VERSION:-latest}
     environment:
