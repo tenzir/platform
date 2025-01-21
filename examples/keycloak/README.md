@@ -25,12 +25,12 @@ and to set up 2-factor authentication for your admin user.
 
 ### Create a new `tenzir` realm (optional)
 
-This step is not required. It can make sense if you already have
-an existing Keycloak realm configured that you want to keep separate,
-or if you want to change the name of the default `master` realm.
+Keycloak defaults to the `master` realm and the bundled Docker Compose
+stack is configured to use this realm.
 
-If you do, you'll need to update the `TENZIR_PLATFORM_OIDC_ISSUER_URL`
-in the Docker Compose config to point to the new realm instead.
+If you want to use a different realm, or already have an existing one,
+update the `TENZIR_PLATFORM_OIDC_ISSUER_URL` variable to point to the
+new realm instead.
 
 ![Configuration 0](images/create_realm.png)
 
