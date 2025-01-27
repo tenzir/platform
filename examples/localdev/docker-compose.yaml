@@ -2,7 +2,7 @@
 # postgres database and a single hard-coded user.
 #
 # Useful for prototyping or local development with no available
-# infrastructure. Container ports are mapped to the range 3000-3003.
+# infrastructure. Container ports are mapped to the range 3000-3002.
 #
 # **NOTE**: If you want to have multiple users or integrate your own
 #           external IdP, please start from the `keycloak` example
@@ -10,7 +10,7 @@
 
 services:
   app:
-    # image: ghcr.io/tenzir/app:${TENZIR_PLATFORM_VERSION:-latest}
+    image: ghcr.io/tenzir/app:${TENZIR_PLATFORM_VERSION:-latest}
     build: ../../components/app
     environment:
       - AUTH_TRUST_HOST=true
@@ -35,7 +35,7 @@ services:
       - "3000:3000"
 
   platform:
-    # image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION}
+    image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION}
     build: ../../components/tenant-manager/platform/tenant_manager/
     command: ["tenant_manager/rest/server/local.py"]
     environment:
@@ -73,6 +73,8 @@ services:
 
   websocket-gateway:
     image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION:-latest}
+    build: ../../components/tenant-manager/platform/tenant_manager/
+    command: ["tenant_manager/ws/server/local.py"]
     environment:
       - BASE_PATH=
       - TENZIR_PROXY_TIMEOUT=60
@@ -83,7 +85,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: ["tenant_manager/ws/server/local.py"]
     ports:
       - 3002:5000
 
