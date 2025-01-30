@@ -1,0 +1,28 @@
+#!/bin/bash
+
+SUBMODULE_PATH="$1"
+FROM_COMMIT="$2"
+TO_COMMIT="$3"
+
+CHANGELOG_BASE64=$(git -C ${SUBMODULE_PATH} log --stat ${FROM_COMMIT}..${TO_COMMTI} | base64 -w 0)
+
+REQUEST_JSON=$(cat <<EOF
+{
+  "contents": {
+    "role": "user",
+    "parts": [
+      {"text": "Please output a brief summary of the changes that were made in the attached PR. Use roughly one sentence per independent feature or bugfix introduced. Focus on on the user-visible effect and not the technical implementation details."},
+      {"inlineData": {"mimeType": "text/plain", "data": "${CHANGELOG_BASE64}"}},
+    ],
+  }
+}
+EOF
+)
+
+RESPONSE=$(curl -s -X POST \
+  -H "Authorization: Bearer ${GCLOUD_ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL}:generateContent \
+-d "${REQUEST_JSON}")
+
+echo ${RESPONSE} | jq -r .candidates[0].content.parts[0].text
