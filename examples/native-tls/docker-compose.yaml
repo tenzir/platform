@@ -9,7 +9,8 @@
 
 services:
   app:
-    image: ghcr.io/tenzir/app-tls:${TENZIR_PLATFORM_VERSION:-latest}
+    # image: ghcr.io/tenzir/app:${TENZIR_PLATFORM_VERSION:-latest}
+    build: ../../components/app
     environment:
       - AUTH_TRUST_HOST=true
       - PUBLIC_ENABLE_HIGHLIGHT=false
@@ -27,7 +28,12 @@ services:
       - AUTH_SECRET=${TENZIR_PLATFORM_INTERNAL_AUTH_SECRET}
       - PUBLIC_DISABLE_DEMO_NODE_AND_TOUR=${TENZIR_PLATFORM_DISABLE_LOCAL_DEMO_NODES}
       - PRIVATE_DRIZZLE_DATABASE_URL=postgres://${TENZIR_PLATFORM_POSTGRES_USER}:${TENZIR_PLATFORM_POSTGRES_PASSWORD}@${TENZIR_PLATFORM_POSTGRES_HOSTNAME}/${TENZIR_PLATFORM_POSTGRES_DB}
-      - NODE_EXTRA_CA_CERTS=/ssl/ca.pem
+      - TLS_CERTFILE=/ssl/app-cert.pem
+      - TLS_KEYFILE=/ssl/app-cert.pem
+      # This should work according to the documentation, but in practice I had
+      # to mount the certificate into the system default location to have any
+      # effect:
+      # - NODE_EXTRA_CA_CERTS=/ssl/ca.pem
     volumes:
       - ./ssl:/ssl
       - ./ssl/ca.pem:/etc/ssl/certs/ca-certificates.crt
