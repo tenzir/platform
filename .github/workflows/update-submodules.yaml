@@ -73,7 +73,7 @@ jobs:
           if [ ${current_sha} != ${upstream_sha} ]; then
             git -C components/app checkout origin/main
             echo -e "Bump app component from ${current_sha_short} to ${upstream_sha_short}\n\n" > commitmsg
-            ./scripts/describe-component-bump components/app ${current_sha} ${upstream_sha} >> commitmsg
+            ./scripts/describe-component-bump components/app ${current_sha} ${upstream_sha} >> commitmsg ||:
             git add components/app
             git commit -F commitmsg
             git push -u origin main:main
