@@ -23,12 +23,23 @@ execute detections and run analytics in-stream.
 This repository hosts the on-premise version of the Tenzir Platform and a
 command-line utility for managing workspaces and nodes on the Tenzir Platform.
 
+If you want to get up and running quickly to try out the platform locally,
+you can start with the `localdev` example setup, which is designed to be
+self-contained:
+
+```
+echo YOUR_DOCKER_TOKEN | docker login ghcr.io -u tenzir-distribution --password-stdin
+cd examples/localdev
+docker compose up
+```
+
 If you are a customer of the **Sovereign Edition**, deploy the Tenzir Platform
 locally by following our [Deploy the platform][guide] setup guide step by step.
 
 If you are a Tenzir employee and want to work on the code base of the Tenzir
-Platform, we recommend starting with the [Development version][dev-version]
-instead that ties into the infrastructure behind [app.tenzir.com][app].
+Platform, we recommend to start from the `examples/keycloak` example and
+substitute the `keycloak` and `postgres` services for our Testbed infrastructure,
+whose details can be found in 1password.
 
 > [!NOTE]
 > To get more information about the **Sovereign Edition**, please [contact
@@ -37,7 +48,6 @@ instead that ties into the infrastructure behind [app.tenzir.com][app].
 
 [app]: https://app.tenzir.com
 [guide]: https://docs.tenzir.com/setup-guides/deploy-the-platform
-[dev-version]: https://github.com/tenzir/event-horizon/tree/main/platform/compose
 
 ## Community
 

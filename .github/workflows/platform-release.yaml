@@ -33,10 +33,10 @@ jobs:
         run: |
           # The workflow_dispatch only supports tags or branches as targets,
           # not direct commit hashes, so we push a branch first.
-          git submodule set-url components/tenant-manager https://x-access-token:$GH_TOKEN@github.com/tenzir/event-horizon.git/
+          git submodule set-url components/tenant-manager https://x-access-token:$GH_TOKEN@github.com/tenzir/platform-gateway.git/
           git submodule update --init components/tenant-manager
           git -C components/tenant-manager push -f origin HEAD:refs/heads/platform-prod
-          gh workflow -R tenzir/event-horizon run tzcp-deploy-production.yaml \
+          gh workflow -R tenzir/platform-gateway run tzcp-deploy-production.yaml \
             --ref platform-prod
 
       - name: Deploy app

@@ -2,7 +2,3 @@
 	path = components/app
 	url = git@github.com:tenzir/app.git
 	shallow = true
-[submodule "components/tenant-manager"]
-	path = components/tenant-manager
-	url = git@github.com:tenzir/event-horizon.git
-	shallow = true
