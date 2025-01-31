@@ -2,3 +2,6 @@
 	path = components/app
 	url = git@github.com:tenzir/app.git
 	shallow = true
+[submodule "components/platform-gateway"]
+	path = components/platform-gateway
+	url = git@github.com:tenzir/platform-gateway.git
