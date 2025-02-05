@@ -12,6 +12,10 @@ on:
         type: boolean
         default: false
 
+# TODO: Move these into Github variables.
+env:
+  GCP_WORKLOAD_IDP: projects/1057156539039/locations/global/workloadIdentityPools/gh-actions-pool/providers/gh-actions-provider
+  GCP_SERVICE_ACCOUNT: github-actions@crucial-kayak-261816.iam.gserviceaccount.com
 
 jobs:
   update_submodules:
@@ -53,9 +57,11 @@ jobs:
       - name: Authenticate with google cloud
         id: gcloud-login
         uses: 'google-github-actions/auth@v2'
+        continue-on-error: true
         with:
-          credentials_json: ${{ secrets.GCS_SERVICE_ACCOUNT_CREDENTIALS }}
-          token_format: "access_token"
+          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDP }}
+          service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
+          token_format: access_token
       - name: Update app submodule
         if: ${{ inputs.bump-app }}
         env:
@@ -64,6 +70,7 @@ jobs:
           PROJECT_ID: ${{ steps.gcloud-login.outputs.project_id }}
           GCLOUD_ACCESS_TOKEN: ${{ steps.gcloud-login.outputs.access_token }}
         run: |
+          echo $PROJECT_ID
           git submodule update --init components/app
           current_sha=$(git -C components/app rev-parse HEAD)
           current_sha_short=$(git -C components/app rev-parse --short HEAD)
