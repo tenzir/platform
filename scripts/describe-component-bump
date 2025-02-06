@@ -23,7 +23,7 @@ echo ${REQUEST_JSON} >&2
 echo "Access token length: ${#GCLOUD_ACCESS_TOKEN}" >&2
 echo "Access token first four chars: ${GCLOUD_ACCESS_TOKEN:0:4}" >&2
 
-RESPONSE=$(curl -s -X POST \
+RESPONSE=$(curl -s --fail -X POST \
   -H "Authorization: Bearer ${GCLOUD_ACCESS_TOKEN}" \
   -H "Content-Type: application/json" \
   https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL}:generateContent \
@@ -32,5 +32,6 @@ RESPONSE=$(curl -s -X POST \
 if [ $? -eq 0 ]; then
   echo ${RESPONSE} | jq -r .candidates[0].content.parts[0].text
 else
-  echo $(git -C ${SUBMODULE_PATH} log --oneline --first-parent --no-decorate ${FROM_COMMIT}..${TO_COMMTI})
+  echo $(git -C ${SUBMODULE_PATH} log --oneline --first-parent --no-decorate ${FROM_COMMIT}..${TO_COMMIT})
 fi
+echo "\n\nView Changes: https://github.com/tenzir/app/compare/${current_sha}...${upstream_sha}"
