@@ -12,6 +12,9 @@ on:
         type: boolean
         default: false
 
+env:
+  GEMINI_LOCATION: europe-west3
+  GEMINI_MODEL: gemini-1.5-pro
 
 jobs:
   update_submodules:
@@ -53,17 +56,20 @@ jobs:
       - name: Authenticate with google cloud
         id: gcloud-login
         uses: 'google-github-actions/auth@v2'
+        continue-on-error: true
         with:
-          credentials_json: ${{ secrets.GCS_SERVICE_ACCOUNT_CREDENTIALS }}
-          token_format: "access_token"
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDP }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          token_format: access_token
       - name: Update app submodule
         if: ${{ inputs.bump-app }}
         env:
-          LOCATION: europe-west3
-          MODEL: gemini-1.5-pro
+          LOCATION: ${{ env.GEMINI_LOCATION }}
+          MODEL: ${{ env.GEMINI_MODEL }}
           PROJECT_ID: ${{ steps.gcloud-login.outputs.project_id }}
           GCLOUD_ACCESS_TOKEN: ${{ steps.gcloud-login.outputs.access_token }}
         run: |
+          echo $PROJECT_ID
           git submodule update --init components/app
           current_sha=$(git -C components/app rev-parse HEAD)
           current_sha_short=$(git -C components/app rev-parse --short HEAD)
@@ -72,8 +78,9 @@ jobs:
 
           if [ ${current_sha} != ${upstream_sha} ]; then
             git -C components/app checkout origin/main
-            echo -e "Bump app component from ${current_sha_short} to ${upstream_sha_short}\n\n" > commitmsg
+            echo -e "Bump app component from ${current_sha_short} to ${upstream_sha_short}\n\n"
             ./scripts/describe-component-bump components/app ${current_sha} ${upstream_sha} >> commitmsg ||:
+
             git add components/app
             git commit -F commitmsg
             git push -u origin main:main
@@ -84,6 +91,11 @@ jobs:
           ssh-private-key: ${{ secrets.TENZIR_EVENT_HORIZON_DEPLOY_KEY }}
       - name: Update tenant-manager submodule
         if: ${{ inputs.bump-tenant-manager }}
+        env:
+          LOCATION: ${{ env.GEMINI_LOCATION }}
+          MODEL: ${{ env.GEMINI_MODEL }}
+          PROJECT_ID: ${{ steps.gcloud-login.outputs.project_id }}
+          GCLOUD_ACCESS_TOKEN: ${{ steps.gcloud-login.outputs.access_token }}
         run: |
           git submodule update --init components/tenant-manager
           current_sha=$(git -C components/tenant-manager rev-parse HEAD)
@@ -92,14 +104,10 @@ jobs:
           upstream_sha_short=$(git -C components/tenant-manager rev-parse --short origin/main)
 
           if [ ${current_sha} != ${upstream_sha} ]; then
-            git -C components/tenant-manager diff --name-status HEAD origin/main -- platform/changelog/
-            names=$(git -C components/tenant-manager diff --name-status HEAD origin/main -- platform/changelog/ | grep -E '^(A|M)' | awk '{print $2}')
             git -C components/tenant-manager checkout origin/main
-            echo -e "Bump tenant-manager component from ${current_sha_short} to ${upstream_sha_short}\n\nChanges:\n" > commitmsg
-            echo "Found changelog files: ${names}"
-            for name in ${names}; do
-              cat components/tenant-manager/${name} >> commitmsg
-            done
+            echo -e "Bump tenant-manager component from ${current_sha_short} to ${upstream_sha_short}\n\n" > commitmsg
+            ./scripts/describe-component-bump components/tenant-manager ${current_sha} ${upstream_sha} >> commitmsg ||:
+
             git -C components/tenant-manager rebase origin/main
             git add components/tenant-manager
             git commit -F commitmsg
