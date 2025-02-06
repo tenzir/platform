@@ -32,6 +32,6 @@ RESPONSE=$(curl -s --fail -X POST \
 if [ $? -eq 0 ]; then
   echo ${RESPONSE} | jq -r .candidates[0].content.parts[0].text
 else
-  echo $(git -C ${SUBMODULE_PATH} log --oneline --first-parent --no-decorate ${FROM_COMMIT}..${TO_COMMTI})
+  echo $(git -C ${SUBMODULE_PATH} log --oneline --first-parent --no-decorate ${FROM_COMMIT}..${TO_COMMIT})
 fi
 echo "\n\nView Changes: https://github.com/tenzir/app/compare/${current_sha}...${upstream_sha}"
