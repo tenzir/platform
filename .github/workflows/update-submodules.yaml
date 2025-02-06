@@ -1,5 +1,8 @@
 name: Update component submodules on main branch
 
+permissions:
+  id-token: write
+
 on:
   workflow_dispatch:
     inputs:
