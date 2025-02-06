@@ -12,10 +12,7 @@ on:
         type: boolean
         default: false
 
-# TODO: Move these into Github variables.
 env:
-  GCP_WORKLOAD_IDP: projects/1057156539039/locations/global/workloadIdentityPools/gh-actions-pool/providers/gh-actions-provider
-  GCP_SERVICE_ACCOUNT: github-actions@crucial-kayak-261816.iam.gserviceaccount.com
   GEMINI_LOCATION: europe-west3
   GEMINI_MODEL: gemini-1.5-pro
 
@@ -61,8 +58,8 @@ jobs:
         uses: 'google-github-actions/auth@v2'
         continue-on-error: true
         with:
-          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDP }}
-          service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDP }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
           token_format: access_token
       - name: Update app submodule
         if: ${{ inputs.bump-app }}
