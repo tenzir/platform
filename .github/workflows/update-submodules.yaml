@@ -73,7 +73,7 @@ jobs:
           GCLOUD_ACCESS_TOKEN: ${{ steps.gcloud-login.outputs.access_token }}
         run: |
           echo $PROJECT_ID
-          git submodule update --init components/app
+          git submodule update --init --no-recommend-shallow components/app
           current_sha=$(git -C components/app rev-parse HEAD)
           current_sha_short=$(git -C components/app rev-parse --short HEAD)
           upstream_sha=$(git -C components/app rev-parse origin/main)
@@ -100,7 +100,7 @@ jobs:
           PROJECT_ID: ${{ steps.gcloud-login.outputs.project_id }}
           GCLOUD_ACCESS_TOKEN: ${{ steps.gcloud-login.outputs.access_token }}
         run: |
-          git submodule update --init components/tenant-manager
+          git submodule update --init --no-recommend-shallow components/tenant-manager
           current_sha=$(git -C components/tenant-manager rev-parse HEAD)
           current_sha_short=$(git -C components/tenant-manager rev-parse --short HEAD)
           upstream_sha=$(git -C components/tenant-manager rev-parse origin/main)
