@@ -12,7 +12,7 @@ Use roughly one sentence per independent feature or bugfix introduced.\n
 Split the description into two parts, one for user-visible changes and one for purely internal refactorings, renaming, etc. If one of the parts would be empy, omit it completely.\n
 If the changes correspond to exactly one identifiable GitHub PR, end the description with a link like this, where PR_NUMBER is replaced by the actual number:\n
 \n
-View PR: https://github.com/tenzir/app/pull/PR_NUMBER
+View PR: https://github.com/tenzir/${REPO}/pull/PR_NUMBER
 EOF
 )
 
@@ -44,4 +44,4 @@ if [ $? -eq 0 ]; then
 else
   echo $(git -C ${SUBMODULE_PATH} log --oneline --first-parent --no-decorate ${FROM_COMMIT}..${TO_COMMIT})
 fi
-echo "View Changes: https://github.com/tenzir/app/compare/${FROM_COMMIT}..${TO_COMMIT}"
+echo "View Changes: https://github.com/tenzir/${REPO}/compare/${FROM_COMMIT}...${TO_COMMIT}"

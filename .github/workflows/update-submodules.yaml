@@ -69,6 +69,7 @@ jobs:
         env:
           LOCATION: ${{ env.GEMINI_LOCATION }}
           MODEL: ${{ env.GEMINI_MODEL }}
+          REPO: app
           PROJECT_ID: ${{ steps.gcloud-login.outputs.project_id }}
           GCLOUD_ACCESS_TOKEN: ${{ steps.gcloud-login.outputs.access_token }}
         run: |
@@ -96,6 +97,7 @@ jobs:
         env:
           LOCATION: ${{ env.GEMINI_LOCATION }}
           MODEL: ${{ env.GEMINI_MODEL }}
+          REPO: event-horizon
           PROJECT_ID: ${{ steps.gcloud-login.outputs.project_id }}
           GCLOUD_ACCESS_TOKEN: ${{ steps.gcloud-login.outputs.access_token }}
         run: |
