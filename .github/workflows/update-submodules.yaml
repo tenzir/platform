@@ -69,10 +69,10 @@ jobs:
         env:
           LOCATION: ${{ env.GEMINI_LOCATION }}
           MODEL: ${{ env.GEMINI_MODEL }}
+          REPO: app
           PROJECT_ID: ${{ steps.gcloud-login.outputs.project_id }}
           GCLOUD_ACCESS_TOKEN: ${{ steps.gcloud-login.outputs.access_token }}
         run: |
-          echo $PROJECT_ID
           git submodule update --init --no-recommend-shallow components/app
           current_sha=$(git -C components/app rev-parse HEAD)
           current_sha_short=$(git -C components/app rev-parse --short HEAD)
@@ -97,6 +97,7 @@ jobs:
         env:
           LOCATION: ${{ env.GEMINI_LOCATION }}
           MODEL: ${{ env.GEMINI_MODEL }}
+          REPO: event-horizon
           PROJECT_ID: ${{ steps.gcloud-login.outputs.project_id }}
           GCLOUD_ACCESS_TOKEN: ${{ steps.gcloud-login.outputs.access_token }}
         run: |

@@ -6,12 +6,22 @@ TO_COMMIT="$3"
 
 CHANGELOG_BASE64=$(git -C ${SUBMODULE_PATH} log --stat ${FROM_COMMIT}..${TO_COMMIT} | base64 -w 0)
 
+PROMPT=$(cat <<EOF
+Please output a brief summary of the changes that were made in the attached git log.\n
+Use roughly one sentence per independent feature or bugfix introduced.\n
+Split the description into two parts, one for user-visible changes and one for purely internal refactorings, renaming, etc. If one of the parts would be empy, omit it completely.\n
+If the changes correspond to exactly one identifiable GitHub PR, end the description with a link like this, where PR_NUMBER is replaced by the actual number:\n
+\n
+View PR: https://github.com/tenzir/${REPO}/pull/PR_NUMBER
+EOF
+)
+
 REQUEST_JSON=$(cat <<EOF
 {
   "contents": {
     "role": "user",
     "parts": [
-      {"text": "Please output a brief summary of the changes that were made in the attached git log. Use roughly one sentence per independent feature or bugfix introduced. Focus on on the user-visible effect and not the technical implementation details."},
+      {"text": "${PROMPT}"},
       {"inlineData": {"mimeType": "text/plain", "data": "${CHANGELOG_BASE64}"}},
     ],
   }
@@ -34,4 +44,4 @@ if [ $? -eq 0 ]; then
 else
   echo $(git -C ${SUBMODULE_PATH} log --oneline --first-parent --no-decorate ${FROM_COMMIT}..${TO_COMMIT})
 fi
-echo "View Changes: https://github.com/tenzir/app/compare/${FROM_COMMIT}..${TO_COMMIT}"
+echo "View Changes: https://github.com/tenzir/${REPO}/compare/${FROM_COMMIT}...${TO_COMMIT}"
