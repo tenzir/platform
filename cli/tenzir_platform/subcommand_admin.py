@@ -14,6 +14,7 @@
   tenzir-platform admin update-workspace <workspace_id> [--name=<workspace_name>] [--icon-url=<icon_url>] [--owner-namespace=<namespace>] [--owner-id=<owner_id>] [--category=<workspace_category>]
   tenzir-platform admin list-global-workspaces
   tenzir-platform admin spawn-node <workspace_id> <image> [--lifetime=<lifetime>]
+  tenzir-platform admin change-secret-store <workspace_id> <store_type> <store_config>
 
 Options:
   --connection=<connection>         An optional prefix that must be matched by the 'sub' field
