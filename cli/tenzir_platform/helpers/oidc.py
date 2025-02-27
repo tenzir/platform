@@ -181,6 +181,7 @@ class IdTokenClient:
                 token = f.read()
             self.validate_token(token)
             return token
-        except Exception:
+        except Exception as e:
+            print(e)
             print("could not load valid token from cache, reauthenticating")
         return self.reauthenticate_token(interactive=interactive)

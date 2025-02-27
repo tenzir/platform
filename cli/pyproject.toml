@@ -19,6 +19,7 @@ types-docopt = "^0.6.11.4"
 pydantic-settings = "^2.2.1"
 pyjwt = {extras = ["crypto"], version = "^2.8.0"}
 pytimeparse2 = "^1.7.1"
+cryptography = "^44.0.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.1.1"
