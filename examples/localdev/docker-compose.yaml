@@ -95,6 +95,23 @@ services:
     ports:
       - 3002:5000
 
+  # Use like `docker compose run --rm cli --help`
+  cli:
+    image: ghcr.io/tenzir/tenzir-platform:${TENZIR_PLATFORM_VERSION:-latest}
+    build: ../../cli/
+    profiles:
+      - donotstart
+    volumes:
+      - cli_cache:/cache/tenzir-platform
+    environment:
+      - XDG_CACHE_HOME=/cache/
+      - TENZIR_PLATFORM_CLI_API_ENDPOINT=http://platform:5000/
+      - TENZIR_PLATFORM_CLI_ISSUER_URL=http://platform:5000/oidc
+      # Hard-coded client secret and id, because we're running the
+      # platform in single-user mode.
+      - TENZIR_PLATFORM_CLI_CLIENT_ID=tenzir-cli
+      - TENZIR_PLATFORM_CLI_CLIENT_SECRET=xxxx
+
   postgres:
     image: postgres:14.5
     restart: always
