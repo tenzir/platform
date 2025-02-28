@@ -12,11 +12,11 @@ cat <<EOF > /config.json
         }
       ],
       "actions": [
-        "Read:${TENZIR_PLATFORM_INTERNAL_BUCKET_NAME}",
-        "Write:${TENZIR_PLATFORM_INTERNAL_BUCKET_NAME}",
-        "List:${TENZIR_PLATFORM_INTERNAL_BUCKET_NAME}",
-        "Tagging:${TENZIR_PLATFORM_INTERNAL_BUCKET_NAME}",
-        "Admin:${TENZIR_PLATFORM_INTERNAL_BUCKET_NAME}"
+        "Read",
+        "Write",
+        "List",
+        "Tagging",
+        "Admin"
       ]
     }
   ]
