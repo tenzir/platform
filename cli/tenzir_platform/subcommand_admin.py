@@ -6,6 +6,7 @@
   tenzir-platform admin add-auth-rule [-d] organization-membership <workspace_id> <organization_claim> <organization> [--connection=<connection>]
   tenzir-platform admin add-auth-rule [-d] organization-role <workspace_id> <roles_claim> <role> <organization_claim> <organization> [--connection=<connection>]
   tenzir-platform admin add-auth-rule [-d] user <workspace_id> <user_id>
+  tenzir-platform admin add-auth-rule [-d] allow-all <workspace_id>
   tenzir-platform admin delete-auth-rule <workspace_id> <auth_rule_index>
   tenzir-platform admin list-auth-rules <workspace_id>
   tenzir-platform admin create-workspace <owner_namespace> <owner_id> [--name=<workspace_name>] [--category=<workspace_category>]
@@ -191,6 +192,8 @@ def auth_rule_from_arguments(arguments) -> AuthRule:
         )
     elif arguments["user"]:
         auth_rule = UserAuthRule(user_id=user_id)
+    elif arguments["allow-all"]:
+        auth_rule = AllowAllRule()
     else:
         raise Exception("couldn't determine auth rule from command-line arguments")
     return auth_rule
