@@ -6,6 +6,10 @@
   tenzir-platform secret delete <name>
   tenzir-platform secret list
 
+  tenzir-platform secret add-store aws --region=<region> --assumed-role-arn=<assumed_role_arn> [--name=<name>]
+  tenzir-platform secret delete-store <store>
+  tenzir-platform secret list-stores
+
 Options:
   <name>   The name of the secret.
 
@@ -25,12 +29,12 @@ Description:
     List all configured secrets.
 """
 
-# TODO: We probably also want to add the equivalent of these options for `gh secret`
+# TODO: We probably also want to add the equivalent of these options (from `gh secret`)
+#       in the future.
 #   -o, --org organization     Set organization secret
 #   -r, --repos repositories   List of repositories that can access an organization or user secret
 #   -u, --user                 Set a secret for your user
 #   -v, --visibility string    Set visibility for an organization secret: {all|private|selected} (default "private")
-
 
 from tenzir_platform.helpers.cache import load_current_workspace
 from tenzir_platform.helpers.client import AppClient
@@ -137,6 +141,12 @@ def secret_subcommand(platform: PlatformEnvironment, argv):
             delete(client, workspace_id, name)
         elif args["list"]:
             list(client, workspace_id)
+        elif args["add-store"]:
+            pass # FIXME
+        elif args["delete-store"]:
+            pass # FIXME
+        elif args["list-stores"]:
+            pass # FIXME
     except HTTPError as e:
         if e.response.status_code == 403:
             print(
