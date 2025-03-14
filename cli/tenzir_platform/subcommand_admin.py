@@ -40,6 +40,7 @@ from tenzir_platform.helpers.auth_rule import (
     EmailDomainRule,
     RoleAndOrganizationRule,
     OrganizationMembershipRule,
+    AllowAllRule,
 )
 from pydantic import BaseModel
 from typing import Optional
