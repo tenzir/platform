@@ -47,10 +47,10 @@ services:
       - TENANT_MANAGER_APP_API_KEY=${TENZIR_PLATFORM_INTERNAL_APP_API_KEY}
       - TENANT_MANAGER_TENANT_TOKEN_ENCRYPTION_KEY=${TENZIR_PLATFORM_INTERNAL_TENANT_TOKEN_ENCRYPTION_KEY}
       - TENANT_MANAGER_AUTH__SINGLE_USER_MODE=true
-      - TENANT_MANAGER_AUTH__ISSUER_URL=http://platform:5000/oidc
+      - TENANT_MANAGER_AUTH__ISSUER_URL=http://localhost:3001/oidc
       - TENANT_MANAGER_AUTH__PUBLIC_BASE_URL=${TENZIR_PLATFORM_API_ENDPOINT}/oidc
       - TENANT_MANAGER_AUTH__APP_AUDIENCE=tenzir-app
-      - TENANT_MANAGER_AUTH__APP_REDIRECT_URLS=${TENZIR_PLATFORM_DOMAIN}/login/oauth/callback
+      - TENANT_MANAGER_AUTH__APP_REDIRECT_URLS=${TENZIR_PLATFORM_DOMAIN}/login/oauth/callback,http://localhost:5173/login/oauth/callback
       - TENANT_MANAGER_AUTH__CLI_AUDIENCE=tenzir-cli
       - STORE__TYPE=${TENZIR_PLATFORM_STORE_TYPE}
       - STORE__POSTGRES_URI=postgresql://${TENZIR_PLATFORM_POSTGRES_USER}:${TENZIR_PLATFORM_POSTGRES_PASSWORD}@${TENZIR_PLATFORM_POSTGRES_HOSTNAME}/${TENZIR_PLATFORM_POSTGRES_DB}
@@ -88,6 +88,34 @@ services:
     ports:
       - 3002:5000
 
+  cli-login:
+    image: ghcr.io/tenzir/tenzir-platform:${TENZIR_PLATFORM_VERSION:-latest}
+    build: ../../cli
+    entrypoint: "/bin/sh"
+    command: ["-c", "tenzir-platform auth login --non-interactive && tenzir-platform workspace select 0"]
+    environment:
+      - XDG_CACHE_HOME=/cache
+      - TENZIR_PLATFORM_CLI_API_ENDPOINT=http://platform:5000/
+      - TENZIR_PLATFORM_CLI_ISSUER_URL=http://platform:5000/oidc
+      - TENZIR_PLATFORM_CLI_CLIENT_ID=tenzir-cli
+      - TENZIR_PLATFORM_CLI_CLIENT_SECRET=xxxx
+    volumes:
+      - cli_cache:/cache/tenzir-platform
+
+  cli:
+    image: ghcr.io/tenzir/tenzir-platform:${TENZIR_PLATFORM_VERSION:-latest}
+    build: ../../cli
+    profiles:
+      - donotstart
+    volumes:
+      - cli_cache:/cache/tenzir-platform
+    depends_on:
+      cli-login:
+        condition: service_completed_successfully
+    environment:
+      - XDG_CACHE_HOME=/cache
+      - TENZIR_PLATFORM_CLI_API_ENDPOINT=http://platform:5000/
+
   postgres:
     image: postgres:14.5
     restart: always
@@ -104,6 +132,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    ports:
+      - 5432:5432
 
   # Note the ~25 seconds startup delay before the seaweed server
   # becomes ready.
@@ -123,4 +153,6 @@ volumes:
   postgres_data:
     driver: local
   seaweed_data:
+    driver: local
+  cli_cache:
     driver: local
