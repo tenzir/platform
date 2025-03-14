@@ -49,9 +49,14 @@ class UserAuthRule(BaseModel):
     user_id: str
 
 
+class AllowAllRule(BaseModel):
+    auth_fn: Literal["auth_allow_all"] = "auth_allow_all"
+
+
 AuthRule = (
     UserAuthRule
     | EmailDomainRule
     | RoleAndOrganizationRule
     | OrganizationMembershipRule
+    | AllowAllRule
 )
