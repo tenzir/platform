@@ -57,6 +57,7 @@ class IdTokenClient:
         self.client_id = platform.client_id
         self.client_secret = platform.client_secret
         self.client_secret_file = platform.client_secret_file
+        self.hardcoded_id_token = platform.id_token
         self.verbose = False
         discovery_url = f"{self.issuer.rstrip('/')}/.well-known/openid-configuration"
         discovered_configuration = requests.get(discovery_url).json()
@@ -85,6 +86,8 @@ class IdTokenClient:
             token_data = self._device_code_flow()
         else:
             token_data = self._client_credentials_flow()
+        if self.verbose:
+            print(f"received token data: {token_data}")
         return self._unwrap_flow_result(token_data)
 
     def _device_code_flow(self) -> dict[str, str]:
@@ -157,7 +160,20 @@ class IdTokenClient:
         return response.json()
 
     def _unwrap_flow_result(self, token_data: dict[str, str]) -> str:
-        id_token = token_data["id_token"]
+        if "id_token" in token_data:
+            id_token = token_data["id_token"]
+        elif "access_token" in token_data:
+            # Some identity providers don't provide an id token for decive
+            # code authorization. If the access token is in JWT format, we
+            # can still salvage this.
+            try:
+                self.validate_token(token_data["access_token"])
+            except:
+                raise Exception("access token is not in JWT format")
+            print("warning: no id_token in response from identity provider, falling back to access_token")
+            id_token = token_data["access_token"]
+        else:
+            raise Exception(f"cannot process token response: {token_data}")
         current_user = self.validate_token(id_token)
         if self.verbose:
             print(f"obtained id_token: {current_user}")
@@ -175,6 +191,16 @@ class IdTokenClient:
             f.write(token)
 
     def load_id_token(self, interactive: bool = True) -> str:
+        # If the user is explicitly passing an id token via
+        # environment variable, always use that.
+        if self.hardcoded_id_token:
+            try:
+                self.validate_token(self.hardcoded_id_token)
+                return self.hardcoded_id_token
+            except Exception as e:
+                raise Exception(f"Invalid TENZIR_PLATFORM_CLI_ID_TOKEN: {e}")
+        # Otherwise, try to load a valid token from the cache
+        # in the filesystem.
         filename = self._filename_in_cache()
         try:
             with open(filename, "r") as f:
