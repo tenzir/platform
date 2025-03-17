@@ -27,6 +27,9 @@ class PlatformEnvironment(BaseSettings):
     issuer_url: str = ISSUER_URL
     client_id: str = CLIENT_ID
 
+    # If provided, skip the login workflow completely.
+    id_token: Optional[str] = None
+
     # A client secret is only necessary for non-interactive logins
     # using the client credentials flow.
     client_secret: Optional[str] = None

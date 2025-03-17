@@ -57,6 +57,7 @@ class IdTokenClient:
         self.client_id = platform.client_id
         self.client_secret = platform.client_secret
         self.client_secret_file = platform.client_secret_file
+        self.hardcoded_id_token = platform.id_token
         self.verbose = False
         discovery_url = f"{self.issuer.rstrip('/')}/.well-known/openid-configuration"
         discovered_configuration = requests.get(discovery_url).json()
@@ -190,6 +191,16 @@ class IdTokenClient:
             f.write(token)
 
     def load_id_token(self, interactive: bool = True) -> str:
+        # If the user is explicitly passing an id token via
+        # environment variable, always use that.
+        if self.hardcoded_id_token:
+            try:
+                self.validate_token(self.hardcoded_id_token)
+                return self.hardcoded_id_token
+            except Exception as e:
+                raise Exception(f"Invalid TENZIR_PLATFORM_CLI_ID_TOKEN: {e}")
+        # Otherwise, try to load a valid token from the cache
+        # in the filesystem.
         filename = self._filename_in_cache()
         try:
             with open(filename, "r") as f:
