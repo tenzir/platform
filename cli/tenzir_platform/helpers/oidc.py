@@ -58,7 +58,7 @@ class IdTokenClient:
         self.client_secret = platform.client_secret
         self.client_secret_file = platform.client_secret_file
         self.hardcoded_id_token = platform.id_token
-        self.verbose = False
+        self.verbose = platform.verbose
         discovery_url = f"{self.issuer.rstrip('/')}/.well-known/openid-configuration"
         discovered_configuration = requests.get(discovery_url).json()
         self.jwks_url = discovered_configuration["jwks_uri"]
