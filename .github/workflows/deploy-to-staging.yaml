@@ -44,8 +44,8 @@ jobs:
 
       - name: Deploy tenant-manager
         if: |
-          (github.event_type == 'workflow_dispatch' && inputs.deploy-tenant-manager) || 
-          (github.event_type == 'push' && contains(steps.files.outputs.files-changed, 'components/tenant-manager'))
+          (github.event_name == 'workflow_dispatch' && inputs.deploy-tenant-manager) || 
+          (github.event_name == 'push' && contains(steps.files.outputs.files-changed, 'components/tenant-manager'))
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
@@ -60,8 +60,8 @@ jobs:
 
       - name: Deploy app
         if: |
-          (github.event_type == 'workflow_dispatch' && inputs.deploy-app) || 
-          (github.event_type == 'push' && contains(steps.files.outputs.files-changed, 'components/app'))
+          (github.event_name == 'workflow_dispatch' && inputs.deploy-app) || 
+          (github.event_name == 'push' && contains(steps.files.outputs.files-changed, 'components/app'))
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
