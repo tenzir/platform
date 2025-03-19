@@ -75,7 +75,12 @@ def _resolve_node_identifier(
 
 
 def add(
-    client: AppClient, workspace_id: str, node: str, duration: str, webhook_url: str, webhook_body: str
+    client: AppClient,
+    workspace_id: str,
+    node: str,
+    duration: str,
+    webhook_url: str,
+    webhook_body: str,
 ):
     node_id = _resolve_node_identifier(client, workspace_id, node)
     seconds = parse_duration(duration)
