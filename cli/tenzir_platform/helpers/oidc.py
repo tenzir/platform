@@ -129,7 +129,8 @@ class IdTokenClient:
         authenticated = False
         while not authenticated:
             token_response = requests.post(
-                self.token_endpoint, data=token_payload, headers=x_www_form_urlencoded
+                self.token_endpoint, data=token_payload, 
+                headers=x_www_form_urlencoded
             )
             token_data = token_response.json()
             if token_response.status_code == 200:
@@ -162,7 +163,7 @@ class IdTokenClient:
         }
         response = requests.post(
             self.token_endpoint,
-            client_credentials_payload,
+            data=client_credentials_payload,
             headers=x_www_form_urlencoded,
         )
         response.raise_for_status()
