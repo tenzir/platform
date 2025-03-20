@@ -50,6 +50,9 @@ class ValidOidcToken:
         return self._raw_oidc.__str__()
 
 
+x_www_form_urlencoded = {"Content-Type": "application/x-www-form-urlencoded"}
+
+
 class IdTokenClient:
     def __init__(self, platform: PlatformEnvironment):
         self.platform_environment = platform
@@ -93,13 +96,13 @@ class IdTokenClient:
     def _device_code_flow(self) -> dict[str, str]:
         device_code_payload = {
             "client_id": self.client_id,
-            # Request email by default since many auth rules are checked against the email address.
             "scope": "openid email",
         }
 
         device_code_response = requests.post(
             self.device_authorization_endpoint,
             data=device_code_payload,
+            headers=x_www_form_urlencoded,
         )
 
         if device_code_response.status_code != 200:
@@ -125,7 +128,10 @@ class IdTokenClient:
         }
         authenticated = False
         while not authenticated:
-            token_response = requests.post(self.token_endpoint, data=token_payload)
+            token_response = requests.post(
+                self.token_endpoint, data=token_payload, 
+                headers=x_www_form_urlencoded
+            )
             token_data = token_response.json()
             if token_response.status_code == 200:
                 print("Authenticated!")
@@ -155,7 +161,11 @@ class IdTokenClient:
             "client_secret": client_secret,
             "audience": self.client_id,
         }
-        response = requests.post(self.token_endpoint, client_credentials_payload)
+        response = requests.post(
+            self.token_endpoint,
+            data=client_credentials_payload,
+            headers=x_www_form_urlencoded,
+        )
         response.raise_for_status()
         return response.json()
 
@@ -170,7 +180,9 @@ class IdTokenClient:
                 self.validate_token(token_data["access_token"])
             except:
                 raise Exception("access token is not in JWT format")
-            print("warning: no id_token in response from identity provider, falling back to access_token")
+            print(
+                "warning: no id_token in response from identity provider, falling back to access_token"
+            )
             id_token = token_data["access_token"]
         else:
             raise Exception(f"cannot process token response: {token_data}")
