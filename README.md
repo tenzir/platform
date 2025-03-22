@@ -1,7 +1,10 @@
 <a target="_blank" href="https://docs.tenzir.com">
 <p align="center">
-<img src="./assets/tenzir-white.svg#gh-dark-mode-only" width="60%" alt="Tenzir">
-<img src="./assets/tenzir-black.svg#gh-light-mode-only" width="60%" alt="Tenzir">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/tenzir-white.svg">
+  <source media="(prefers-color-scheme: light)" srcset="./assets/tenzir-black.svg">
+  <img alt="Tenzir" src="./assets/tenzir-white.svg">
+</picture>
 </p>
 </a>
 
