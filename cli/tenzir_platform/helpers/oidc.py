@@ -118,7 +118,7 @@ class IdTokenClient:
         elif "verification_uri" in device_code_data:
             verification_url = device_code_data["verification_uri"]
         else:
-            raise Exception(f"error: couldn't find verification url in OIDC provider response {device_code_data}")
+            raise Exception(f"error: couldn't find verification URL in OIDC provider response {device_code_data}")
 
         print(
             "1. On your computer or mobile device navigate to: ",
