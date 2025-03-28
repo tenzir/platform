@@ -4,7 +4,7 @@
 import hashlib
 import os
 import time
-
+import base64
 import jwt
 import requests
 from jwt import PyJWKClient
@@ -161,10 +161,15 @@ class IdTokenClient:
             "client_secret": client_secret,
             "audience": self.client_id,
         }
+        credentials = base64.b64encode(f"{self.client_id}:{client_secret}".encode("utf-8")).decode("utf-8")
+        decoded_credentials = base64.b64decode(credentials).decode("utf-8")
         response = requests.post(
             self.token_endpoint,
             data=client_credentials_payload,
-            headers=x_www_form_urlencoded,
+            headers={
+                "Authorization": f"Basic {credentials}",
+                **x_www_form_urlencoded,
+            },
         )
         response.raise_for_status()
         return response.json()
@@ -202,7 +207,7 @@ class IdTokenClient:
         with open(filename, "w") as f:
             f.write(token)
 
-    def load_id_token(self, interactive: bool = True) -> str:
+    def load_id_token(self, interactive: Optional[bool] = None) -> str:
         # If the user is explicitly passing an id token via
         # environment variable, always use that.
         if self.hardcoded_id_token:
@@ -221,4 +226,10 @@ class IdTokenClient:
             return token
         except Exception:
             print("could not load valid token from cache, reauthenticating")
+        # If the user didn't explicitly choose [non-]interactive login,
+        # assume that client credentials flow is desired whenever a client
+        # secret was set.
+        if interactive is None:
+            interactive = self.client_secret is None
+            assert interactive is not None  # assist mypy
         return self.reauthenticate_token(interactive=interactive)
