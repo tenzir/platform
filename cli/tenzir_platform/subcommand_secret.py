@@ -77,6 +77,9 @@ def add(
             "value": secret_value,
         },
     )
+    if resp.status_code == 400:
+        print(f"Failed to add secret: {resp.json().get('detail', 'unknown error')}")
+        return
     resp.raise_for_status()
     print(json.dumps(resp.json()))
 
@@ -120,7 +123,7 @@ def delete(client: AppClient, workspace_id: str, name: str):
         },
     )
     resp.raise_for_status()
-    print(f"deleted secret {name}")
+    print(f"Deleted secret {name}")
 
 
 def list(
@@ -143,7 +146,7 @@ def list(
     if len(secrets) == 0:
         print("no secrets configured")
         return
-    print("Secrets")
+    print("# Secrets")
     for secret in secrets:
         name = secret['name']
         print(f"{name}")
