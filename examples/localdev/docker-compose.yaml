@@ -120,6 +120,8 @@ services:
       - POSTGRES_DB=${TENZIR_PLATFORM_POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
     healthcheck:
       test:
         - 'CMD-SHELL'
