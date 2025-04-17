@@ -3,19 +3,23 @@
 
 """Usage:
   tenzir-platform secret add <name> [--file=<file>] [--value=<value>] [--env]
-  tenzir-platform secret update <secret_id> [--file=<file>] [--value=<value>] [--env]
-  tenzir-platform secret delete <secret_id>
+  tenzir-platform secret update <secret> [--file=<file>] [--value=<value>] [--env]
+  tenzir-platform secret delete <secret>
   tenzir-platform secret list [--json]
-  tenzir-platform secret store add aws --region=<region> --assumed-role-arn=<assumed_role_arn> [--name=<name>]
+  tenzir-platform secret store add aws --region=<region> --assumed-role-arn=<assumed_role_arn> [--name=<name>] [--access-key-id=<key_id>] [--secret-access-key=<key>]
   tenzir-platform secret store set-default <store_id>
   tenzir-platform secret store delete <store_id>
   tenzir-platform secret store list [--json]
 
 Options:
   <name>   The name of the secret.
+  <secret> The name or secret id of a the secret.
+  <value>  The plain value of the secret.
+  <file>   The path to a file containing the secret value.
 
 Description:
-  tenzir-platform secret set <name> [--file <file>] [--value <value>] [--env]
+  tenzir-platform secret add <name> [--file <file>] [--value <value>] [--env]
+  tenzir-platform secret update <secret> [--file <file>] [--value <value>] [--env]
     Add or update a secret. By default, reads the secret value
     interactively from stdin.
     The `--file` option can be used to read the secret value from a file instead.
@@ -23,10 +27,10 @@ Description:
     The `--env` option can be used to read the secret value from the environment variable with the same name.
     Only one of these options can be specified.
 
-  tenzir-platform secret delete <name>
+  tenzir-platform secret delete <secret>
     Delete the specified secret.
 
-  tenzir-platform secret list
+  tenzir-platform secret list [--json]
     List all configured secrets.
 """
 
@@ -47,12 +51,38 @@ import json
 import os
 from enum import Enum
 
-class AddOrUpdate(Enum):
-    ADD = "add"
-    UPDATE = "update"
+
+def _list_secrets(client: AppClient, workspace_id: str):
+    resp = client.post(
+        "secrets/list",
+        json={
+            "tenant_id": workspace_id,
+        },
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def _resolve_secret_name_or_id(client: AppClient, workspace_id: str, name_or_id: str):
+    secrets = _list_secrets(client, workspace_id)["secrets"]
+    matching_by_id = [secret for secret in secrets if secret["id"] == name_or_id]
+    if matching_by_id:
+        return matching_by_id[0]
+    matching_by_name = [secret for secret in secrets if secret["name"] == name_or_id]
+    if len(matching_by_name) > 1:
+        raise Exception(f"Multiple secrets found with the name '{name_or_id}'")
+    if matching_by_name:
+        return matching_by_name[0]
+    raise Exception(f"No secret found with id or name '{name_or_id}'")
+
 
 def add(
-    client: AppClient, workspace_id: str, name: str, file: Optional[str], value: Optional[str], env: bool = False
+    client: AppClient,
+    workspace_id: str,
+    name: str,
+    file: Optional[str],
+    value: Optional[str],
+    env: bool = False,
 ):
     if sum(bool(x) for x in [file, value, env]) > 1:
         print("Error: Only one of --file, --value, or --env can be specified.")
@@ -60,7 +90,7 @@ def add(
 
     secret_value = None
     if file:
-        with open(file, 'r') as f:
+        with open(file, "r") as f:
             secret_value = f.read().strip()
     elif value:
         secret_value = value
@@ -85,7 +115,12 @@ def add(
 
 
 def update(
-    client: AppClient, workspace_id: str, name: str, file: Optional[str], value: Optional[str], env: bool = False
+    client: AppClient,
+    workspace_id: str,
+    name_or_id: str,
+    file: Optional[str],
+    value: Optional[str],
+    env: bool = False,
 ):
     if sum(bool(x) for x in [file, value, env]) > 1:
         print("Error: Only one of --file, --value, or --env can be specified.")
@@ -93,20 +128,22 @@ def update(
 
     secret_value = None
     if file:
-        with open(file, 'r') as f:
+        with open(file, "r") as f:
             secret_value = f.read().strip()
     elif value:
         secret_value = value
     elif env:
-        secret_value = os.getenv(name)
+        secret_value = os.getenv(name_or_id)
     else:
         secret_value = input("Enter secret value: ").strip()
+
+    secret_id = _resolve_secret_name_or_id(client, workspace_id, name_or_id)
 
     resp = client.post(
         "secrets/update",
         json={
             "tenant_id": workspace_id,
-            "secret_id": name,
+            "secret_id": secret_id,
             "value": secret_value,
         },
     )
@@ -114,16 +151,17 @@ def update(
     print(json.dumps(resp.json()))
 
 
-def delete(client: AppClient, workspace_id: str, name: str):
+def delete(client: AppClient, workspace_id: str, name_or_id: str):
+    secret_id = _resolve_secret_name_or_id(client, workspace_id, name_or_id)
     resp = client.post(
         "secrets/remove",
         json={
             "tenant_id": workspace_id,
-            "secret_id": name,
+            "secret_id": secret_id,
         },
     )
     resp.raise_for_status()
-    print(f"Deleted secret {name}")
+    print(f"Deleted secret {name_or_id}")
 
 
 def list(
@@ -131,14 +169,7 @@ def list(
     workspace_id: str,
     json_format: bool,
 ):
-    resp = client.post(
-        "secrets/list",
-        json={
-            "tenant_id": workspace_id,
-        },
-    )
-    resp.raise_for_status()
-    json_body = resp.json()
+    json_body = _list_secrets(client, workspace_id)
     if json_format:
         print(json_body)
         return
@@ -148,7 +179,7 @@ def list(
         return
     print("# Secrets")
     for secret in secrets:
-        name = secret['name']
+        name = secret["name"]
         print(f"{name}")
 
 
@@ -165,7 +196,9 @@ def list_stores(client: AppClient, workspace_id: str, json_format: bool):
         print(json_body)
         return
     for store in json_body["stores"]:
-        print(f"{'*' if store['is_default'] else ' '} {store['name']}  (id: {store['id']})")
+        print(
+            f"{'*' if store['is_default'] else ' '} {store['name']}  (id: {store['id']})"
+        )
 
 
 def delete_store(client: AppClient, workspace_id: str, store_id: str):
@@ -195,7 +228,14 @@ def set_default_store(client, workspace_id, store_id):
     resp.raise_for_status()
     print("updated default store")
 
-def add_store_aws(client: AppClient, workspace_id: str, name: Optional[str], region: str, assumed_role_arn: str):
+
+def add_store_aws(
+    client: AppClient,
+    workspace_id: str,
+    name: Optional[str],
+    region: str,
+    assumed_role_arn: str,
+):
     resp = client.post(
         "secrets/add-external-store",
         json={
@@ -228,14 +268,21 @@ def secret_subcommand(platform: PlatformEnvironment, argv):
         exit(1)
 
     try:
+        # TODO: Move the store commands to a different subcommand.
         if args["store"]:
             if args["add"]:
-                store_type = "aws"  # We only support one type at the moment 
+                store_type = "aws"  # We only support one type at the moment
                 region = args["--region"]
                 assumed_role_arn = args["--assumed-role-arn"]
                 name = args["--name"]
                 if store_type == "aws":
-                    add_store_aws(client, workspace_id, name=name, region=region, assumed_role_arn=assumed_role_arn)
+                    add_store_aws(
+                        client,
+                        workspace_id,
+                        name=name,
+                        region=region,
+                        assumed_role_arn=assumed_role_arn,
+                    )
                 else:
                     print("error: unknown store type")
             elif args["delete"]:
@@ -254,18 +301,18 @@ def secret_subcommand(platform: PlatformEnvironment, argv):
             env = args["--env"]
             add(client, workspace_id, name, file, value, env)
         elif args["update"]:
-            name = args["<secret_id>"]
+            name_or_id = args["<secret>"]
             file = args["--file"]
             value = args["--value"]
             env = args["--env"]
-            update(client, workspace_id, name, file, value, env)
+            update(client, workspace_id, name_or_id, file, value, env)
         elif args["delete"]:
-            name = args["<secret_id>"]
-            delete(client, workspace_id, name)
+            name_or_id = args["<secret>"]
+            delete(client, workspace_id, name_or_id)
         elif args["list"]:
             json_format = args["--json"]
             list(client, workspace_id, json_format)
-        
+
     except HTTPError as e:
         if e.response.status_code == 403:
             print(
