@@ -162,7 +162,6 @@ class IdTokenClient:
             "audience": self.client_id,
         }
         credentials = base64.b64encode(f"{self.client_id}:{client_secret}".encode("utf-8")).decode("utf-8")
-        decoded_credentials = base64.b64decode(credentials).decode("utf-8")
         response = requests.post(
             self.token_endpoint,
             data=client_credentials_payload,
