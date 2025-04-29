@@ -63,6 +63,7 @@ services:
       - BLOB_STORAGE__SECRET_ACCESS_KEY=${TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY}
       - WORKSPACE_CONFIG_FILE=/etc/tenzir/workspaces.yaml
       - WORKSPACE_SECRETS_MASTER_SEED=${TENZIR_PLATFORM_INTERNAL_MASTER_SEED}
+      - WORKSPACE_CONFIG_FILE=/etc/tenzir/workspaces.yaml
     volumes:
       - ./workspaces.yaml:/etc/tenzir/workspaces.yaml
       # Mounting the docker socket is required iff local demo nodes are enabled.
