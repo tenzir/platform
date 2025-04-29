@@ -7,7 +7,7 @@
   tenzir-platform secret delete <secret>
   tenzir-platform secret list [--json]
   tenzir-platform secret store add aws --region=<region> --assumed-role-arn=<assumed_role_arn> [--name=<name>] [--access-key-id=<key_id>] [--secret-access-key=<key>]
-  tenzir-platform secret store set-default <store_id>
+  tenzir-platform secret store select <store_id>
   tenzir-platform secret store delete <store_id>
   tenzir-platform secret store list [--json]
 
@@ -45,11 +45,10 @@ from tenzir_platform.helpers.cache import load_current_workspace
 from tenzir_platform.helpers.client import AppClient
 from tenzir_platform.helpers.environment import PlatformEnvironment
 from docopt import docopt
-from typing import Optional, List
+from typing import Optional
 from requests import HTTPError
 import json
 import os
-from enum import Enum
 
 
 def _list_secrets(client: AppClient, workspace_id: str):
@@ -219,7 +218,7 @@ def delete_store(client: AppClient, workspace_id: str, store_id: str):
 
 def set_default_store(client, workspace_id, store_id):
     resp = client.post(
-        "secrets/set-default-store",
+        "secrets/select-store",
         json={
             "tenant_id": workspace_id,
             "store_id": store_id,
@@ -288,7 +287,7 @@ def secret_subcommand(platform: PlatformEnvironment, argv):
             elif args["delete"]:
                 store_id = args["<store_id>"]
                 delete_store(client, workspace_id, store_id)
-            elif args["set-default"]:
+            elif args["select"]:
                 store_id = args["<store_id>"]
                 set_default_store(client, workspace_id, store_id)
             elif args["list"]:
