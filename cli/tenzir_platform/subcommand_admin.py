@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Usage:
-  tenzir-platform admin add-auth-rule [-d] email-domain <workspace_id> <domain> [--connection=<connection>]
-  tenzir-platform admin add-auth-rule [-d] organization-membership <workspace_id> <organization_claim> <organization> [--connection=<connection>]
-  tenzir-platform admin add-auth-rule [-d] organization-role <workspace_id> <roles_claim> <role> <organization_claim> <organization> [--connection=<connection>]
-  tenzir-platform admin add-auth-rule [-d] user <workspace_id> <user_id>
-  tenzir-platform admin add-auth-rule [-d] allow-all <workspace_id>
+  tenzir-platform admin add-auth-rule email-domain <workspace_id> <domain> [--connection=<connection>]
+  tenzir-platform admin add-auth-rule organization-membership <workspace_id> <organization_claim> <organization> [--connection=<connection>]
+  tenzir-platform admin add-auth-rule organization-role <workspace_id> <roles_claim> <role> <organization_claim> <organization> [--connection=<connection>]
+  tenzir-platform admin add-auth-rule user <workspace_id> <user_id>
+  tenzir-platform admin add-auth-rule allow-all <workspace_id>
   tenzir-platform admin delete-auth-rule <workspace_id> <auth_rule_index>
   tenzir-platform admin list-auth-rules <workspace_id>
   tenzir-platform admin create-workspace <owner_namespace> <owner_id> [--name=<workspace_name>] [--category=<workspace_category>]
@@ -16,7 +16,6 @@
   tenzir-platform admin spawn-node <workspace_id> <image> [--lifetime=<lifetime>]
 
 Options:
-  -d,--dry-run                      Do not add the rule, only print a JSON representation.
   --connection=<connection>         An optional prefix that must be matched by the 'sub' field
   --name=<workspace_name>           The user-visible name of the workspace.
   --icon-url=<icon_url>             The image to be used for this workspace in the frontend.
@@ -250,13 +249,9 @@ def admin_subcommand(platform: PlatformEnvironment, argv):
 
     if arguments["add-auth-rule"]:
         workspace_id = arguments["<workspace_id>"]
-        dry_run = arguments["--dry-run"]
         auth_rule = auth_rule_from_arguments(arguments)
-        if dry_run:
-            print(f"Would add rule {auth_rule.model_dump_json()}")
-        else:
-            client = connect_and_login()
-            add_auth_rule(client, workspace_id, auth_rule)
+        client = connect_and_login()
+        add_auth_rule(client, workspace_id, auth_rule)
 
     if arguments["delete-auth-rule"]:
         workspace_id = arguments["<workspace_id>"]
