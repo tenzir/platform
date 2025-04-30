@@ -111,9 +111,18 @@ class IdTokenClient:
             )
 
         device_code_data = device_code_response.json()
+        # The `_complete` url  already contains the user code as a url param,
+        # some OIDC providers provide it and some don't.
+        if "verification_uri_complete" in device_code_data:
+            verification_url = device_code_data["verification_uri_complete"]
+        elif "verification_uri" in device_code_data:
+            verification_url = device_code_data["verification_uri"]
+        else:
+            raise Exception(f"error: couldn't find verification URL in OIDC provider response {device_code_data}")
+
         print(
             "1. On your computer or mobile device navigate to: ",
-            device_code_data["verification_uri_complete"],
+            verification_url,
         )
         print(
             "2. Verify you're seeing the following code and confirm: ",
