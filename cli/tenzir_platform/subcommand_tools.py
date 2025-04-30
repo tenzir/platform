@@ -3,11 +3,11 @@
 
 """Usage:
   tenzir-platform tools print-workspace-token <workspace_id>
-  tenzir-platform tools add-auth-rule email-domain <domain> [--connection=<connection>]
-  tenzir-platform tools add-auth-rule organization-membership <organization_claim> <organization> [--connection=<connection>]
-  tenzir-platform tools add-auth-rule organization-role <roles_claim> <role> <organization_claim> <organization> [--connection=<connection>]
-  tenzir-platform tools add-auth-rule user <user_id>
-  tenzir-platform tools add-auth-rule allow-all
+  tenzir-platform tools print-auth-rule email-domain <domain> [--connection=<connection>]
+  tenzir-platform tools print-auth-rule organization-membership <organization_claim> <organization> [--connection=<connection>]
+  tenzir-platform tools print-auth-rule organization-role <roles_claim> <role> <organization_claim> <organization> [--connection=<connection>]
+  tenzir-platform tools print-auth-rule user <user_id>
+  tenzir-platform tools print-auth-rule allow-all
 
 This set of commands does not interact with the remote Tenzir Platform. It
 contains a set of utility commands that administrators can use to prepare the
