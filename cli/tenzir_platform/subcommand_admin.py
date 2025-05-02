@@ -41,7 +41,6 @@ from tenzir_platform.helpers.auth_rule import (
     OrganizationMembershipRule,
     AllowAllRule,
 )
-from pydantic import BaseModel
 from typing import Optional
 from docopt import docopt
 import json
