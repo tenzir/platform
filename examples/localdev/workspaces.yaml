@@ -1,11 +1,11 @@
 ---
 # tenzir-platform.yaml
 workspaces:
-  xxxaa:
+  static0:
     name: Tenzir
-    category: Shared Workspaces
+    category: Staticall Configured Workspaces
     icon_url: https://storage.googleapis.com/tenzir-public-data/icons/tenzir-logo-square.svg
     # Knowledge of the workspace token allows nodes to register themselves at runtime
-    token: wsp_d1173dfae9871fa455e9e94258130eaf1248f46f01d2e49fEbKPZ92
+    token: wsk_e9ee76d4faf4b213745dd5c99a9be11f501d7009ded63f2d5NmDS38vXR
     auth_functions:
       - {"auth_fn": "auth_allow_all"}
