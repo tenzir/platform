@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Usage:
-  tenzir-platform tools print-workspace-token <workspace_id>
+  tenzir-platform tools generate-workspace-token <workspace_id>
   tenzir-platform tools print-auth-rule email-domain <domain> [--connection=<connection>]
   tenzir-platform tools print-auth-rule organization-membership <organization_claim> <organization> [--connection=<connection>]
   tenzir-platform tools print-auth-rule organization-role <roles_claim> <role> <organization_claim> <organization> [--connection=<connection>]
@@ -28,7 +28,7 @@ def print_workspace_token(workspace_id: str) -> None:
 def tools_subcommand(_: PlatformEnvironment, argv):
     args = docopt(__doc__, argv=argv)
 
-    if args["print-workspace-token"]:
+    if args["generate-workspace-token"]:
         workspace_id = args["<workspace_id>"]
         print_workspace_token(workspace_id=workspace_id)
     elif args["print-auth-rule"]:
