@@ -18,19 +18,19 @@ from tenzir_platform.helpers.environment import PlatformEnvironment
 from docopt import docopt
 import os
 import base58
+from tenzir_platform.subcommand_admin import auth_rule_from_arguments
 
 def print_workspace_token(workspace_id: str) -> None:
     base58_workspace_id = base58.b58encode(workspace_id.encode()).decode()
-    print(f"debug: {workspace_id} -> {base58_workspace_id}")
     random_bytes = os.urandom(24).hex()
-    print(f"wsp_{random_bytes}{base58_workspace_id}")
+    print(f"wsk_{random_bytes}{base58_workspace_id}")
 
-def tools_subcommand(platform: PlatformEnvironment, argv):
+def tools_subcommand(_: PlatformEnvironment, argv):
     args = docopt(__doc__, argv=argv)
 
     if args["print-workspace-token"]:
         workspace_id = args["<workspace_id>"]
         print_workspace_token(workspace_id=workspace_id)
     elif args["print-auth-rule"]:
-        # TODO
-        pass
+        rule = auth_rule_from_arguments(args)
+        print(rule.model_dump_json())
