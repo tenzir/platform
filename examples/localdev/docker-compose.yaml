@@ -121,6 +121,9 @@ services:
       - POSTGRES_USER=${TENZIR_PLATFORM_POSTGRES_USER}
       - POSTGRES_PASSWORD=${TENZIR_PLATFORM_POSTGRES_PASSWORD}
       - POSTGRES_DB=${TENZIR_PLATFORM_POSTGRES_DB}
+      # For psql, so you can run `docker compose exec postgres psql`.
+      - PGUSER=${TENZIR_PLATFORM_POSTGRES_USER}
+      - PGDATABASE=${TENZIR_PLATFORM_POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
