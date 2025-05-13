@@ -3,9 +3,24 @@
 workspaces:
   static0:
     name: Tenzir
-    category: Staticall Configured Workspaces
+    category: Statically Configured Workspaces
     icon_url: https://storage.googleapis.com/tenzir-public-data/icons/tenzir-logo-square.svg
     # Knowledge of the workspace token allows nodes to register themselves at runtime
     token: wsk_e9ee76d4faf4b213745dd5c99a9be11f501d7009ded63f2d5NmDS38vXR
     auth_functions:
       - {"auth_fn": "auth_allow_all"}
+    dashboards:
+      dashboard_1:
+        name: Example Dashboard
+        cells:
+          - name: Dashboard 1
+            definition: |
+              partitions
+              where not internal
+              summarize events=sum(events), schema
+              sort -events
+            type: "chart"
+            x: 0
+            y: 0
+            w: 12
+            h: 12

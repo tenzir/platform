@@ -149,6 +149,13 @@ services:
       - '3003:8333'
       - '9333:9333'
 
+    
+  node:
+    image: tenzir/tenzir-node:main
+    environment:
+      - TENZIR_TOKEN=wsk_e9ee76d4faf4b213745dd5c99a9be11f501d7009ded63f2d5NmDS38vXR
+      - TENZIR_PLUGINS__PLATFORM__CONTROL_ENDPOINT=ws://websocket-gateway:5000
+
 volumes:
   postgres_data:
     driver: local
