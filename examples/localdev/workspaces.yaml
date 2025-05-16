@@ -1,0 +1,39 @@
+---
+workspaces:
+  static0:
+    # The name of this workspace
+    name: Tenzir
+
+    # The category for this workspace in the workspace switcher.
+    category: Statically Configured Workspaces
+
+    # The icon to use for this workspace.
+    icon-url: https://storage.googleapis.com/tenzir-public-data/icons/tenzir-logo-square.svg
+
+    # Knowledge of this token allows nodes to connect to this workspace
+    # as ephemeral nodes.
+    token: wsk_e9ee76d4faf4b213745dd5c99a9be11f501d7009ded63f2d5NmDS38vXR
+    #  - or -
+    # token-file: /path/to/token
+
+
+    # Everybody can access this workspace.
+    auth-rules:
+      - {"auth_fn": "auth_allow_all"}
+
+    # Define one example dashboard.
+    dashboards:
+      dashboard1:
+        name: Example Dashboard
+        cells:
+          - name: Dashboard 1
+            definition: |
+              partitions
+              where not internal
+              summarize events=sum(events), schema
+              sort -events
+            type: table
+            x: 0
+            y: 0
+            w: 12
+            h: 12

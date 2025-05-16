@@ -50,7 +50,7 @@ services:
       - TENANT_MANAGER_AUTH__ISSUER_URL=http://platform:5000/oidc
       - TENANT_MANAGER_AUTH__PUBLIC_BASE_URL=${TENZIR_PLATFORM_API_ENDPOINT}/oidc
       - TENANT_MANAGER_AUTH__APP_AUDIENCE=tenzir-app
-      - TENANT_MANAGER_AUTH__APP_REDIRECT_URLS=${TENZIR_PLATFORM_DOMAIN}/login/oauth/callback
+      - TENANT_MANAGER_AUTH__APP_REDIRECT_URLS=${TENZIR_PLATFORM_DOMAIN}/login/oauth/callback,http://localhost:3000/login/oauth/callback,http://localhost:5173/login/oauth/callback
       - TENANT_MANAGER_AUTH__CLI_AUDIENCE=tenzir-cli
       - STORE__TYPE=${TENZIR_PLATFORM_STORE_TYPE}
       - STORE__POSTGRES_URI=postgresql://${TENZIR_PLATFORM_POSTGRES_USER}:${TENZIR_PLATFORM_POSTGRES_PASSWORD}@${TENZIR_PLATFORM_POSTGRES_HOSTNAME}/${TENZIR_PLATFORM_POSTGRES_DB}
@@ -60,8 +60,10 @@ services:
       - BLOB_STORAGE__PUBLIC_ENDPOINT_URL=${TENZIR_PLATFORM_BLOBS_ENDPOINT}
       - BLOB_STORAGE__ACCESS_KEY_ID=${TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID}
       - BLOB_STORAGE__SECRET_ACCESS_KEY=${TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY}
+      - WORKSPACE_CONFIG_FILE=/etc/tenzir/workspaces.yaml
     volumes:
-      # Mounting the docker socket is only required if local demo nodes are enabled.
+      - ./workspaces.yaml:/etc/tenzir/workspaces.yaml
+      # Mounting the docker socket is required iff local demo nodes are enabled.
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - 3001:5000
@@ -119,6 +121,9 @@ services:
       - POSTGRES_USER=${TENZIR_PLATFORM_POSTGRES_USER}
       - POSTGRES_PASSWORD=${TENZIR_PLATFORM_POSTGRES_PASSWORD}
       - POSTGRES_DB=${TENZIR_PLATFORM_POSTGRES_DB}
+      # For psql, so you can run `docker compose exec postgres psql`.
+      - PGUSER=${TENZIR_PLATFORM_POSTGRES_USER}
+      - PGDATABASE=${TENZIR_PLATFORM_POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -143,6 +148,16 @@ services:
     ports:
       - '3003:8333'
       - '9333:9333'
+
+  node:
+    image: ghcr.io/tenzir/tenzir-node:main
+    environment:
+      - TENZIR_TOKEN=wsk_e9ee76d4faf4b213745dd5c99a9be11f501d7009ded63f2d5NmDS38vXR
+      - TENZIR_NODE_NAME=localdev
+      - TENZIR_PLATFORM_CONTROL_ENDPOINT=ws://websocket-gateway:5000
+    depends_on:
+      websocket-gateway:
+        condition: service_started
 
 volumes:
   postgres_data:
