@@ -118,6 +118,8 @@ jobs:
       - name: Update app submodule
         run: |
           git submodule update --init components/app
+          app_commit=$(git -C components/app rev-parse HEAD)
+          echo "app_commit=$app_commit" >> $GITHUB_ENV
 
       - name: Configure ssh-agent for tenant-manager submodule
         uses: webfactory/ssh-agent@v0.9.0
@@ -174,6 +176,8 @@ jobs:
 
       - uses: mr-smithers-excellent/docker-build-push@v6
         name: Build & push Docker image
+        env:
+          GIT_COMMIT_HASH: ${{ env.app_commit }}
         with:
           image: app
           tags: ${{ github.event.release.tag_name }},latest
