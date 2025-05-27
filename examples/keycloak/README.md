@@ -81,7 +81,7 @@ setting and enable the "OAuth 2.0 Device Authorization Grant" authentication flo
 
 ### Custom Scopes
 
-By default, the Tenzir Platform requests the `profile email oidc offline_access` scopes
+By default, the Tenzir Platform requests the `profile email openid offline_access` scopes
 when logging in. To adjust this, set the `PUBLIC_OIDC_SCOPES` environment variable
 to a space-separated list of scope names.
 
