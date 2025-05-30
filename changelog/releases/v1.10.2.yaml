@@ -1,9 +1,15 @@
 title: Tenzir Platform v1.10.2
-description: "This patch release contains a number of additional bugfixes since  [Tenzir Platform v1.10.1](https://github.com/tenzir/platform/releases/tag/v1.10.1):
+description: |
+  This patch release contains a number of additional bugfixes since [Tenzir
+  Platform v1.10.1](https://github.com/tenzir/platform/releases/tag/v1.10.1):
 
-- This release fixes a bug that causes nodes to be shown as offline in the websocket gateway while still being connected.
-- Tooltips in line and grouped area charts are now sorted by value.
-- This release fixes a bug where charts with logarithmic scales do not show any ticks when the domain includes 0.
-- This release fixes a bug where maximum and minimum values are not being passed to explorer charts.
-- This release fixes repeated values appearing in logarithmic scales on charts."
+  - This release fixes a bug that causes nodes to be shown as offline in the
+    websocket gateway while still being connected.
+  - Tooltips in line and grouped area charts are now sorted by value.
+  - This release fixes a bug where charts with logarithmic scales do not show
+    any ticks when the domain includes 0.
+  - This release fixes a bug where maximum and minimum values are not being
+    passed to explorer charts.
+  - This release fixes repeated values appearing in logarithmic scales on
+    charts.
 changes: []

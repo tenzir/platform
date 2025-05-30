@@ -1,3 +1,4 @@
 title: Tenzir Platform v0.17.2
-description: This release fixes a bug in the `tenzir-platform auth` subcommand.
+description: |
+  This release fixes a bug in the `tenzir-platform auth` subcommand.
 changes: []

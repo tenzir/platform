@@ -1,7 +1,12 @@
 title: Tenzir Platform v1.6.1
-description: "This patch release contains the following changes, bug fixes and improvements over [Tenzir Platform v1.6](https://github.com/tenzir/platform/releases/tag/v1.6.0):
+description: |
+  This patch release contains the following changes, bug fixes and improvements
+  over [Tenzir Platform
+  v1.6](https://github.com/tenzir/platform/releases/tag/v1.6.0):
 
-- This release fixes an issue that prevents the display of activity spark bars
-- This release fixes a race condition that leads to a parse error in the detailed pipeline activity view
-- This release adds a new option to specify CORS settings for the on-prem version of the websocket gateway"
+  - This release fixes an issue that prevents the display of activity spark bars
+  - This release fixes a race condition that leads to a parse error in the
+    detailed pipeline activity view
+  - This release adds a new option to specify CORS settings for the on-prem
+    version of the websocket gateway
 changes: []
