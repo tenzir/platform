@@ -1,0 +1,6 @@
+title: Tenzir Platform v0.19
+description: "* This release moves pipeline filters into the pipeline table's header, preparing for further upcoming changes to the table
+* This release adds a detailed activity view to the detailed pipeline view that opens when clicking on a pipeline
+* Clicking on the diagnostics column in the pipelines table now opens the detailed pipeline view with the diagnostics tab active
+* This release fixes scrolling in the detailed pipeline view"
+changes: []

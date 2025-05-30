@@ -1,0 +1,5 @@
+title: Tenzir Platform v1.6
+description: "This release features a new UI for example pipelines and adds support for the new TQL2 mode for nodes.
+
+Note: The **minimum node version** for Tenzir Platform v1.6 updates to Tenzir Node **v4.24**. Older nodes need to be upgraded before they can reconnect to the newest platform version."
+changes: []

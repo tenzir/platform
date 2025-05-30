@@ -1,0 +1,8 @@
+title: Tenzir Platform v1.8.4
+description: "This patch release includes the following bug fixes over [Tenzir Platform v1.8.3](https://github.com/tenzir/platform/releases/tag/v1.8.3):
+
+- This release fixes a bug where the pipeline page crashes when navigating away from it and back to a newly loaded page.
+- This release fixes the broken hover state of the dropdown in DetailedActivity.
+- This release reduces 5s-7s spikes in the initial load time of the platform page.
+- This release improves the styling and user experience of the download menu to be consistent with the node submenu used for charts."
+changes: []

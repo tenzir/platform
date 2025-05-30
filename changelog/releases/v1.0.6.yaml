@@ -1,0 +1,9 @@
+title: Tenzir Platform v1.0.6
+description: "This patch release contains the following changes, bug fixes and improvements over [Tenzir Platform v1.0.5](https://github.com/tenzir/platform/releases/tag/v1.0.5):
+
+- This release fixes the JSON formatting in the Tenzir Platform CLI output.
+- This release significantly reduces latency and network traffic when interacting with nodes in the app by making requests go through the platform control endpoint directly.
+- The library becomes searchable and allows additional pipeline configuration when installing packages.
+- Package descriptions now support Markdown, e.g., to insert links or code blocks.
+- This release fixes some minor UI bugs and adds a few quality-of-life improvements to the new redesigned app."
+changes: []

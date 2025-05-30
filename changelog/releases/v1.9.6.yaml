@@ -1,0 +1,5 @@
+title: Tenzir Platform v1.9.6
+description: "This patch release includes the following improvements over [Tenzir Platform v1.9.5](https://github.com/tenzir/platform/releases/tag/v1.9.5):
+
+- The TQL2 switch no longer shows in the Explorer for nodes that have the TQL2-only mode enabled through the `TENZIR_TQL2=true` option. This prepares for the upcoming Tenzir Node v5.0 release, which enables TQL2 by default."
+changes: []
