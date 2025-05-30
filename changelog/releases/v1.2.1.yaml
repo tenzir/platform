@@ -2,6 +2,6 @@ title: Tenzir Platform v1.2.1
 description:
   "This patch release contains the following changes, bug fixes and improvements over [Tenzir Platform v1.2](https://github.com/tenzir/platform/releases/tag/v1.2.0):
 
-  * OIDC issuer url's without a trailing slash are now handled correctly.
-  * Fixed an issue where the `PUBLIC_OIDC_SCOPES` variable was ignored."
+  * This release handles OIDC issuer URLs without a trailing slash correctly.
+  * This release fixes an issue where the `PUBLIC_OIDC_SCOPES` variable is ignored."
 changes: []

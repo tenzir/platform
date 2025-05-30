@@ -1,6 +1,6 @@
 title: Tenzir Platform v1.8.3
 description: "This patch release includes the following bug fixes over [Tenzir Platform v1.8.2](https://github.com/tenzir/platform/releases/tag/v1.8.2):
 
-- We fixed a bug where a newly added node was not automatically selected on the Pipelines page.
-- We ensured that the node selector on different pages does not overflow off the screen."
+- This release fixes a bug where a newly added node is not automatically selected on the Pipelines page.
+- This release ensures that the node selector on different pages does not overflow off the screen.
 changes: []

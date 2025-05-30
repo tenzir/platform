@@ -2,5 +2,5 @@ title: Tenzir Platform v1.7.2
 description:
   "This patch release contains the following changes, bug fixes and improvements over [Tenzir Platform v1.7.1](https://github.com/tenzir/platform/releases/tag/v1.7.1):
 
-  * Handle incoming timestamps with a 'Z' timezone suffix in pipeline data"
+  * This release handles incoming timestamps with a 'Z' timezone suffix in pipeline data"
 changes: []

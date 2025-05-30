@@ -2,6 +2,6 @@ title: Tenzir Platform v1.1.1
 description: "This patch release contains the following changes, bug fixes and improvements over [Tenzir Platform v1.1](https://github.com/tenzir/platform/releases/tag/v1.1.0):
 
 - The new **Add pipeline** button on the pipeline page brings users back to the Explorer.
-- Scrolling in the schemas dropdown in the Explorer is now working as expected again.
-- We applied a few cosmetic touchups throughout the user interface."
+- Scrolling in the schemas dropdown in the Explorer now works as expected again.
+- This release applies a few cosmetic touchups throughout the user interface."
 changes: []

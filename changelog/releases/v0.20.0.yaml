@@ -1,10 +1,10 @@
 title: Tenzir Platform v0.20
-description: "Tenzir Platform v0.20 brings the following improvements and changes:
+description: "This release brings the following improvements and changes:
 
 * The new `tenzir-platform admin spawn-node` CLI command allows running nodes with arbitrary Docker images
-* The CLI no longer requests the 'email' scope by  default when using the non-interactive login,  fixing a compatibility issue with the keycloak identity provider
-* We reduced the CPU usage of activity spark bars in the pipelines list, making them update more smoothly.
-* Spark bars no longer stop updating for stopped pipelines.
-* We fixed a bug that caused an increased network usage from fetching diagnostics and metrics in the app.
-* We fixed scrolling in the detailed pipeline view for pipelines with long definitions."
+* The CLI no longer requests the 'email' scope by default when using the non-interactive login, fixing a compatibility issue with the keycloak identity provider
+* This release reduces the CPU usage of activity spark bars in the pipelines list, making them update more smoothly
+* Spark bars no longer stop updating for stopped pipelines
+* This release fixes a bug that causes increased network usage from fetching diagnostics and metrics in the app
+* This release fixes scrolling in the detailed pipeline view for pipelines with long definitions"
 changes: []

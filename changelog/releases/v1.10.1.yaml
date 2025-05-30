@@ -1,11 +1,11 @@
 title: Tenzir Platform v1.10.1
-description: "This patch release fixes a number of issues that we found since the release of [Tenzir Platform v1.10](https://github.com/tenzir/platform/releases/tag/v1.10.0):
+description: "This patch release fixes a number of issues found since the release of [Tenzir Platform v1.10](https://github.com/tenzir/platform/releases/tag/v1.10.0):
 
 - The platform now generates valid Tenzir tokens for non-ephemeral nodes in statically defined workspaces.
-- Added a new `/health` endpoint to the user API that can be used to check for network connectivity.
-- Fixed TQL syntax highlighting.
-- The display of very old demo nodes in the \"Connect Node\" view was fixed.
-- The background color of the library page was adjusted.
-- The order of items in the contexts table was stabilized.
-- Several fixes were applied to the nodes page."
+- This release adds a new `/health` endpoint to the user API that can be used to check for network connectivity.
+- This release fixes TQL syntax highlighting.
+- This release fixes the display of very old demo nodes in the \"Connect Node\" view.
+- This release adjusts the background color of the library page.
+- This release stabilizes the order of items in the contexts table.
+- This release applies several fixes to the nodes page."
 changes: []
