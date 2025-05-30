@@ -137,7 +137,7 @@ def create_github_url(branch, type_value, author=None, pr=None, title=None, desc
     encoded_content = urllib.parse.quote(content)
 
     # Construct the GitHub URL
-    url = f"https://github.com/tenzir/tenzir/new/{branch}?filename={filename}&value={encoded_content}"
+    url = f"https://github.com/tenzir/platform/new/{branch}?filename={filename}&value={encoded_content}"
 
     print(url)
 
