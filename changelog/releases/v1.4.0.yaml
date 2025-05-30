@@ -1,0 +1,8 @@
+title: Tenzir Platform v1.4
+description: "In the latest platform version, we are introducing **alerts** for the Tenzir Platform, allowing users to get notified when a node is unexpectedly offline.
+
+Of course, the release also contains a lot of other noteworthy improvements and bug fixes:
+- The workspace switcher is now significantly faster
+ - A new diagnostics drawer on the dashboard page makes warnings and errors more accessible
+ - The image download of charts now works as expected"
+changes: []

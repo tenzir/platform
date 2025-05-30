@@ -1,0 +1,9 @@
+title: Tenzir Platform v1.8.2
+description: "This patch release contains the following changes, bug fixes and improvements over [Tenzir Platform v1.8.1](https://github.com/tenzir/platform/releases/tag/v1.8.1):
+
+- Numbers in the platform are now thousands-separated
+- Titles are now required before adding charts to dashboards
+- Dashboard charts now correctly load data fully
+- Failure of various data-fetching tasks now show errors in the UI
+- A bunch styling fixes, updates, and small features"
+changes: []

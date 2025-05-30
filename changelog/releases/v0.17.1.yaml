@@ -1,0 +1,3 @@
+title: Tenzir Platform v0.17.1
+description: In this patch release, we fixed a bug where very long-running instances of the tenant-manager would issue expired user keys, making it impossible for users to log in successfully.
+changes: []

@@ -1,0 +1,7 @@
+title: Tenzir Platform v1.0.3
+description: "This patch release contains the following bug fixes and improvements over [Tenzir Platform v1.0.2](https://github.com/tenzir/platform/releases/tag/v1.0.2):
+
+- The download button now works correctly for pipelines written in TQL2.
+- Charts on the dashboard now work correctly for pipelines written in TQL2.
+- The run button in the explorer now checks more reliably whether a pipeline is deployable."
+changes: []

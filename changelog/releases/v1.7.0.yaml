@@ -1,0 +1,11 @@
+title: Tenzir Platform v1.7
+description: "In this release, we introduce a new Drag'n'Drop feature to easily work with data from local files, and some additional configuration knobs for Sovereign Edition users.
+
+Users of the sovereign edition also get a few more options to customize their deployment:
+ * `ANALYTICS_WEBHOOK_URL`: Allows configuring an analytics sink for sending events
+ * `TLS_KEYFILE`/`TLS_CERTFILE`: Allow the platform and websocket gateway services to provide native TLS support, when not running behind a reverse proxy
+
+For more details, check out these link:
+
+**Blog Post**: https://docs.tenzir.com/blog/tenzir-platform-v1.7"
+changes: []

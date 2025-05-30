@@ -1,0 +1,4 @@
+title: Tenzir Platform v0.18.1
+description: "* Fixed a memory leak in the overview page
+* Updated the docker compose examples in a release by automatically pinning them to the corresponding platform version"
+changes: []

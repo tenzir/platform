@@ -1,0 +1,8 @@
+title: Tenzir Platform v0.20.2
+description:
+  "This bugfix release contains various small fixes and reliability improvements for the Tenzir Platform:
+
+  * Fix request ID forwarding and malformed JSON responses
+  * Fix `admin update-workspace` subcommand for CLI
+  * Websocket Gateway improvements"
+changes: []

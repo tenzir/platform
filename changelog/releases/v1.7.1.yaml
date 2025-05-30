@@ -1,0 +1,9 @@
+title: Tenzir Platform v1.7.1
+description: "This patch release contains the following bug fixes and improvements over [Tenzir Platform v1.7](https://github.com/tenzir/platform/releases/tag/v1.7.0):
+
+- Fixed an issue that caused Demo Nodes to periodically lose their connection to the platform
+- Fixed node switching in the Library package install tab
+- Added new placeholder screens
+- Fixed table column order mismatch for numerical keys
+- Prevented schema tree from getting cut-off"
+changes: []

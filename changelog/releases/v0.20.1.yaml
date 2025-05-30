@@ -1,0 +1,6 @@
+title: Tenzir Platform v0.20.1
+description: "Tenzir Platform v0.20.1 brings the following improvements and changes:
+
+* We fixed a bug that caused spark bars for recently completed or stopped pipelines to show incorrect data.
+* We fixed a bug that caused the event inspector in the explorer not to be scrollable."
+changes: []

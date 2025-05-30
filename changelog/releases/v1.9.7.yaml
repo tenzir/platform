@@ -1,0 +1,6 @@
+title: Tenzir Platform v1.9.7
+description: "This patch release comes with a number of frontend improvements since [Tenzir Platform v1.9.6](https://github.com/tenzir/platform/releases/tag/v1.9.5):
+
+- The data inspector has been completely overhauled to give a more detailed tree view of the data, and it's now possible to collapse and expand the tree.
+- The copy button in the data inspector now copies the data as TQL instead of JSON."
+changes: []

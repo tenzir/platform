@@ -1,0 +1,8 @@
+title: Tenzir Platform v1.0.2
+description: "This patch release contains the following bug fixes and improvements over [Tenzir Platform v1.0.1](https://github.com/tenzir/platform/releases/tag/v1.0.1):
+
+- We fixed a potential hang when opening the history when it contained some pipelines whose definition must be URL-encoded.
+- Sorting schemas now has a deterministic order when both a schema and a category with the same name exist, e.g., for a schema `foo` and `foo.bar`.
+- We fixed a bug that potentially led to corruption of dashboard configurations after loading the dashboard failed.
+- We fixed a hang when adding a chart to a dashboard without assigning a name explicitly."
+changes: []

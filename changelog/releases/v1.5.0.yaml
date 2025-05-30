@@ -1,0 +1,11 @@
+title: Tenzir Platform v1.5
+description: "The latest platform release brings a major upgrade to Dashboards making them independent of nodes.
+
+We’ve also introduced a **dedicated Contexts page** that allows for managing contexts directly in the Tenzir
+Platform.
+
+This release includes several additional enhancements and fixes:
+- Fixed an issue preventing package uninstallation.
+- Resolved a bug causing infinite loading when logging into a new account after logging out.
+- Fixed a problem that broke account deletion."
+changes: []

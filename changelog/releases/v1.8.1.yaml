@@ -1,0 +1,9 @@
+title: Tenzir Platform v1.8.1
+description:
+  "This patch release contains the following changes, bug fixes and improvements over [Tenzir Platform v1.8](https://github.com/tenzir/platform/releases/tag/v1.8):
+
+  * Fix explorer results being hidden when pausing the pipeline
+  * Fix Run button scrolling out of view
+  * Add a Discord link to the app
+  * Support `TLS_KEYFILE` and `TLS_CERTFILE` in the app"
+changes: []

@@ -1,0 +1,8 @@
+title: Tenzir Platform v1.3
+description: "This version of the Tenzir Platform comes with a new **vertical layout** option to make better use of the screen space available for event data and longer pipelines:
+
+This release also contains many additional improvements and bugfixes:
+ *  The explorer event inspector now automatically selects the first event if it is open.
+ *  We fixed an issue in the detailed activity charts in the pipelines page where the ingress and egress activities were mistakenly swapped.
+ * Charts in the dashboard show up to 10,000 events now."
+changes: []

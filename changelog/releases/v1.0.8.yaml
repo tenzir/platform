@@ -1,0 +1,7 @@
+title: Tenzir Platform v1.0.8
+description: "This patch release contains the following changes, bug fixes and improvements over [Tenzir Platform v1.0.7](https://github.com/tenzir/platform/releases/tag/v1.0.7):
+
+- We fixed the positioning of the \"Load More\" button in the Explorer results table.
+- We improved the pipeline table UI with clearer filtering indicators and a \"New\" badge for newly created pipelines.
+- We also resolved an issue where toasts occasionally rendered under drawers."
+changes: []

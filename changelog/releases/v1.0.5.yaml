@@ -1,0 +1,8 @@
+title: Tenzir Platform v1.0.5
+description: "This patch release contains the following changes, bug fixes and improvements over [Tenzir Platform v1.0.4](https://github.com/tenzir/platform/releases/tag/v1.0.4):
+
+- We open-sourced the **Tenzir Platform CLI**, which can be used to show and manage nodes and workspaces. Try it yourself with `uvx tenzir-platform --help`.
+- We implemented support for package updates in the Library tab.
+- We completely redesigned and reimplemented the toast components.
+- Additionally, this release contains many fixes and reliability improvements, in particular for diagnostics and in the pipeline inspector."
+changes: []
