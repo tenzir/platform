@@ -28,14 +28,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.TENZIR_BOT_GITHUB_TOKEN }}
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.x"
 
-      - name: Import GPG key
+      - name: Generate an app token
+        id: generate_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.TENZIR_AUTOBUMPER_APP_ID }}
+          private-key: ${{ secrets.TENZIR_AUTOBUMPER_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Set up GPG for signing
         uses: crazy-max/ghaction-import-gpg@v6
         with:
           gpg_private_key: ${{ secrets.TENZIR_BOT_GPG_SIGNING_KEY }}
@@ -44,9 +53,13 @@ jobs:
           git_tag_gpgsign: true
 
       - name: Configure Git
+        env:
+          GITHUB_APP_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           git config --global user.name "tenzir-bot"
           git config --global user.email "engineering@tenzir.com"
+          git remote set-url origin https://x-access-token:${GITHUB_APP_TOKEN}@github.com/${{ github.repository }}.git
+
 
       - name: Validate version format
         run: |
@@ -84,7 +97,7 @@ jobs:
       - name: Commit release file
         run: |
           git add changelog/releases/"${{ github.event.inputs.version }}.yaml"
-          git commit -s -m "Release Tenzir Platform ${{ github.event.inputs.version }}"
+          git commit -m "Release Tenzir Platform ${{ github.event.inputs.version }}"
 
       - name: Create signed annotated tag
         run: |
@@ -103,7 +116,7 @@ jobs:
 
       - name: Create GitHub Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           # Format version for changelog URL (replace dots with dashes, remove 'v' prefix)
           VERSION_FOR_URL=$(echo "${{ github.event.inputs.version }}" | sed 's/^v//' | sed 's/\./-/g')
