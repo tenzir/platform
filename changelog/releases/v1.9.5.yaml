@@ -1,6 +1,8 @@
 title: Tenzir Platform v1.9.5
-description: "This patch release includes the following improvements over [Tenzir Platform v1.9.4](https://github.com/tenzir/platform/releases/tag/v1.9.4):
+description: |
+  This patch release includes the following improvements over [Tenzir Platform
+  v1.9.4](https://github.com/tenzir/platform/releases/tag/v1.9.4):
 
-- The pipelines table sorting and filtering by column works correctly again.
-- This release reduces bandwidth usage between the node and the platform."
+  - The pipelines table sorting and filtering by column works correctly again.
+  - This release reduces bandwidth usage between the node and the platform.
 changes: []

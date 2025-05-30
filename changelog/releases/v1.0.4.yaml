@@ -1,11 +1,19 @@
 title: Tenzir Platform v1.0.4
-description: "This patch release contains the following changes, bug fixes and improvements over [Tenzir Platform v1.0.3](https://github.com/tenzir/platform/releases/tag/v1.0.3):
+description: |
+  This patch release contains the following changes, bug fixes and improvements
+  over [Tenzir Platform
+  v1.0.3](https://github.com/tenzir/platform/releases/tag/v1.0.3):
 
-- This release fixes and improves alignment and styling throughout the application.
-- The run button in the explorer now indicates whether it is activated.
-- Open dropdown menus now prevent accidental interaction with other elements on the page when clicking on them.
-- Pipeline names can no longer be edited inline in the pipelines table, and instead must be edited through the sidebar.
-- The _installed_ tab becomes the default tab in the library.
-- The nodes dropdown on the pipelines page with a collapsed nodes sidebar now includes all functionality from the sidebar.
-- Activity metrics no longer show `undefined B/s` for the unit when the ingress or egress averages between 0 and 1 byte per second."
+  - This release fixes and improves alignment and styling throughout the
+    application.
+  - The run button in the explorer now indicates whether it is activated.
+  - Open dropdown menus now prevent accidental interaction with other elements
+    on the page when clicking on them.
+  - Pipeline names can no longer be edited inline in the pipelines table, and
+    instead must be edited through the sidebar.
+  - The _installed_ tab becomes the default tab in the library.
+  - The nodes dropdown on the pipelines page with a collapsed nodes sidebar now
+    includes all functionality from the sidebar.
+  - Activity metrics no longer show `undefined B/s` for the unit when the
+    ingress or egress averages between 0 and 1 byte per second.
 changes: []

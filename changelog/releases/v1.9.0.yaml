@@ -1,11 +1,13 @@
 title: Tenzir Platform v1.9
-description: "This release revamps the Explorer to better support large datasets:
+description: |
+  This release revamps the Explorer to better support large datasets.
 
-👉 We wrote a blog post that explains the improvements in detail: https://docs.tenzir.com/releases/tenzir-platform-v1.9
-
-Additionally, this release contains the following bug fixes and improvements:
-- The _Add to Dashboard_ button in the Explorer is no longer disabled when the corresponding history entry is removed.
-- This release fixes a bug that prevents the _Save_ button on dashboards from working. The save button now also shows a loading state when applicable.
-- This release makes pie chart legends scrollable.
-- All log scales in charts change to symlog scales, which handle zero and negative values more gracefully."
+  Additionally, this release contains the following bug fixes and improvements:
+  - The _Add to Dashboard_ button in the Explorer is no longer disabled when the
+    corresponding history entry is removed.
+  - This release fixes a bug that prevents the _Save_ button on dashboards from
+    working. The save button now also shows a loading state when applicable.
+  - This release makes pie chart legends scrollable.
+  - All log scales in charts change to symlog scales, which handle zero and
+    negative values more gracefully.
 changes: []

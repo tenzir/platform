@@ -1,5 +1,13 @@
 title: Tenzir Platform v0.17
-description: "This release introduces the ability to change pipelines on [app.tenzir.com](https://app.tenzir.com/) more quickly. Users can click on any pipeline on the overview page to open a detailed view, directly edit the definition or options, and use the new action menu to quickly start, pause, stop, duplicate, or delete pipelines.
+description: |
+  This release introduces the ability to change pipelines on
+  [app.tenzir.com](https://app.tenzir.com/) more quickly. Users can click on any
+  pipeline on the overview page to open a detailed view, directly edit the
+  definition or options, and use the new action menu to quickly start, pause,
+  stop, duplicate, or delete pipelines.
 
-This release brings the following improvements for Sovereign Edition users: The `tenzir-platform` CLI supports changing user and workspace icons, printing node and workspace lists in JSON format, and logging in with the client credentials flow for non-interactive authentication."
+  This release brings the following improvements for Sovereign Edition users:
+  The `tenzir-platform` CLI supports changing user and workspace icons, printing
+  node and workspace lists in JSON format, and logging in with the client
+  credentials flow for non-interactive authentication.
 changes: []
