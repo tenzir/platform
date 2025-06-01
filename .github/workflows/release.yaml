@@ -60,6 +60,13 @@ jobs:
           git config --global user.email "engineering@tenzir.com"
           git remote set-url origin https://x-access-token:${GITHUB_APP_TOKEN}@github.com/${{ github.repository }}.git
 
+          # Fetch app component
+          git submodule set-url components/app https://x-access-token:${GITHUB_APP_TOKEN}@github.com/tenzir/app.git
+          git submodule update --init components/app
+
+          # Fetch tenant-manager component
+          git submodule set-url components/tenant-manager https://x-access-token:${GITHUB_APP_TOKEN}@github.com/tenzir/event-horizon.git
+          git submodule update --init components/tenant-manager
 
       - name: Validate version format
         run: |
