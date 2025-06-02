@@ -10,7 +10,7 @@ from the command-line to manage their workspaces and nodes.
 Install the [`tenzir-platform`](https://pypi.org/project/tenzir-platform/)
 package from PyPI.
 
-```bash
+```text
 pip install tenzir-platform
 ```
 
@@ -18,7 +18,7 @@ pip install tenzir-platform
 
 ### Synopsis
 
-```bash
+```text
 tenzir-platform auth login
 tenzir-platform workspace list
 tenzir-platform workspace select <workspace_id>
@@ -40,7 +40,7 @@ The unique ID of the workspace, as shown in `tenzir-platform workspace list`.
 
 ### Synopsis
 
-```bash
+```text
 tenzir-platform node list
 tenzir-platform node ping <node_id>
 tenzir-platform node create [--name <node_name>]
@@ -79,11 +79,11 @@ The name of the node as shown in the app.
 The Docker image to use for ad-hoc created node. We recommend using one of the
 following images:
 
-- `tenzir/tenzir:v5.1.3` to use a specific release.
-- `tenzir/tenzir:v5.1` to use the latest version of a specific minor release.
-- `tenzir/tenzir:v5` to use the latest version of a specific major release.
-  `tenzir/tenzir:v4.11.2` to use the specified release.- `tenzir/tenzir:latest` to use the latest release.
+- `tenzir/tenzir:latest` to use the latest release.
 - `tenzir/tenzir:main` to use the current development version.
+- `tenzir/tenzir:v5` to pin to a major release.
+- `tenzir/tenzir:v5.1` to pin to a minor release.
+- `tenzir/tenzir:v5.1.3` to use a specific release.
 
 ## Manage Secrets
 
@@ -92,7 +92,7 @@ pipelines running on a Tenzir Node.
 
 ### Synopsis
 
-```bash
+```text
 tenzir-platform secret add <name> [--file=<file>] [--value=<value>] [--env]
 tenzir-platform secret update <secret_id> [--file=<file>] [--value=<value>] [--env]
 tenzir-platform secret delete <secret_id>
@@ -164,13 +164,13 @@ access to the secrets.
 
 ### Synopsis
 
-```bash
-tenzir-platform secret store add aws \
-    --region=<region> \
-    --assumed-role-arn=<assumed_role_arn> \
-    [--name=<name>] \
-    [--prefix=<prefix>] \
-    [--access-key-id=<key_id>] \
+```text
+tenzir-platform secret store add aws
+    --region=<region>
+    --assumed-role-arn=<assumed_role_arn>
+    [--name=<name>]
+    [--prefix=<prefix>]
+    [--access-key-id=<key_id>]
     [--secret-access-key=<key>]
 tenzir-platform secret store set-default <store_id>
 tenzir-platform secret store delete <store_id>
@@ -211,7 +211,7 @@ alternative to options (1) and (3) above.
 
 ### Synopsis
 
-```bash
+```text
 tenzir-platform alert add <node> <duration> <webhook_url> [<webhook_body>]
 tenzir-platform alert delete <alert_id>
 tenzir-platform alert list
@@ -249,7 +249,7 @@ where `$NODE_NAME` and `{duration}` are set dynamically from the CLI parameters.
 
 Given nodes like this:
 
-```bash
+```text
 $ tenzir-platform node list
 🟢 Node-1 (n-w2tjezz3)
 🟢 Node-2 (n-kzw21299)
@@ -261,7 +261,7 @@ than 3 minutes. First we create a webhook as described in the
 [Slack docs](https://api.slack.com/messaging/webhooks). Next, we configure the
 alert in the Tenzir Platform:
 
-```bash
+```text
 tenzir-platform alert add Node-3 3m "https://hooks.slack.com/services/XXXXX/YYYYY/ZZZZZ" '{"text": "Alert! Look after node $NODE_NAME"}'
 ```
 
@@ -283,7 +283,7 @@ to define who is an administrator in your platform deployment.
 
 ### Synopsis
 
-```bash
+```text
 tenzir-platform admin list-global-workspaces
 tenzir-platform admin create-workspace <owner_namespace> <owner_id> [--name <workspace_name>]
 tenzir-platform admin delete-workspace <workspace_id>
@@ -342,16 +342,16 @@ to define who is an administrator in your platform deployment.
 
 ### Synopsis
 
-```bash
+```text
 tenzir-platform admin list-auth-rules <workspace_id>
 
 tenzir-platform admin add-auth-rule allow-all <workspace_id>
 tenzir-platform admin add-auth-rule user <workspace_id> <user_id>
-tenzir-platform admin add-auth-rule \
+tenzir-platform admin add-auth-rule
     email-domain <workspace_id> <connection> <domain>
-tenzir-platform admin add-auth-rule \
+tenzir-platform admin add-auth-rule
     organization-membership <workspace_id> <connection> <organization_claim> <organization>
-tenzir-platform admin add-auth-rule \
+tenzir-platform admin add-auth-rule
     organization-role <workspace_id> <connection> <roles_claim> <role> <organization_claim> <organization>
 
 tenzir-platform admin delete-auth-rule <workspace_id> <auth_rule_index>
