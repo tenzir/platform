@@ -1,4 +1,4 @@
-title: Tenzir Platform v1.10
+title: Layout Restructure & Workspaces
 description: |
   This release restructures the page layout for better usability and adds the
   ability to statically define workspaces in on-prem environments.
