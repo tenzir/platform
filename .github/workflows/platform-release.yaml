@@ -184,5 +184,6 @@ jobs:
           dockerfile: components/app/Dockerfile
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          buildArgs:
-            - GIT_COMMIT_HASH=${{ env.app_commit }}
+
+          # Note: Comma-delimited string:
+          buildArgs: GIT_COMMIT_HASH=${{ env.app_commit }}
