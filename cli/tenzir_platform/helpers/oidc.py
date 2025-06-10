@@ -59,7 +59,9 @@ class IdTokenClient:
         self.issuer = platform.issuer_url
         self.client_id = platform.client_id
         self.client_secret = platform.client_secret
-        self.client_secret_file = platform.client_secret_file
+        if platform.client_secret_file is not None:
+            with open(platform.client_secret_file, "r") as f:
+                self.client_secret = f.read()
         self.hardcoded_id_token = platform.id_token
         self.verbose = platform.verbose
         discovery_url = f"{self.issuer.rstrip('/')}/.well-known/openid-configuration"
@@ -117,6 +119,8 @@ class IdTokenClient:
             verification_url = device_code_data["verification_uri_complete"]
         elif "verification_uri" in device_code_data:
             verification_url = device_code_data["verification_uri"]
+        elif "verification_url" in device_code_data:
+            verification_url = device_code_data["verification_url"]  # Google is not following the spec :/
         else:
             raise Exception(f"error: couldn't find verification URL in OIDC provider response {device_code_data}")
 
@@ -135,6 +139,10 @@ class IdTokenClient:
             "device_code": device_code_data["device_code"],
             "client_id": self.client_id,
         }
+        # Google's braindead implementation creates a "public" client secret
+        # for apps using device code flow, that is required for the request.
+        if self.client_secret is not None:
+            token_payload["client_secret"] = self.client_secret
         authenticated = False
         while not authenticated:
             token_response = requests.post(
@@ -143,26 +151,23 @@ class IdTokenClient:
             )
             token_data = token_response.json()
             if token_response.status_code == 200:
+                print(f"got final result: {token_data}")
                 print("Authenticated!")
                 break
             elif token_data["error"] not in ("authorization_pending", "slow_down"):
                 print(token_data["error_description"])
-                authenticated = True
+                # authenticated = True
+                break
             else:
                 time.sleep(device_code_data["interval"])
         return token_data
 
     def _client_credentials_flow(self) -> dict[str, str]:
-        if self.client_secret_file is not None:
-            with open(self.client_secret_file, "r") as f:
-                client_secret = f.read()
-        elif self.client_secret is not None:
-            client_secret = self.client_secret
-        else:
+        if self.client_secret is None:
             raise Exception(
                 "Need a client secret in order to perform non-interactive login"
             )
-
+        client_secret = self.client_secret
         client_credentials_payload = {
             "grant_type": "client_credentials",
             "scope": "openid",
