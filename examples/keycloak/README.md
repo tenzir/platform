@@ -5,12 +5,13 @@ as Identity Provider, it is necessary to do some additional
 manual configuration.
 
 This document is intended to guide you through this process.
+You can also view an [online version](docs.tenzir.com/...).
 
 We assume that you already have a Keycloak instance up
 and running that is reachable with a browser, for example
 by running the `keycloak` service from the Docker Compose file
 in this example. The same configuration steps apply when using
-an external instance.
+an external Keycloak instance.
 
 ## Setting up the Keycloak Instance
 

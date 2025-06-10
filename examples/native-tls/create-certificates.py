@@ -1,10 +1,6 @@
-#!/usr/bin/env python3
-
-# To install the requirements run
+# Run this script as:
 #
-#     python3 -m venv venv/
-#     . venv/bin/activate
-#     python3 -m pip install trustme python-dotenv
+#     uv run --with trustme,python-dotenv create-certificates.py
 
 import os
 import trustme
@@ -18,11 +14,19 @@ load_dotenv()
 ca = trustme.CA()
 ca.cert_pem.write_to_path("ssl/ca.pem")
 
+# Check that the user didn't forget to create the .env file and all
+# required environment variables are set.
+for endpoint in ("UI", "API", "NODES", "DOWNLOADS", "LOGIN"):
+    full_url = f"TENZIR_PLATFORM_{endpoint}_ENDPOINT"
+    if not os.getenv(full_url):
+        print(f"error: missing environment variable {full_url}")
+        exit(1)
+
 # Get the DNS names for the certificates.
-app_endpoint = urlparse(os.getenv("TENZIR_PLATFORM_DOMAIN")).hostname
+app_endpoint = urlparse(os.getenv("TENZIR_PLATFORM_UI_ENDPOINT")).hostname
 platform_endpoint = urlparse(os.getenv("TENZIR_PLATFORM_API_ENDPOINT")).hostname
-control_endpoint = urlparse(os.getenv("TENZIR_PLATFORM_CONTROL_ENDPOINT")).hostname
-blobs_endpoint = urlparse(os.getenv("TENZIR_PLATFORM_BLOBS_ENDPOINT")).hostname
+control_endpoint = urlparse(os.getenv("TENZIR_PLATFORM_NODES_ENDPOINT")).hostname
+blobs_endpoint = urlparse(os.getenv("TENZIR_PLATFORM_DOWNLOADS_ENDPOINT")).hostname
 login_endpoint = urlparse(os.getenv("TENZIR_PLATFORM_LOGIN_ENDPOINT")).hostname
 
 
