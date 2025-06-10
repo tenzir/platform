@@ -3,7 +3,6 @@ name: Create Sovereign Edition containers and also push a new production Cloud D
 on:
   release:
     types: [published]
-  workflow_dispatch:
 
 permissions:
   packages: write
