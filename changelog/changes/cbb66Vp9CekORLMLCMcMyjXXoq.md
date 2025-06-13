@@ -4,4 +4,4 @@ type: feature
 authors: lava
 pr: 107
 ---
-The Tenzir Platform CLI now supports for logging into internal Google OAuth clients created in GCP using the device code flow.
+The Tenzir Platform CLI now supports logging into internal Google OAuth clients created in GCP using the device code flow.
