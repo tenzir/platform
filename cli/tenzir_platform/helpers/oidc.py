@@ -151,7 +151,6 @@ class IdTokenClient:
             )
             token_data = token_response.json()
             if token_response.status_code == 200:
-                print(f"got final result: {token_data}")
                 print("Authenticated!")
                 break
             elif token_data["error"] not in ("authorization_pending", "slow_down"):
