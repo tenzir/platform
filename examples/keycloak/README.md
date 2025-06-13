@@ -5,7 +5,7 @@ as Identity Provider, it is necessary to do some additional
 manual configuration.
 
 This document is intended to guide you through this process.
-You can also view an [online version](docs.tenzir.com/...).
+You can also view an [online version](https://docs.tenzir.com/guides/platform-setup/configure-identity-provider/#keycloak).
 
 We assume that you already have a Keycloak instance up
 and running that is reachable with a browser, for example
