@@ -62,6 +62,8 @@ services:
       - BLOB_STORAGE__ACCESS_KEY_ID=${TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID}
       - BLOB_STORAGE__SECRET_ACCESS_KEY=${TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY}
       - WORKSPACE_CONFIG_FILE=/etc/tenzir/workspaces.yaml
+      - WORKSPACE_SECRETS_MASTER_SEED=${TENZIR_PLATFORM_INTERNAL_MASTER_SEED}
+      - WORKSPACE_CONFIG_FILE=/etc/tenzir/workspaces.yaml
     volumes:
       - ./workspaces.yaml:/etc/tenzir/workspaces.yaml
       # Mounting the docker socket is required iff local demo nodes are enabled.
@@ -90,6 +92,7 @@ services:
       - BLOB_STORAGE__PUBLIC_ENDPOINT_URL=${TENZIR_PLATFORM_BLOBS_ENDPOINT}
       - BLOB_STORAGE__ACCESS_KEY_ID=${TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID}
       - BLOB_STORAGE__SECRET_ACCESS_KEY=${TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY}
+      - WORKSPACE_SECRETS_MASTER_SEED=${TENZIR_PLATFORM_INTERNAL_MASTER_SEED}
     depends_on:
       postgres:
         condition: service_healthy
@@ -98,7 +101,7 @@ services:
     ports:
       - 3002:5000
 
-  # Use like `docker compose run --rm cli --help`
+  # Usage: `docker compose run --rm cli --help`
   cli:
     image: ghcr.io/tenzir/tenzir-platform:${TENZIR_PLATFORM_VERSION:-latest}
     build: ../../cli/
@@ -110,8 +113,6 @@ services:
       - XDG_CACHE_HOME=/cache/
       - TENZIR_PLATFORM_CLI_API_ENDPOINT=http://platform:5000/
       - TENZIR_PLATFORM_CLI_ISSUER_URL=http://platform:5000/oidc
-      # Hard-coded client secret and id, because we're running the
-      # platform in single-user mode.
       - TENZIR_PLATFORM_CLI_CLIENT_ID=tenzir-cli
       - TENZIR_PLATFORM_CLI_CLIENT_SECRET=xxxx
 
@@ -127,6 +128,8 @@ services:
       - PGDATABASE=${TENZIR_PLATFORM_POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
     healthcheck:
       test:
         - 'CMD-SHELL'

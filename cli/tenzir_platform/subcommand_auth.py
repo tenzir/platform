@@ -37,9 +37,9 @@ def auth_subcommand(platform: PlatformEnvironment, argv):
         explicit_interactive = args["--interactive"]
         explicit_noninteractive = args["--non-interactive"]
         if explicit_interactive:
-          interactive = True
+            interactive = True
         elif explicit_noninteractive:
-          interactive = False
+            interactive = False
         else:
-          interactive = None
+            interactive = None
         login(platform, interactive)

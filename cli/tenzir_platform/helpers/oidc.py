@@ -138,8 +138,7 @@ class IdTokenClient:
         authenticated = False
         while not authenticated:
             token_response = requests.post(
-                self.token_endpoint, data=token_payload, 
-                headers=x_www_form_urlencoded
+                self.token_endpoint, data=token_payload, headers=x_www_form_urlencoded
             )
             token_data = token_response.json()
             if token_response.status_code == 200:
@@ -170,7 +169,9 @@ class IdTokenClient:
             "client_secret": client_secret,
             "audience": self.client_id,
         }
-        credentials = base64.b64encode(f"{self.client_id}:{client_secret}".encode("utf-8")).decode("utf-8")
+        credentials = base64.b64encode(
+            f"{self.client_id}:{client_secret}".encode("utf-8")
+        ).decode("utf-8")
         response = requests.post(
             self.token_endpoint,
             data=client_credentials_payload,
@@ -232,7 +233,7 @@ class IdTokenClient:
                 token = f.read()
             self.validate_token(token)
             return token
-        except Exception:
+        except Exception as e:
             print("could not load valid token from cache, reauthenticating")
         # If the user didn't explicitly choose [non-]interactive login,
         # assume that client credentials flow is desired whenever a client

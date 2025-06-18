@@ -34,3 +34,4 @@ def tools_subcommand(_: PlatformEnvironment, argv):
     elif args["print-auth-rule"]:
         rule = auth_rule_from_arguments(args)
         print(rule.model_dump_json())
+
