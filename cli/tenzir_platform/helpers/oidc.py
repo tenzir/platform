@@ -234,7 +234,6 @@ class IdTokenClient:
             self.validate_token(token)
             return token
         except Exception as e:
-            print(e)
             print("could not load valid token from cache, reauthenticating")
         # If the user didn't explicitly choose [non-]interactive login,
         # assume that client credentials flow is desired whenever a client
