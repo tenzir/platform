@@ -9,7 +9,7 @@
 
 services:
   app:
-    # image: ghcr.io/tenzir/app:${TENZIR_PLATFORM_VERSION:-latest}
+    image: ghcr.io/tenzir/app:${TENZIR_PLATFORM_VERSION:-latest}
     build: ../../components/app
     environment:
       - AUTH_TRUST_HOST=true
@@ -30,9 +30,6 @@ services:
       - PRIVATE_DRIZZLE_DATABASE_URL=postgres://${TENZIR_PLATFORM_POSTGRES_USER}:${TENZIR_PLATFORM_POSTGRES_PASSWORD}@${TENZIR_PLATFORM_POSTGRES_HOSTNAME}/${TENZIR_PLATFORM_POSTGRES_DB}
       - TLS_CERTFILE=/ssl/app-cert.pem
       - TLS_KEYFILE=/ssl/app-cert.pem
-      # This should work according to the documentation, but in practice I had
-      # to mount the certificate into the system default location to have any
-      # effect:
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
     volumes:
       - ./ssl/app-cert.pem:/ssl/app-cert.pem
@@ -63,7 +60,7 @@ services:
       - TLS_KEYFILE=/ssl/platform-cert.pem
       # 'requests' is using a baked-in CA bundle, so we need to point it to our CA explicitly.
       - REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
-      - SSL_CERT_FILE=/ssl/ca.pem
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - STORE__TYPE=${TENZIR_PLATFORM_STORE_TYPE}
       - STORE__POSTGRES_URI=postgresql://${TENZIR_PLATFORM_POSTGRES_USER}:${TENZIR_PLATFORM_POSTGRES_PASSWORD}@${TENZIR_PLATFORM_POSTGRES_HOSTNAME}/${TENZIR_PLATFORM_POSTGRES_DB}
       - TENANT_MANAGER_SIDEPATH_BUCKET_NAME=${TENZIR_PLATFORM_INTERNAL_BUCKET_NAME}
