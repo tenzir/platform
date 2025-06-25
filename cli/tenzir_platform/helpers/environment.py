@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from pydantic_settings import BaseSettings
+from pydantic_settings.exceptions import SettingsError
+from tenzir_platform.helpers.exceptions import PlatformCliError
 from typing import Optional
 
 API_ENDPOINT = "https://rest.tenzir.app/production-v1"
@@ -13,7 +15,7 @@ CLIENT_ID = "vzRh8grIVu1bwutvZbbpBDCOvSzN8AXh"
 #
 #   `TENZIR_PLATFORM_CLI_API_ENDPOINT=https://tenzir.example`
 #
-# (and also can only set this way, because we don't provide
+# (and they can only be set this way, because we don't provide
 # separate command-line options)
 class PlatformEnvironment(BaseSettings):
     # The remote API endpoint of the platform.
@@ -44,6 +46,9 @@ class PlatformEnvironment(BaseSettings):
 
     @staticmethod
     def load():
-        return PlatformEnvironment(
-            _env_prefix="TENZIR_PLATFORM_CLI_", _env_nested_delimiter="__"
-        )
+        try:
+            return PlatformEnvironment(
+                _env_prefix="TENZIR_PLATFORM_CLI_", _env_nested_delimiter="__"
+            )
+        except SettingsError as e:
+            raise PlatformCliError(str(e)).add_context("while parsing the configuration environment variables")

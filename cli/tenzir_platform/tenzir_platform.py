@@ -48,9 +48,9 @@ def main():
     arguments = docopt(
         __doc__, version=f"Tenzir Platform CLI {version}", options_first=True
     )
-    platform = PlatformEnvironment.load()
-    argv = [arguments["<command>"]] + arguments["<args>"]
     try:
+        platform = PlatformEnvironment.load()
+        argv = [arguments["<command>"]] + arguments["<args>"]
         if arguments["<command>"] == "auth":
             auth_subcommand(platform, argv)
         elif arguments["<command>"] == "alert":
