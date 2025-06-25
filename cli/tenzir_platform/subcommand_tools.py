@@ -20,10 +20,12 @@ import os
 import base58
 from tenzir_platform.subcommand_admin import auth_rule_from_arguments
 
+
 def print_workspace_token(workspace_id: str) -> None:
     base58_workspace_id = base58.b58encode(workspace_id.encode()).decode()
     random_bytes = os.urandom(24).hex()
     print(f"wsk_{random_bytes}{base58_workspace_id}")
+
 
 def tools_subcommand(_: PlatformEnvironment, argv):
     args = docopt(__doc__, argv=argv)

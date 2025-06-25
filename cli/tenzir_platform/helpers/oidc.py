@@ -5,16 +5,18 @@ import hashlib
 import os
 import time
 import base64
+import sys
 import jwt
 import requests
 from jwt import PyJWKClient
 from typing import Optional, Any
 from tenzir_platform.helpers.cache import filename_in_cache
 from tenzir_platform.helpers.environment import PlatformEnvironment
+from tenzir_platform.helpers.exceptions import PlatformCliError
 
 
-class INVALID_API_KEY(Exception):
-    pass
+def INVALID_API_KEY(hint: str):
+    return PlatformCliError("invalid JWT").add_hint(hint)
 
 
 class ValidOidcToken:
@@ -59,7 +61,9 @@ class IdTokenClient:
         self.issuer = platform.issuer_url
         self.client_id = platform.client_id
         self.client_secret = platform.client_secret
-        self.client_secret_file = platform.client_secret_file
+        if platform.client_secret_file is not None:
+            with open(platform.client_secret_file, "r") as f:
+                self.client_secret = f.read()
         self.hardcoded_id_token = platform.id_token
         self.verbose = platform.verbose
         discovery_url = f"{self.issuer.rstrip('/')}/.well-known/openid-configuration"
@@ -106,7 +110,7 @@ class IdTokenClient:
         )
 
         if device_code_response.status_code != 200:
-            raise Exception(
+            raise PlatformCliError(
                 f"Error generating the device code: {device_code_response.text}"
             )
 
@@ -117,8 +121,14 @@ class IdTokenClient:
             verification_url = device_code_data["verification_uri_complete"]
         elif "verification_uri" in device_code_data:
             verification_url = device_code_data["verification_uri"]
+        elif "verification_url" in device_code_data:
+            verification_url = device_code_data[
+                "verification_url"
+            ]  # Google is not following the spec :/
         else:
-            raise Exception(f"error: couldn't find verification URL in OIDC provider response {device_code_data}")
+            raise PlatformCliError(
+                f"couldn't find verification URL in OIDC provider response"
+            ).add_hint(f"received data {device_code_data}")
 
         print(
             "1. On your computer or mobile device navigate to: ",
@@ -135,34 +145,33 @@ class IdTokenClient:
             "device_code": device_code_data["device_code"],
             "client_id": self.client_id,
         }
+        # Google's braindead implementation creates a "public" client secret
+        # for apps using device code flow, that is required for the request.
+        if self.client_secret is not None:
+            token_payload["client_secret"] = self.client_secret
         authenticated = False
         while not authenticated:
             token_response = requests.post(
-                self.token_endpoint, data=token_payload, 
-                headers=x_www_form_urlencoded
+                self.token_endpoint, data=token_payload, headers=x_www_form_urlencoded
             )
             token_data = token_response.json()
             if token_response.status_code == 200:
                 print("Authenticated!")
                 break
             elif token_data["error"] not in ("authorization_pending", "slow_down"):
-                print(token_data["error_description"])
-                authenticated = True
+                raise PlatformCliError(
+                    "failed to perform device code authentication"
+                ).add_hint(f"upstream error message: {token_data['error_description']}")
             else:
                 time.sleep(device_code_data["interval"])
         return token_data
 
     def _client_credentials_flow(self) -> dict[str, str]:
-        if self.client_secret_file is not None:
-            with open(self.client_secret_file, "r") as f:
-                client_secret = f.read()
-        elif self.client_secret is not None:
-            client_secret = self.client_secret
-        else:
-            raise Exception(
+        if self.client_secret is None:
+            raise PlatformCliError(
                 "Need a client secret in order to perform non-interactive login"
             )
-
+        client_secret = self.client_secret
         client_credentials_payload = {
             "grant_type": "client_credentials",
             "scope": "openid",
@@ -170,7 +179,9 @@ class IdTokenClient:
             "client_secret": client_secret,
             "audience": self.client_id,
         }
-        credentials = base64.b64encode(f"{self.client_id}:{client_secret}".encode("utf-8")).decode("utf-8")
+        credentials = base64.b64encode(
+            f"{self.client_id}:{client_secret}".encode("utf-8")
+        ).decode("utf-8")
         response = requests.post(
             self.token_endpoint,
             data=client_credentials_payload,
@@ -192,13 +203,16 @@ class IdTokenClient:
             try:
                 self.validate_token(token_data["access_token"])
             except:
-                raise Exception("access token is not in JWT format")
+                raise PlatformCliError("access token is not in JWT format").add_context(
+                    "while validating the access_token returned by the identity provider"
+                )
             print(
-                "warning: no id_token in response from identity provider, falling back to access_token"
+                "warning: no id_token in response from identity provider, falling back to access_token",
+                file=sys.stderr,
             )
             id_token = token_data["access_token"]
         else:
-            raise Exception(f"cannot process token response: {token_data}")
+            raise INVALID_API_KEY(f"cannot process token response: {token_data}")
         current_user = self.validate_token(id_token)
         if self.verbose:
             print(f"obtained id_token: {current_user}")
@@ -210,7 +224,8 @@ class IdTokenClient:
 
     def _store_id_token(self, token: str):
         filename = self._filename_in_cache()
-        print(f"saving token to {filename}")
+        if self.verbose:
+            print(f"saving token to {filename}")
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         with open(filename, "w") as f:
             f.write(token)
@@ -223,7 +238,9 @@ class IdTokenClient:
                 self.validate_token(self.hardcoded_id_token)
                 return self.hardcoded_id_token
             except Exception as e:
-                raise Exception(f"Invalid TENZIR_PLATFORM_CLI_ID_TOKEN: {e}")
+                raise PlatformCliError(f"invalid JWT").add_context(
+                    "while validating TENZIR_PLATFORM_CLI_ID_TOKEN"
+                ).add_hint(f"upstream error: {e}")
         # Otherwise, try to load a valid token from the cache
         # in the filesystem.
         filename = self._filename_in_cache()
@@ -233,7 +250,10 @@ class IdTokenClient:
             self.validate_token(token)
             return token
         except Exception:
-            print("could not load valid token from cache, reauthenticating")
+            print(
+                "could not load valid token from cache, reauthenticating",
+                file=sys.stderr,
+            )
         # If the user didn't explicitly choose [non-]interactive login,
         # assume that client credentials flow is desired whenever a client
         # secret was set.
