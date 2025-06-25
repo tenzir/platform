@@ -11,10 +11,11 @@ from jwt import PyJWKClient
 from typing import Optional, Any
 from tenzir_platform.helpers.cache import filename_in_cache
 from tenzir_platform.helpers.environment import PlatformEnvironment
+from tenzir_platform.helpers.exceptions import PlatformCliError
 
 
-class INVALID_API_KEY(Exception):
-    pass
+def INVALID_API_KEY(hint: str):
+    return PlatformCliError("invalid JWT").add_hint(hint)
 
 
 class ValidOidcToken:
@@ -108,7 +109,7 @@ class IdTokenClient:
         )
 
         if device_code_response.status_code != 200:
-            raise Exception(
+            raise PlatformCliError(
                 f"Error generating the device code: {device_code_response.text}"
             )
 
@@ -122,7 +123,7 @@ class IdTokenClient:
         elif "verification_url" in device_code_data:
             verification_url = device_code_data["verification_url"]  # Google is not following the spec :/
         else:
-            raise Exception(f"error: couldn't find verification URL in OIDC provider response {device_code_data}")
+            raise PlatformCliError(f"error: couldn't find verification URL in OIDC provider response {device_code_data}")
 
         print(
             "1. On your computer or mobile device navigate to: ",
