@@ -67,8 +67,10 @@ def main():
             print("unknown subcommand, see 'tenzir-platform --help' for usage")
     except PlatformCliError as e:
         print(f"\033[91mError:\033[0m {e.error}")
-        for hint in e.hints:
-            print(f"  hint: {hint}")
+        for context in e.contexts:
+            print(f"  {context}")
+        for note in e.hints:
+            print(f"note: {note}")
         exit(-1)
 
 

@@ -22,6 +22,7 @@ from tenzir_platform.helpers.oidc import IdTokenClient
 from tenzir_platform.helpers.environment import PlatformEnvironment
 from docopt import docopt
 from typing import Optional
+import sys
 
 
 def login(platform: PlatformEnvironment, interactive: Optional[bool]):
