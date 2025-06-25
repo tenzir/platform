@@ -122,9 +122,13 @@ class IdTokenClient:
         elif "verification_uri" in device_code_data:
             verification_url = device_code_data["verification_uri"]
         elif "verification_url" in device_code_data:
-            verification_url = device_code_data["verification_url"]  # Google is not following the spec :/
+            verification_url = device_code_data[
+                "verification_url"
+            ]  # Google is not following the spec :/
         else:
-            raise PlatformCliError(f"couldn't find verification URL in OIDC provider response").add_hint(f"received data {device_code_data}")
+            raise PlatformCliError(
+                f"couldn't find verification URL in OIDC provider response"
+            ).add_hint(f"received data {device_code_data}")
 
         print(
             "1. On your computer or mobile device navigate to: ",
@@ -148,16 +152,16 @@ class IdTokenClient:
         authenticated = False
         while not authenticated:
             token_response = requests.post(
-                self.token_endpoint, data=token_payload, 
-                headers=x_www_form_urlencoded
+                self.token_endpoint, data=token_payload, headers=x_www_form_urlencoded
             )
             token_data = token_response.json()
             if token_response.status_code == 200:
                 print("Authenticated!")
                 break
             elif token_data["error"] not in ("authorization_pending", "slow_down"):
-                raise PlatformCliError("failed to perform device code authentication").add_hint(
-                    f"upstream error message: {token_data['error_description']}")
+                raise PlatformCliError(
+                    "failed to perform device code authentication"
+                ).add_hint(f"upstream error message: {token_data['error_description']}")
             else:
                 time.sleep(device_code_data["interval"])
         return token_data
@@ -175,7 +179,9 @@ class IdTokenClient:
             "client_secret": client_secret,
             "audience": self.client_id,
         }
-        credentials = base64.b64encode(f"{self.client_id}:{client_secret}".encode("utf-8")).decode("utf-8")
+        credentials = base64.b64encode(
+            f"{self.client_id}:{client_secret}".encode("utf-8")
+        ).decode("utf-8")
         response = requests.post(
             self.token_endpoint,
             data=client_credentials_payload,
@@ -197,10 +203,12 @@ class IdTokenClient:
             try:
                 self.validate_token(token_data["access_token"])
             except:
-                raise PlatformCliError("access token is not in JWT format").add_context("while validating the access_token returned by the identity provider")
+                raise PlatformCliError("access token is not in JWT format").add_context(
+                    "while validating the access_token returned by the identity provider"
+                )
             print(
                 "warning: no id_token in response from identity provider, falling back to access_token",
-                file=sys.stderr
+                file=sys.stderr,
             )
             id_token = token_data["access_token"]
         else:
@@ -230,7 +238,9 @@ class IdTokenClient:
                 self.validate_token(self.hardcoded_id_token)
                 return self.hardcoded_id_token
             except Exception as e:
-                raise PlatformCliError(f"invalid JWT").add_context("while validating TENZIR_PLATFORM_CLI_ID_TOKEN").add_hint(f"upstream error: {e}")
+                raise PlatformCliError(f"invalid JWT").add_context(
+                    "while validating TENZIR_PLATFORM_CLI_ID_TOKEN"
+                ).add_hint(f"upstream error: {e}")
         # Otherwise, try to load a valid token from the cache
         # in the filesystem.
         filename = self._filename_in_cache()
@@ -240,7 +250,10 @@ class IdTokenClient:
             self.validate_token(token)
             return token
         except Exception:
-            print("could not load valid token from cache, reauthenticating", file=sys.stderr)
+            print(
+                "could not load valid token from cache, reauthenticating",
+                file=sys.stderr,
+            )
         # If the user didn't explicitly choose [non-]interactive login,
         # assume that client credentials flow is desired whenever a client
         # secret was set.

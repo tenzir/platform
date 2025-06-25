@@ -4,7 +4,7 @@ type: feature
 authors: lava
 pr: 107
 ---
-When encountering authentication errors, the Tenzir Platform CLI now exists with a nice error message instead of printing a raw stacktrace:
+When encountering authentication errors, the Tenzir Platform CLI now exits with a nice error message instead of printing a raw stacktrace:
 
 ```sh
 $ TENZIR_PLATFORM_CLI_ID_TOKEN=xxxx tenzir-platform workspace list

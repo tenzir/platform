@@ -51,4 +51,6 @@ class PlatformEnvironment(BaseSettings):
                 _env_prefix="TENZIR_PLATFORM_CLI_", _env_nested_delimiter="__"
             )
         except SettingsError as e:
-            raise PlatformCliError(str(e)).add_context("while parsing the configuration environment variables")
+            raise PlatformCliError(str(e)).add_context(
+                "while parsing the configuration environment variables"
+            )
