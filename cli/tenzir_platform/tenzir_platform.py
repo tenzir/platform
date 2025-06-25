@@ -69,8 +69,8 @@ def main():
         print(f"\033[91mError:\033[0m {e.error}")
         for context in e.contexts:
             print(f"  {context}")
-        for note in e.hints:
-            print(f"note: {note}")
+        for hint in e.hints:
+            print(f"(hint) {hint}")
         exit(-1)
 
 

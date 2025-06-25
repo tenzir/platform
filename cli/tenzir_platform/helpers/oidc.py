@@ -153,7 +153,7 @@ class IdTokenClient:
             )
             token_data = token_response.json()
             if token_response.status_code == 200:
-                print("Authenticated!", file=sys.stderr)
+                print("Authenticated!")
                 break
             elif token_data["error"] not in ("authorization_pending", "slow_down"):
                 raise PlatformCliError("failed to perform device code authentication").add_hint(
@@ -197,9 +197,10 @@ class IdTokenClient:
             try:
                 self.validate_token(token_data["access_token"])
             except:
-                raise INVALID_API_KEY("access token is not in JWT format")
+                raise PlatformCliError("access token is not in JWT format").add_context("while validating the access_token returned by the identity provider")
             print(
-                "warning: no id_token in response from identity provider, falling back to access_token"
+                "warning: no id_token in response from identity provider, falling back to access_token",
+                file=sys.stderr
             )
             id_token = token_data["access_token"]
         else:
@@ -215,7 +216,8 @@ class IdTokenClient:
 
     def _store_id_token(self, token: str):
         filename = self._filename_in_cache()
-        print(f"saving token to {filename}", file=sys.stderr)
+        if self.verbose:
+            print(f"saving token to {filename}")
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         with open(filename, "w") as f:
             f.write(token)
