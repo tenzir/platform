@@ -30,6 +30,7 @@ class AppClient:
         self.id_token: str = UNAUTHENTICATED
         self.user_key: str = UNAUTHENTICATED
         self.endpoint_prefix = platform.api_endpoint.rstrip("/")
+        self.extra_headers = platform.extra_headers
 
     def user_login(self, id_token: str):
         self.id_token = id_token
@@ -45,8 +46,6 @@ class AppClient:
         target_api: TargetApi = TargetApi.USER,
         connection_retry: int = 0,
     ) -> Response:
-        start = time.time()
-
         match target_api:
             case TargetApi.USER:
                 assert (
@@ -63,6 +62,10 @@ class AppClient:
                 ), "missing user_login() before making admin api requests"
                 headers = {"X-Tenzir-AdminKey": self.id_token}
                 endpoint = self.endpoint_prefix + "/admin"
+
+        # Add any user-provided extra headers.
+        for header, value in self.extra_headers.items():
+            headers[header] = value
 
         for i in range(connection_retry + 1):
             try:

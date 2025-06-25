@@ -35,6 +35,10 @@ class PlatformEnvironment(BaseSettings):
     client_secret: Optional[str] = None
     client_secret_file: Optional[str] = None
 
+    # Additional headers that should be sent with any request
+    # to the Tenzir Platform.
+    extra_headers: dict[str, str] = {}
+
     # Enable more verbose print statements.
     verbose: bool = False
 
