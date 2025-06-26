@@ -1,0 +1,11 @@
+title: Schema Search & GCP Support
+description: This release contains improved integration for running the Tenzir Platform inside GCP, a new Schema Search functionality, and an option for showing the total diagnostic count in heatmap cells.
+changes:
+  - 0vuPDPd56gApaX7w0CqHYWHp89
+  - IidBfKZpYOZbNJmRSqUEZVTOnd
+  - X4UKMBvclY6o6ZV3IUZl5QrURl
+  - c128pzOcPiqh1lvp5owADbjRW6
+  - cbb66Vp9CekORLMLCMcMyjXXoq
+  - ncY32dpyGp9i7GM3M8GEJjPBe3
+  - q9BUoKNhVMZ5YXZfdAqgKRThGJ
+  - sV2PllGlnxKb4dmEQ5VvYxFzRK
