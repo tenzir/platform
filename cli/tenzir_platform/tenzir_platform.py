@@ -17,6 +17,7 @@ Commands:
    alert      Configure alerts for disconnected nodes.
    admin      Administer local on-prem platform infrastructure.
    tools      Utility commands for configuring the platform.
+   secret     Manage secrets.
 
 See 'tenzir-platform <command> --help' for more information on a specific command.
 """
@@ -36,6 +37,7 @@ from tenzir_platform.subcommand_workspace import workspace_subcommand
 from tenzir_platform.subcommand_node import node_subcommand
 from tenzir_platform.subcommand_admin import admin_subcommand
 from tenzir_platform.subcommand_tools import tools_subcommand
+from tenzir_platform.subcommand_secret import secret_subcommand
 from tenzir_platform.helpers.environment import PlatformEnvironment
 from tenzir_platform.helpers.exceptions import PlatformCliError
 
@@ -63,6 +65,8 @@ def main():
             admin_subcommand(platform, argv)
         elif arguments["<command>"] == "tools":
             tools_subcommand(platform, argv)
+        elif arguments["<command>"] == "secret":
+            secret_subcommand(platform, argv)
         else:
             print("unknown subcommand, see 'tenzir-platform --help' for usage")
     except PlatformCliError as e:
