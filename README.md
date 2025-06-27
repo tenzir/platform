@@ -29,18 +29,13 @@ command-line utility for managing workspaces and nodes on the Tenzir Platform.
 If you are a customer of the **Sovereign Edition**, deploy the Tenzir Platform
 locally by following our [Deploy the platform][guide] setup guide step by step.
 
-If you are a Tenzir employee and want to work on the code base of the Tenzir
-Platform, we recommend starting with the [Development version][dev-version]
-instead that ties into the infrastructure behind [app.tenzir.com][app].
-
 > [!NOTE]
 > To get more information about the **Sovereign Edition**, please [contact
 > sales](mailto://sales@tenzir.com). Visit [app.tenzir.com][app] to enjoy the
 > free, cloud-hosted version of the Tenzir Platform.
 
 [app]: https://app.tenzir.com
-[guide]: https://docs.tenzir.com/setup-guides/deploy-the-platform
-[dev-version]: https://github.com/tenzir/event-horizon/tree/main/platform/compose
+[guide]: https://docs.tenzir.com/guides/platform-setup/
 
 ## Community
 
