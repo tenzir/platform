@@ -44,6 +44,7 @@ Description:
 from tenzir_platform.helpers.cache import load_current_workspace
 from tenzir_platform.helpers.client import AppClient
 from tenzir_platform.helpers.environment import PlatformEnvironment
+from tenzir_platform.helpers.exceptions import PlatformCliError
 from docopt import docopt
 from typing import Optional, List
 from requests import HTTPError
@@ -70,10 +71,12 @@ def _resolve_secret_name_or_id(client: AppClient, workspace_id: str, name_or_id:
         return matching_by_id[0]
     matching_by_name = [secret for secret in secrets if secret["name"] == name_or_id]
     if len(matching_by_name) > 1:
-        raise Exception(f"Multiple secrets found with the name '{name_or_id}'")
+        raise PlatformCliError(f"Multiple secrets found with the name '{name_or_id}'")
     if matching_by_name:
         return matching_by_name[0]
-    raise Exception(f"No secret found with id or name '{name_or_id}'")
+    raise PlatformCliError("Secret not found").add_context(
+        f"while trying to resolve id or name '{name_or_id}'"
+    )
 
 
 def add(
@@ -85,8 +88,9 @@ def add(
     env: bool = False,
 ):
     if sum(bool(x) for x in [file, value, env]) > 1:
-        print("Error: Only one of --file, --value, or --env can be specified.")
-        return
+        raise PlatformCliError(
+            "Only one of --file, --value, or --env can be specified."
+        )
 
     secret_value = None
     if file:
@@ -108,7 +112,9 @@ def add(
         },
     )
     if resp.status_code == 400:
-        print(f"Failed to add secret: {resp.json().get('detail', 'unknown error')}")
+        raise PlatformCliError("Failed to add secret").add_hint(
+            f"received upstream error: {resp.json().get('detail', 'unknown error')}"
+        )
         return
     resp.raise_for_status()
     print(json.dumps(resp.json()))
@@ -123,8 +129,9 @@ def update(
     env: bool = False,
 ):
     if sum(bool(x) for x in [file, value, env]) > 1:
-        print("Error: Only one of --file, --value, or --env can be specified.")
-        return
+        raise PlatformCliError(
+            "Error: Only one of --file, --value, or --env can be specified."
+        )
 
     secret_value = None
     if file:
@@ -211,8 +218,10 @@ def delete_store(client: AppClient, workspace_id: str, store_id: str):
     )
     if resp.status_code == 400:
         # User tried to delete the default store, or the built-in store.
-        print(f"failed to delete store {store_id}")
-        return
+        raise PlatformCliError(f"failed to delete secret store").add_context(
+            "while trying to delete store {store_id}"
+        )
+
     resp.raise_for_status()
     print(f"deleted store {store_id}")
 
@@ -261,11 +270,9 @@ def secret_subcommand(platform: PlatformEnvironment, argv):
         client = AppClient(platform=platform)
         client.workspace_login(user_key)
     except Exception as e:
-        print(f"error: {e}")
-        print(
+        raise PlatformCliError(
             "Failed to load current workspace, please run 'tenzir-platform workspace select' first"
-        )
-        exit(1)
+        ).add_hint(f"reason: {e}")
 
     try:
         # TODO: Move the store commands to a different subcommand.
@@ -284,7 +291,7 @@ def secret_subcommand(platform: PlatformEnvironment, argv):
                         assumed_role_arn=assumed_role_arn,
                     )
                 else:
-                    print("error: unknown store type")
+                    raise PlatformCliError("unknown store type")
             elif args["delete"]:
                 store_id = args["<store_id>"]
                 delete_store(client, workspace_id, store_id)
