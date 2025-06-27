@@ -6,10 +6,6 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
-      deploy-app:
-        description: Deloy the app to staging
-        type: boolean
-        default: true
       deploy-tenant-manager:
         description: Deploy the tenant manager to staging
         type: boolean
@@ -57,17 +53,3 @@ jobs:
           gh workflow -R tenzir/event-horizon run tzcp-deploy-staging.yaml \
             --ref platform-staging
             
-
-      - name: Deploy app
-        if: |
-          (github.event_name == 'workflow_dispatch' && inputs.deploy-app) || 
-          (github.event_name == 'push' && contains(steps.files.outputs.files-changed, 'components/app'))
-        env:
-          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
-        run: |
-          git submodule set-url components/app https://x-access-token:$GH_TOKEN@github.com/tenzir/app.git/
-          git submodule update --init components/app
-          git -C components/app push -f origin ${{ steps.files.outputs.app-commit }}:refs/heads/platform-staging
-          gh workflow -R tenzir/app run deploy-to-vercel.yaml \
-            --ref platform-staging \
-            -f deploy-staging=true
