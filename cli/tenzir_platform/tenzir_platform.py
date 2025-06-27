@@ -16,12 +16,8 @@ Commands:
    node       Interact with nodes
    alert      Configure alerts for disconnected nodes.
    admin      Administer local on-prem platform infrastructure.
-<<<<<<< HEAD
    tools      Utility commands for configuring the platform.
-||||||| parent of d04fc23 (Add new 'secret' subcommand for CLI)
-=======
    secret     Manage secrets.
->>>>>>> d04fc23 (Add new 'secret' subcommand for CLI)
 
 See 'tenzir-platform <command> --help' for more information on a specific command.
 """
