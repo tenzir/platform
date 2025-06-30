@@ -45,14 +45,26 @@ from tenzir_platform.helpers.cache import load_current_workspace
 from tenzir_platform.helpers.client import AppClient
 from tenzir_platform.helpers.environment import PlatformEnvironment
 from tenzir_platform.helpers.exceptions import PlatformCliError
+from datetime import datetime
 from docopt import docopt
+from pydantic import BaseModel
 from typing import Optional, List
 import json
 import os
-from enum import Enum
 
 
-def _list_secrets(client: AppClient, workspace_id: str):
+class Secret(BaseModel):
+    last_updated: datetime
+    last_accessed: datetime
+    id: str
+    name: str
+
+
+class ListSecretsResponse(BaseModel):
+    secrets: list[Secret]
+
+
+def _list_secrets(client: AppClient, workspace_id: str) -> ListSecretsResponse:
     resp = client.post(
         "secrets/list",
         json={
@@ -60,15 +72,15 @@ def _list_secrets(client: AppClient, workspace_id: str):
         },
     )
     resp.raise_for_status()
-    return resp.json()
+    return ListSecretsResponse.model_validate(resp.json())
 
 
-def _resolve_secret_name_or_id(client: AppClient, workspace_id: str, name_or_id: str):
-    secrets = _list_secrets(client, workspace_id)["secrets"]
-    matching_by_id = [secret for secret in secrets if secret["id"] == name_or_id]
+def _resolve_secret_name_or_id(client: AppClient, workspace_id: str, name_or_id: str) -> Secret:
+    secrets = _list_secrets(client, workspace_id).secrets
+    matching_by_id = [secret for secret in secrets if secret.id == name_or_id]
     if matching_by_id:
         return matching_by_id[0]
-    matching_by_name = [secret for secret in secrets if secret["name"] == name_or_id]
+    matching_by_name = [secret for secret in secrets if secret.name == name_or_id]
     if len(matching_by_name) > 1:
         raise PlatformCliError(f"Multiple secrets found with the name '{name_or_id}'")
     if matching_by_name:
@@ -130,7 +142,7 @@ def update(
     if sum(bool(x) for x in [file, value, env]) > 1:
         raise PlatformCliError(
             "Error: Only one of --file, --value, or --env can be specified."
-        )
+        ).add_context(f"while trying to update secret {name_or_id}")
 
     secret_value = None
     if file:
@@ -143,31 +155,30 @@ def update(
     else:
         secret_value = input("Enter secret value: ").strip()
 
-    secret_id = _resolve_secret_name_or_id(client, workspace_id, name_or_id)
-
+    secret = _resolve_secret_name_or_id(client, workspace_id, name_or_id)
     resp = client.post(
         "secrets/update",
         json={
             "tenant_id": workspace_id,
-            "secret_id": secret_id,
+            "secret_id": secret.id,
             "value": secret_value,
         },
     )
     resp.raise_for_status()
-    print(json.dumps(resp.json()))
+    print(f"updated secret {name_or_id}")
 
 
 def delete(client: AppClient, workspace_id: str, name_or_id: str):
-    secret_id = _resolve_secret_name_or_id(client, workspace_id, name_or_id)
+    secret = _resolve_secret_name_or_id(client, workspace_id, name_or_id)
     resp = client.post(
         "secrets/remove",
         json={
             "tenant_id": workspace_id,
-            "secret_id": secret_id,
+            "secret_id": secret.id,
         },
     )
     resp.raise_for_status()
-    print(f"Deleted secret {name_or_id}")
+    print(f"deleted secret {name_or_id}")
 
 
 def list(
@@ -175,17 +186,17 @@ def list(
     workspace_id: str,
     json_format: bool,
 ):
-    json_body = _list_secrets(client, workspace_id)
+    secrets_list = _list_secrets(client, workspace_id)
     if json_format:
-        print(json_body)
+        print(secrets_list.model_dump_json(indent=4))
         return
-    secrets = json_body["secrets"]
+    secrets = secrets_list.secrets
     if len(secrets) == 0:
         print("no secrets configured")
         return
     print("# Secrets")
     for secret in secrets:
-        name = secret["name"]
+        name = secret.name
         print(f"{name}")
 
 
@@ -201,9 +212,10 @@ def list_stores(client: AppClient, workspace_id: str, json_format: bool):
     if json_format:
         print(json_body)
         return
+    default_store_id = json_body['default_store_id']
     for store in json_body["stores"]:
         print(
-            f"{'*' if store['is_default'] else ' '} {store['name']}  (id: {store['id']})"
+            f"{'*' if store['id'] == default_store_id else ' '} {store['name']}  (id: {store['id']})"
         )
 
 
