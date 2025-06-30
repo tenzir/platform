@@ -317,5 +317,3 @@ def secret_subcommand(platform: PlatformEnvironment, argv):
     elif args["list"]:
         json_format = args["--json"]
         list(client, workspace_id, json_format)
-
-
