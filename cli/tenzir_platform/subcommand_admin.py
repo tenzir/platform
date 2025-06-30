@@ -86,7 +86,7 @@ def list_auth_rules(client: AppClient, workspace_id: str):
             print(json.dumps(t["auth_functions"], indent=4))
 
 
-def create_workspace(client: AppClient, name: str, owner: str, owner_namespace: str):
+def create_workspace(client: AppClient, name: str, owner: str, owner_namespace: str, category: str):
     resp = client.post(
         "create-tenant",
         target_api=TargetApi.ADMIN,
@@ -94,6 +94,7 @@ def create_workspace(client: AppClient, name: str, owner: str, owner_namespace: 
             "owner": {
                 "namespace": owner_namespace,
                 "owner_id": owner,
+                "display_name": category,
             },
             "name": name,
         },
@@ -217,7 +218,7 @@ def admin_subcommand(platform: PlatformEnvironment, argv):
         else:
             name = f"{owner}'s Workspace"
         category = arguments["--category"]
-        create_workspace(client, name, owner, owner_namespace)
+        create_workspace(client, name=name, owner=owner, owner_namespace=owner_namespace, category=category)
 
     if arguments["delete-workspace"]:
         workspace_id = arguments["<workspace_id>"]
