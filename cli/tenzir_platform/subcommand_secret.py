@@ -47,7 +47,6 @@ from tenzir_platform.helpers.environment import PlatformEnvironment
 from tenzir_platform.helpers.exceptions import PlatformCliError
 from docopt import docopt
 from typing import Optional, List
-from requests import HTTPError
 import json
 import os
 from enum import Enum
@@ -274,56 +273,49 @@ def secret_subcommand(platform: PlatformEnvironment, argv):
             "Failed to load current workspace, please run 'tenzir-platform workspace select' first"
         ).add_hint(f"reason: {e}")
 
-    try:
-        # TODO: Move the store commands to a different subcommand.
-        if args["store"]:
-            if args["add"]:
-                store_type = "aws"  # We only support one type at the moment
-                region = args["--region"]
-                assumed_role_arn = args["--assumed-role-arn"]
-                name = args["--name"]
-                if store_type == "aws":
-                    add_store_aws(
-                        client,
-                        workspace_id,
-                        name=name,
-                        region=region,
-                        assumed_role_arn=assumed_role_arn,
-                    )
-                else:
-                    raise PlatformCliError("unknown store type")
-            elif args["delete"]:
-                store_id = args["<store_id>"]
-                delete_store(client, workspace_id, store_id)
-            elif args["set-default"]:
-                store_id = args["<store_id>"]
-                set_default_store(client, workspace_id, store_id)
-            elif args["list"]:
-                json_format = args["--json"]
-                list_stores(client, workspace_id, json_format)
-        elif args["add"]:
-            name = args["<name>"]
-            file = args["--file"]
-            value = args["--value"]
-            env = args["--env"]
-            add(client, workspace_id, name, file, value, env)
-        elif args["update"]:
-            name_or_id = args["<secret>"]
-            file = args["--file"]
-            value = args["--value"]
-            env = args["--env"]
-            update(client, workspace_id, name_or_id, file, value, env)
+    # TODO: Move the store commands to a different subcommand.
+    if args["store"]:
+        if args["add"]:
+            store_type = "aws"  # We only support one type at the moment
+            region = args["--region"]
+            assumed_role_arn = args["--assumed-role-arn"]
+            name = args["--name"]
+            if store_type == "aws":
+                add_store_aws(
+                    client,
+                    workspace_id,
+                    name=name,
+                    region=region,
+                    assumed_role_arn=assumed_role_arn,
+                )
+            else:
+                raise PlatformCliError("unknown store type")
         elif args["delete"]:
-            name_or_id = args["<secret>"]
-            delete(client, workspace_id, name_or_id)
+            store_id = args["<store_id>"]
+            delete_store(client, workspace_id, store_id)
+        elif args["set-default"]:
+            store_id = args["<store_id>"]
+            set_default_store(client, workspace_id, store_id)
         elif args["list"]:
             json_format = args["--json"]
-            list(client, workspace_id, json_format)
+            list_stores(client, workspace_id, json_format)
+    elif args["add"]:
+        name = args["<name>"]
+        file = args["--file"]
+        value = args["--value"]
+        env = args["--env"]
+        add(client, workspace_id, name, file, value, env)
+    elif args["update"]:
+        name_or_id = args["<secret>"]
+        file = args["--file"]
+        value = args["--value"]
+        env = args["--env"]
+        update(client, workspace_id, name_or_id, file, value, env)
+    elif args["delete"]:
+        name_or_id = args["<secret>"]
+        delete(client, workspace_id, name_or_id)
+    elif args["list"]:
+        json_format = args["--json"]
+        list(client, workspace_id, json_format)
 
-    except HTTPError as e:
-        if e.response.status_code == 403:
-            print(
-                "Access denied. Please try re-authenticating by running 'tenzir-platform workspace select'"
-            )
-        else:
-            print(f"Error communicating with the platform: {e}")
+

@@ -245,30 +245,24 @@ def node_subcommand(platform: PlatformEnvironment, argv):
         )
         exit(1)
 
-    try:
-        if args["list"]:
-            json = args["--json"]
-            list(client, workspace_id, json)
-        elif args["ping"]:
-            node = args["<node>"]
-            ping(client, workspace_id, node)
-        elif args["run"]:
-            node_name = args["--name"]
-            container_image = args["--image"]
-            run(client, workspace_id, node_name, container_image)
-        elif args["create"]:
-            node_name = args["--name"]
-            create(client, workspace_id, node_name)
-        elif args["config"]:
-            node = args["<node>"]
-            format_ = args["--format"]
-            output = args["--output"]
-            config(client, workspace_id, node, format_, output)
-        elif args["delete"]:
-            node = args["<node>"]
-            delete(client, workspace_id, node)
-    except HTTPError as e:
-        if e.response.status_code == 403:
-            print(
-                "Access denied. Please try re-authenticating by running 'tenzir-platform workspace select'"
-            )
+    if args["list"]:
+        json = args["--json"]
+        list(client, workspace_id, json)
+    elif args["ping"]:
+        node = args["<node>"]
+        ping(client, workspace_id, node)
+    elif args["run"]:
+        node_name = args["--name"]
+        container_image = args["--image"]
+        run(client, workspace_id, node_name, container_image)
+    elif args["create"]:
+        node_name = args["--name"]
+        create(client, workspace_id, node_name)
+    elif args["config"]:
+        node = args["<node>"]
+        format_ = args["--format"]
+        output = args["--output"]
+        config(client, workspace_id, node, format_, output)
+    elif args["delete"]:
+        node = args["<node>"]
+        delete(client, workspace_id, node)

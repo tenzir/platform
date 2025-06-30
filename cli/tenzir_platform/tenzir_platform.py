@@ -23,12 +23,8 @@ See 'tenzir-platform <command> --help' for more information on a specific comman
 """
 
 from docopt import docopt
-from enum import Enum
-import os
-import requests
-import requests.exceptions
+from requests import HTTPError
 import sys
-import time
 import importlib.metadata
 
 from tenzir_platform.subcommand_auth import auth_subcommand
@@ -69,6 +65,26 @@ def main():
             secret_subcommand(platform, argv)
         else:
             print("unknown subcommand, see 'tenzir-platform --help' for usage")
+    except HTTPError as e:
+        if e.response.status_code == 403:
+            print(
+                "Access denied. Please try re-authenticating by running 'tenzir-platform workspace select'"
+            )
+        else:
+            detail = ""
+            try:
+                error_json = e.response.json()
+                if "detail" in error_json:
+                    detail = f" Detail: {error_json['detail']}"
+                elif "error" in error_json:
+                    detail = f" Error: {error_json['error']}"
+            except Exception:
+                pass
+            error = PlatformCliError(f"failed to communicate with the platform")
+            error.add_hint(f"status code {e.response.status_code}")
+            if detail:
+                error.add_hint("detail: {detail}")
+            raise error
     except PlatformCliError as e:
         print(f"\033[91mError:\033[0m {e.error}")
         for context in e.contexts:
