@@ -39,6 +39,12 @@ from tenzir_platform.helpers.exceptions import PlatformCliError
 
 version = importlib.metadata.version("tenzir-platform")
 
+def _pretty_print_cli_error(e: PlatformCliError):
+    print(f"\033[91mError:\033[0m {e.error}")
+    for context in e.contexts:
+        print(f"  {context}")
+    for hint in e.hints:
+        print(f"(hint) {hint}")
 
 def main():
     if len(sys.argv) == 1:
@@ -83,14 +89,11 @@ def main():
             error = PlatformCliError(f"failed to communicate with the platform")
             error.add_hint(f"status code {e.response.status_code}")
             if detail:
-                error.add_hint("detail: {detail}")
-            raise error
+                error.add_hint(f"detail: {detail}")
+            _pretty_print_cli_error(error)
+            exit(-1)
     except PlatformCliError as e:
-        print(f"\033[91mError:\033[0m {e.error}")
-        for context in e.contexts:
-            print(f"  {context}")
-        for hint in e.hints:
-            print(f"(hint) {hint}")
+        _pretty_print_cli_error(e)
         exit(-1)
 
 
