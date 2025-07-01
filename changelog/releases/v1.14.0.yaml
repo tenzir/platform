@@ -1,0 +1,14 @@
+title: Platform Secrets
+description: This release adds CLI support for adding, removing and updating secrets.  It also adds a new three-dot menu on the pipelines page, as well as partial pipeline execution from the history.
+changes:
+  - 1p7ZkwleVWmcYYVYbhxwbrlGrR
+  - 1q0Xlr6WDHSWEkcyvYbyuCsM9t
+  - 5e0c6LHXPYxp7oao75JQDwRUSY
+  - Gzqww5Hu9R7kap8YoqbYqjhRIg
+  - Nbm2uMVqP6kNskb8xNJjsjs5MS
+  - bOUp4p3Dt5vyFYuhnj9Q4kPkoR
+  - kNohwqhvJbZT0AvdFC5WU4xBr7
+  - lm6LHbDYynxCWgUfBXLMaSO6Sj
+  - r17ra6jE9ksPXd8whALw1XPp4g
+  - vwJECAFhB4IhXP6oHC17snAP15
+  - xC24rQw4CL3YaGGLmsYrdc51i4
