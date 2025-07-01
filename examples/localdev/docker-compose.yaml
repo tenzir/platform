@@ -62,6 +62,7 @@ services:
       - BLOB_STORAGE__ACCESS_KEY_ID=${TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID}
       - BLOB_STORAGE__SECRET_ACCESS_KEY=${TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY}
       - WORKSPACE_CONFIG_FILE=/etc/tenzir/workspaces.yaml
+      - WORKSPACE_SECRETS_MASTER_SEED=${TENZIR_PLATFORM_INTERNAL_MASTER_SEED}
     volumes:
       - ./workspaces.yaml:/etc/tenzir/workspaces.yaml
       # Mounting the docker socket is required iff local demo nodes are enabled.
@@ -90,6 +91,7 @@ services:
       - BLOB_STORAGE__PUBLIC_ENDPOINT_URL=${TENZIR_PLATFORM_BLOBS_ENDPOINT}
       - BLOB_STORAGE__ACCESS_KEY_ID=${TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID}
       - BLOB_STORAGE__SECRET_ACCESS_KEY=${TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY}
+      - WORKSPACE_SECRETS_MASTER_SEED=${TENZIR_PLATFORM_INTERNAL_MASTER_SEED}
     depends_on:
       postgres:
         condition: service_healthy

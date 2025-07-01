@@ -5,7 +5,7 @@
 # (usually `~/.cache/tenzir-platform`) needs to be mapped to an external volume,
 # to be able to persist the login information between runs.
 
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 RUN pip install poetry
 RUN mkdir -p /app
@@ -15,7 +15,7 @@ WORKDIR /app
 RUN poetry config virtualenvs.in-project true --local
 RUN poetry install --without dev
 
-FROM python:3.11-slim as base
+FROM python:3.11-slim AS base
 
 COPY --from=builder /app /app
 

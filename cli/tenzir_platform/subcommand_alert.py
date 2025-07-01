@@ -155,25 +155,19 @@ def alert_subcommand(platform: PlatformEnvironment, argv):
         )
         exit(1)
 
-    try:
-        if args["add"]:
-            node = args["<node>"]
-            duration = args["<duration>"]
-            webhook_url = args["<webhook_url>"]
-            webhook_body = args["<webhook_body>"]
-            if webhook_body is None:
-                webhook_body = f'{{"text": "Node $NODE_NAME disconnected for more than {duration}s"}}'
-            assert json.loads(webhook_body), "body must be valid json"
-            add(client, workspace_id, node, duration, webhook_url, webhook_body)
-        elif args["delete"]:
-            alert = args["<alert_id>"]
-            delete(client, workspace_id, alert)
-        elif args["list"]:
-            list(client, workspace_id)
-    except HTTPError as e:
-        if e.response.status_code == 403:
-            print(
-                "Access denied. Please try re-authenticating by running 'tenzir-platform workspace select'"
+    if args["add"]:
+        node = args["<node>"]
+        duration = args["<duration>"]
+        webhook_url = args["<webhook_url>"]
+        webhook_body = args["<webhook_body>"]
+        if webhook_body is None:
+            webhook_body = (
+                f'{{"text": "Node $NODE_NAME disconnected for more than {duration}s"}}'
             )
-        else:
-            print(f"Error communicating with the platform: {e}")
+        assert json.loads(webhook_body), "body must be valid json"
+        add(client, workspace_id, node, duration, webhook_url, webhook_body)
+    elif args["delete"]:
+        alert = args["<alert_id>"]
+        delete(client, workspace_id, alert)
+    elif args["list"]:
+        list(client, workspace_id)
