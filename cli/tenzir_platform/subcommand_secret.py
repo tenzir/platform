@@ -84,10 +84,10 @@ def _resolve_secret_name_or_id(
         return matching_by_id[0]
     matching_by_name = [secret for secret in secrets if secret.name == name_or_id]
     if len(matching_by_name) > 1:
-        raise PlatformCliError(f"Multiple secrets found with the name '{name_or_id}'")
+        raise PlatformCliError(f"multiple secrets found with the name '{name_or_id}'")
     if matching_by_name:
         return matching_by_name[0]
-    raise PlatformCliError("Secret not found").add_context(
+    raise PlatformCliError("secret not found").add_context(
         f"while trying to resolve id or name '{name_or_id}'"
     )
 
@@ -125,7 +125,7 @@ def add(
         },
     )
     if resp.status_code == 400:
-        raise PlatformCliError("Failed to add secret").add_hint(
+        raise PlatformCliError("failed to add secret").add_hint(
             f"received upstream error: {resp.json().get('detail', 'unknown error')}"
         )
         return
