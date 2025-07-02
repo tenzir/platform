@@ -10,6 +10,7 @@ import jwt
 import requests
 import requests.exceptions
 from requests import Response
+
 from tenzir_platform.helpers.environment import PlatformEnvironment
 
 UNAUTHENTICATED = "unauthenticated"

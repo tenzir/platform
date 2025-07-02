@@ -1,15 +1,17 @@
 # SPDX-FileCopyrightText: (c) 2024 The Tenzir Contributors
 # SPDX-License-Identifier: BSD-3-Clause
 
+import base64
 import hashlib
 import os
-import time
-import base64
 import sys
+import time
+from typing import Any, Optional
+
 import jwt
 import requests
 from jwt import PyJWKClient
-from typing import Optional, Any
+
 from tenzir_platform.helpers.cache import filename_in_cache
 from tenzir_platform.helpers.environment import PlatformEnvironment
 from tenzir_platform.helpers.exceptions import PlatformCliError
@@ -111,7 +113,7 @@ class IdTokenClient:
 
         if device_code_response.status_code != 200:
             raise PlatformCliError(
-                f"Error generating the device code: {device_code_response.text}"
+                f"failed to generate device code: {device_code_response.text}"
             )
 
         device_code_data = device_code_response.json()
@@ -169,7 +171,7 @@ class IdTokenClient:
     def _client_credentials_flow(self) -> dict[str, str]:
         if self.client_secret is None:
             raise PlatformCliError(
-                "Need a client secret in order to perform non-interactive login"
+                "need a client secret in order to perform non-interactive login"
             )
         client_secret = self.client_secret
         client_credentials_payload = {

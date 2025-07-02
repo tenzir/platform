@@ -30,20 +30,19 @@ Options:
   --lifetime=<lifetime>             The lifetime of the new node in seconds. [default: 360]
 """
 
-from tenzir_platform.helpers.client import AppClient, TargetApi
-from tenzir_platform.helpers.oidc import IdTokenClient
-from tenzir_platform.helpers.environment import PlatformEnvironment
-from tenzir_platform.helpers.auth_rule import (
-    AuthRule,
-    UserAuthRule,
-    EmailDomainRule,
-    RoleAndOrganizationRule,
-    OrganizationMembershipRule,
-    AllowAllRule,
-)
-from typing import Optional
-from docopt import docopt
 import json
+from typing import Optional
+
+from docopt import docopt
+
+from tenzir_platform.helpers.auth_rule import (AllowAllRule, AuthRule,
+                                               EmailDomainRule,
+                                               OrganizationMembershipRule,
+                                               RoleAndOrganizationRule,
+                                               UserAuthRule)
+from tenzir_platform.helpers.client import AppClient, TargetApi
+from tenzir_platform.helpers.environment import PlatformEnvironment
+from tenzir_platform.helpers.oidc import IdTokenClient
 
 
 def _get_global_workspaces(client: AppClient):

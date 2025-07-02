@@ -1,10 +1,12 @@
 # SPDX-FileCopyrightText: (c) 2024 The Tenzir Contributors
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Optional
+
 from pydantic_settings import BaseSettings
 from pydantic_settings.exceptions import SettingsError
+
 from tenzir_platform.helpers.exceptions import PlatformCliError
-from typing import Optional
 
 API_ENDPOINT = "https://rest.tenzir.app/production-v1"
 ISSUER_URL = "https://tenzir.eu.auth0.com/"

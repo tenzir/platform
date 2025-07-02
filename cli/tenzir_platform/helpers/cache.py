@@ -1,10 +1,11 @@
 # SPDX-FileCopyrightText: (c) 2024 The Tenzir Contributors
 # SPDX-License-Identifier: BSD-3-Clause
 
-import os
 import json
-from tenzir_platform.helpers.environment import PlatformEnvironment
+import os
 from typing import Optional
+
+from tenzir_platform.helpers.environment import PlatformEnvironment
 
 
 def filename_in_cache(platform: PlatformEnvironment, filename: str):

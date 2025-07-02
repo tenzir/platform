@@ -23,22 +23,25 @@ Description:
     List all configured alerts.
 """
 
+import datetime
+import json
+import os
+import random
+import re
+import subprocess
+import tempfile
+import time
+from typing import List, Optional
+
+from docopt import docopt
+from pydantic import BaseModel
+from pytimeparse2 import parse as parse_duration
+from requests import HTTPError
+
 from tenzir_platform.helpers.cache import load_current_workspace
 from tenzir_platform.helpers.client import AppClient
 from tenzir_platform.helpers.environment import PlatformEnvironment
-from pydantic import BaseModel
-from docopt import docopt
-from typing import Optional, List
-from requests import HTTPError
-from pytimeparse2 import parse as parse_duration
-import json
-import time
-import tempfile
-import os
-import subprocess
-import re
-import random
-import datetime
+from tenzir_platform.helpers.exceptions import PlatformCliError
 
 
 def _is_node_id(identifier: str):
@@ -85,13 +88,11 @@ def add(
     node_id = _resolve_node_identifier(client, workspace_id, node)
     seconds = parse_duration(duration)
     if not seconds:
-        print(f"invalid duration: {duration}")
-        return
+        raise PlatformCliError(f"invalid duration: {duration}")
     try:
         json.loads(webhook_body)
     except:
-        print(f"body must be valid json")
-        return
+        raise PlatformCliError("body must be valid json")
     resp = client.post(
         "alert/add",
         json={
@@ -149,11 +150,9 @@ def alert_subcommand(platform: PlatformEnvironment, argv):
         client = AppClient(platform=platform)
         client.workspace_login(user_key)
     except Exception as e:
-        print(f"error: {e}")
-        print(
-            "Failed to load current workspace, please run 'tenzir-platform workspace select' first"
-        )
-        exit(1)
+        raise PlatformCliError(
+            "failed to load current workspace, please run 'tenzir-platform workspace select' first"
+        ).add_context(f"error: {e}")
 
     if args["add"]:
         node = args["<node>"]

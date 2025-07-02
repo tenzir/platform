@@ -22,22 +22,24 @@ Commands:
 See 'tenzir-platform <command> --help' for more information on a specific command.
 """
 
+import importlib.metadata
+import sys
+
 from docopt import docopt
 from requests import HTTPError
-import sys
-import importlib.metadata
 
-from tenzir_platform.subcommand_auth import auth_subcommand
-from tenzir_platform.subcommand_alert import alert_subcommand
-from tenzir_platform.subcommand_workspace import workspace_subcommand
-from tenzir_platform.subcommand_node import node_subcommand
-from tenzir_platform.subcommand_admin import admin_subcommand
-from tenzir_platform.subcommand_tools import tools_subcommand
-from tenzir_platform.subcommand_secret import secret_subcommand
 from tenzir_platform.helpers.environment import PlatformEnvironment
 from tenzir_platform.helpers.exceptions import PlatformCliError
+from tenzir_platform.subcommand_admin import admin_subcommand
+from tenzir_platform.subcommand_alert import alert_subcommand
+from tenzir_platform.subcommand_auth import auth_subcommand
+from tenzir_platform.subcommand_node import node_subcommand
+from tenzir_platform.subcommand_secret import secret_subcommand
+from tenzir_platform.subcommand_tools import tools_subcommand
+from tenzir_platform.subcommand_workspace import workspace_subcommand
 
 version = importlib.metadata.version("tenzir-platform")
+
 
 def _pretty_print_cli_error(e: PlatformCliError):
     print(f"\033[91mError:\033[0m {e.error}")
@@ -45,6 +47,7 @@ def _pretty_print_cli_error(e: PlatformCliError):
         print(f"  {context}")
     for hint in e.hints:
         print(f"(hint) {hint}")
+
 
 def main():
     if len(sys.argv) == 1:
