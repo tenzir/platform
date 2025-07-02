@@ -42,6 +42,7 @@ Description:
 from tenzir_platform.helpers.cache import load_current_workspace
 from tenzir_platform.helpers.client import AppClient
 from tenzir_platform.helpers.environment import PlatformEnvironment
+from tenzir_platform.helpers.exceptions import PlatformCliError
 from pydantic import BaseModel
 from docopt import docopt
 from typing import Optional, List
@@ -82,10 +83,12 @@ def _resolve_node_identifier(
     nodes = _get_node_list(client, workspace_id)
     name_matched = [node for node in nodes if node["name"] == identifier]
     if len(name_matched) == 0:
-        raise Exception(f"Unknown node {identifier}")
+        raise PlatformCliError(f"unknown node {identifier}")
     if len(name_matched) > 1:
         matching_ids = [node["node_id"] for node in name_matched]
-        raise Exception(f"Ambigous name {identifier} is shared by nodes {matching_ids}")
+        raise PlatformCliError(
+            f"ambiguous name {identifier} is shared by nodes {matching_ids}"
+        )
     return name_matched[0]["node_id"]
 
 
@@ -117,8 +120,7 @@ def ping(client: AppClient, workspace_id: str, node: str):
         print("node disconnected")
         return
     elif resp.status_code != 200:
-        print(f"error {resp.status_code} after {time.time()-start}s")
-        return
+        raise PlatformCliError(f"error {resp.status_code} after {time.time()-start}s")
     print(f"response {resp.status_code} in {time.time()-start}s")
 
 
@@ -157,7 +159,7 @@ def run(
         # Regular exit with CTRL-C
         pass
     except subprocess.CalledProcessError as e:
-        print(f"Error running the docker compose command: {e}")
+        raise PlatformCliError(f"error running the docker compose command: {e}")
     finally:
         print("removing node and config file")
         if os.path.exists(temp_file_name):
@@ -239,11 +241,9 @@ def node_subcommand(platform: PlatformEnvironment, argv):
         client = AppClient(platform=platform)
         client.workspace_login(user_key)
     except Exception as e:
-        print(f"error: {e}")
-        print(
-            "Failed to load current workspace, please run 'tenzir-platform workspace select' first"
-        )
-        exit(1)
+        raise PlatformCliError(
+            "failed to load current workspace, please run 'tenzir-platform workspace select' first"
+        ).add_hint(f"reason: {e}")
 
     if args["list"]:
         json = args["--json"]

@@ -24,6 +24,7 @@ from tenzir_platform.helpers.client import AppClient, TargetApi
 from tenzir_platform.helpers.environment import PlatformEnvironment
 from tenzir_platform.helpers.cache import store_workspace, load_current_workspace
 from tenzir_platform.helpers.oidc import IdTokenClient
+from tenzir_platform.helpers.exceptions import PlatformCliError
 from docopt import docopt
 from typing import List
 import json
@@ -62,18 +63,18 @@ def _resolve_workspace_identifier(
     except ValueError:
         pass
     except IndexError:
-        raise Exception(f"Only have {len(workspaces)-1} workspaces")
+        raise PlatformCliError(f"only have {len(workspaces)-1} workspaces")
 
     # Else, look for a matching workspace name
     name_matched = [
         workspace for workspace in workspaces if workspace["name"] == identifier
     ]
     if len(name_matched) == 0:
-        raise Exception(f"Unknown workspace {identifier}")
+        raise PlatformCliError(f"unknown workspace {identifier}")
     if len(name_matched) > 1:
         matching_ids = [workspace["tenant_id"] for workspace in name_matched]
-        raise Exception(
-            f"Ambigous name {identifier} is shared by workspaces {matching_ids}"
+        raise PlatformCliError(
+            f"ambiguous name {identifier} is shared by workspaces {matching_ids}"
         )
     return name_matched[0]["tenant_id"]
 

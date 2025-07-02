@@ -72,11 +72,13 @@ def main():
         elif arguments["<command>"] == "secret":
             secret_subcommand(platform, argv)
         else:
-            print("unknown subcommand, see 'tenzir-platform --help' for usage")
+            raise PlatformCliError(
+                "unknown subcommand, see 'tenzir-platform --help' for usage"
+            )
     except HTTPError as e:
         if e.response.status_code == 403:
-            print(
-                "Access denied. Please try re-authenticating by running 'tenzir-platform workspace select'"
+            raise PlatformCliError(
+                "access denied. Please try re-authenticating by running 'tenzir-platform workspace select'"
             )
         else:
             detail = ""
