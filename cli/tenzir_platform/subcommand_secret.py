@@ -75,7 +75,9 @@ def _list_secrets(client: AppClient, workspace_id: str) -> ListSecretsResponse:
     return ListSecretsResponse.model_validate(resp.json())
 
 
-def _resolve_secret_name_or_id(client: AppClient, workspace_id: str, name_or_id: str) -> Secret:
+def _resolve_secret_name_or_id(
+    client: AppClient, workspace_id: str, name_or_id: str
+) -> Secret:
     secrets = _list_secrets(client, workspace_id).secrets
     matching_by_id = [secret for secret in secrets if secret.id == name_or_id]
     if matching_by_id:
@@ -212,7 +214,7 @@ def list_stores(client: AppClient, workspace_id: str, json_format: bool):
     if json_format:
         print(json_body)
         return
-    default_store_id = json_body['default_store_id']
+    default_store_id = json_body["default_store_id"]
     for store in json_body["stores"]:
         print(
             f"{'*' if store['id'] == default_store_id else ' '} {store['name']}  (id: {store['id']})"

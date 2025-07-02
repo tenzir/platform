@@ -39,12 +39,14 @@ from tenzir_platform.helpers.exceptions import PlatformCliError
 
 version = importlib.metadata.version("tenzir-platform")
 
+
 def _pretty_print_cli_error(e: PlatformCliError):
     print(f"\033[91mError:\033[0m {e.error}")
     for context in e.contexts:
         print(f"  {context}")
     for hint in e.hints:
         print(f"(hint) {hint}")
+
 
 def main():
     if len(sys.argv) == 1:
