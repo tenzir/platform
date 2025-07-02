@@ -1,0 +1,25 @@
+name: Markdownlint
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+jobs:
+  markdownlint:
+    name: Lint Markdown files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+
+      - name: Run markdownlint
+        run: npx markdownlint-cli --fix .
