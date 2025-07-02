@@ -87,10 +87,13 @@ jobs:
           fi
 
       - name: Run release script
+        env:
+          RELEASE_TITLE: ${{ github.event.inputs.title }}
+          RELEASE_DESCRIPTION: ${{ github.event.inputs.description }}
         run: |
           ./changelog/release.py "${{ github.event.inputs.version }}" \
-            --title "${{ github.event.inputs.title }}" \
-            --description "${{ github.event.inputs.description }}"
+            --title "$RELEASE_TITLE" \
+            --description "$RELEASE_DESCRIPTION"
 
       - name: Verify release file was created
         run: |
@@ -107,9 +110,11 @@ jobs:
           git commit -m "Release Tenzir Platform ${{ github.event.inputs.version }}"
 
       - name: Create signed annotated tag
+        env:
+          TAG_TITLE: ${{ github.event.inputs.title }}
         run: |
           git tag -a -s "${{ github.event.inputs.version }}" \
-            -m "Tenzir Platform ${{ github.event.inputs.version }}: ${{ github.event.inputs.title }}"
+            -m "Tenzir Platform ${{ github.event.inputs.version }}: $TAG_TITLE"
 
       - name: Push changes and tag
         run: |
@@ -124,19 +129,27 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          RELEASE_TITLE: ${{ github.event.inputs.title }}
+          RELEASE_DESCRIPTION: ${{ github.event.inputs.description }}
         run: |
           # Format version for changelog URL (replace dots with dashes, remove 'v' prefix)
           VERSION_FOR_URL=$(echo "${{ github.event.inputs.version }}" | sed 's/^v//' | sed 's/\./-/g')
           CHANGELOG_URL="https://docs.tenzir.com/changelog/platform/v${VERSION_FOR_URL}/"
 
-          # Create release notes with changelog link
-          RELEASE_NOTES="${{ github.event.inputs.description }}
+          # Create release notes file to handle special characters properly
+          cat > /tmp/release-notes.md << 'EOF'
+          ${{ github.event.inputs.description }}
 
-          For a detailed list of all changes, view [the changelog](${CHANGELOG_URL})."
+          For a detailed list of all changes, view [the changelog](CHANGELOG_URL_PLACEHOLDER).
+          EOF
 
+          # Replace the placeholder with the actual URL
+          sed -i "s|CHANGELOG_URL_PLACEHOLDER|${CHANGELOG_URL}|g" /tmp/release-notes.md
+
+          # Create the release using the notes file
           gh release create "${{ github.event.inputs.version }}" \
-            --title "${{ github.event.inputs.title }}" \
-            --notes "$RELEASE_NOTES"
+            --title "$RELEASE_TITLE" \
+            --notes-file /tmp/release-notes.md
 
       - name: Output success message
         run: |
