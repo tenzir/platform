@@ -241,9 +241,13 @@ def node_subcommand(platform: PlatformEnvironment, argv):
         workspace_id, user_key = load_current_workspace(platform)
         client = AppClient(platform=platform)
         client.workspace_login(user_key)
+    except PlatformCliError as e:
+        raise e.add_context("while trying to load current workspace")
     except Exception as e:
-        raise PlatformCliError(f"failed to load current workspace: {e}").add_context(
-            "please run 'tenzir-platform workspace select' first"
+        raise PlatformCliError(f"failed to load current workspace").add_hint(
+            f"reason: {e}"
+        ).add_hint(
+            "run 'tenzir-platform workspace select' to select the current workspace"
         )
 
     if args["list"]:
