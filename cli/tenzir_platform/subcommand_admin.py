@@ -33,6 +33,7 @@ Options:
 from tenzir_platform.helpers.client import AppClient, TargetApi
 from tenzir_platform.helpers.oidc import IdTokenClient
 from tenzir_platform.helpers.environment import PlatformEnvironment
+from tenzir_platform.helpers.exceptions import PlatformCliError
 from tenzir_platform.helpers.auth_rule import (
     AuthRule,
     UserAuthRule,
@@ -196,7 +197,9 @@ def auth_rule_from_arguments(arguments) -> AuthRule:
     elif arguments["allow-all"]:
         auth_rule = AllowAllRule()
     else:
-        raise Exception("couldn't determine auth rule from command-line arguments")
+        raise PlatformCliError(
+            "couldn't determine auth rule from command-line arguments"
+        )
     return auth_rule
 
 
