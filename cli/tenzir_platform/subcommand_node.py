@@ -7,9 +7,11 @@
   tenzir-platform node create [--name=<node_name>]
   tenzir-platform node config <node> [-o filename] [--format=docker|tenzir|tenzir-node]
   tenzir-platform node delete <node>
+  tenzir-platform node proxy <node> <endpoint> [<json_body>]
   tenzir-platform node run [--name=<node_name>] [--image=<container_image>]
 
 Options:
+  <node>                     The node id or name.
   --name=<node_name>         The name of the newly created node [default: CLI_Node]
   --image=<container_image>  The docker image to use for the newly created node
   -o,--output=<filename>     Where to write the config file. Set to "-" to write to stdout.
@@ -21,6 +23,9 @@ Description:
 
   tenzir-platform node ping
     Send a ping request to a node and measure the response time.
+
+  tenzir-platform node proxy <endpoint> <json_body>
+    Perform an HTTP request against the selected node's REST API.
 
   tenzir-platform node create
     Create a new node.
@@ -53,7 +58,6 @@ import tempfile
 import os
 import subprocess
 import re
-import random
 import datetime
 
 
@@ -234,6 +238,21 @@ def delete(client: AppClient, workspace_id: str, node: str):
     resp.raise_for_status()
     print(f"deleted node {node_id}")
 
+def proxy(client: AppClient, workspace_id: str, node: str, endpoint: str, body: Optional[str]):
+    node_id = _resolve_node_identifier(client, workspace_id, node)
+    endpoint = endpoint.lstrip("/")
+    resp = client.post(
+        f"node-proxy/{workspace_id}/{node_id}/{endpoint}",
+        json=json.loads(body or "{}"),
+    )
+    try:
+        resp.raise_for_status()
+    except HTTPError as e:
+        raise PlatformCliError(f"failed to proxy request to node {node}").add_hint(
+            f"platform error: {e}"
+        )
+    print(resp.content)
+
 
 def node_subcommand(platform: PlatformEnvironment, argv):
     args = docopt(__doc__, argv=argv)
@@ -271,3 +290,8 @@ def node_subcommand(platform: PlatformEnvironment, argv):
     elif args["delete"]:
         node = args["<node>"]
         delete(client, workspace_id, node)
+    elif args["proxy"]:
+        node = args["<node>"]
+        endpoint = args["<endpoint>"]
+        body_json = args.get("<body_json>", None)
+        proxy(client, workspace_id, node, endpoint, body_json)
