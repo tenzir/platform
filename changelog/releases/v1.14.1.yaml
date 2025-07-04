@@ -1,0 +1,4 @@
+title: Fix Pipelines Table
+description: We fixed a bug that prevented the table from scrolling when pipelines overflowed, so you can now access all rows without any being cut off.
+changes:
+  - Nid5Sn0npWu12ZnplBsr95U4ME
