@@ -75,17 +75,19 @@ def _list_secrets(client: AppClient, workspace_id: str) -> ListSecretsResponse:
     return ListSecretsResponse.model_validate(resp.json())
 
 
-def _resolve_secret_name_or_id(client: AppClient, workspace_id: str, name_or_id: str) -> Secret:
+def _resolve_secret_name_or_id(
+    client: AppClient, workspace_id: str, name_or_id: str
+) -> Secret:
     secrets = _list_secrets(client, workspace_id).secrets
     matching_by_id = [secret for secret in secrets if secret.id == name_or_id]
     if matching_by_id:
         return matching_by_id[0]
     matching_by_name = [secret for secret in secrets if secret.name == name_or_id]
     if len(matching_by_name) > 1:
-        raise PlatformCliError(f"Multiple secrets found with the name '{name_or_id}'")
+        raise PlatformCliError(f"multiple secrets found with the name '{name_or_id}'")
     if matching_by_name:
         return matching_by_name[0]
-    raise PlatformCliError("Secret not found").add_context(
+    raise PlatformCliError("secret not found").add_context(
         f"while trying to resolve id or name '{name_or_id}'"
     )
 
@@ -123,7 +125,7 @@ def add(
         },
     )
     if resp.status_code == 400:
-        raise PlatformCliError("Failed to add secret").add_hint(
+        raise PlatformCliError("failed to add secret").add_hint(
             f"received upstream error: {resp.json().get('detail', 'unknown error')}"
         )
         return
@@ -141,7 +143,7 @@ def update(
 ):
     if sum(bool(x) for x in [file, value, env]) > 1:
         raise PlatformCliError(
-            "Error: Only one of --file, --value, or --env can be specified."
+            "only one of --file, --value, or --env can be specified."
         ).add_context(f"while trying to update secret {name_or_id}")
 
     secret_value = None
@@ -212,7 +214,7 @@ def list_stores(client: AppClient, workspace_id: str, json_format: bool):
     if json_format:
         print(json_body)
         return
-    default_store_id = json_body['default_store_id']
+    default_store_id = json_body["default_store_id"]
     for store in json_body["stores"]:
         print(
             f"{'*' if store['id'] == default_store_id else ' '} {store['name']}  (id: {store['id']})"
@@ -282,7 +284,7 @@ def secret_subcommand(platform: PlatformEnvironment, argv):
         client.workspace_login(user_key)
     except Exception as e:
         raise PlatformCliError(
-            "Failed to load current workspace, please run 'tenzir-platform workspace select' first"
+            "failed to load current workspace, please run 'tenzir-platform workspace select' first"
         ).add_hint(f"reason: {e}")
 
     # TODO: Move the store commands to a different subcommand.
