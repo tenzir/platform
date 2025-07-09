@@ -1,0 +1,8 @@
+title: External JWT Support
+description: This release adds support for reading externally-supplied JWT tokens from a header, instead of manually clicking on the _Log In_ button.
+changes:
+  - HXEjFJSY3grv1CW8ZCQvE0fF46
+  - HrxTLjcKt3cvu1FxVlkyrBON7R
+  - XgwF4se9POzV2aZEQzLBHwNy6c
+  - ZJF6WG9zAbVEq78xvD7yafLXkK
+  - ZYjjXruXRGrALzCNC0AtIrpwTn
