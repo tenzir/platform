@@ -251,7 +251,7 @@ def proxy(client: AppClient, workspace_id: str, node: str, endpoint: str, body: 
         raise PlatformCliError(f"failed to proxy request to node {node}").add_hint(
             f"platform error: {e}"
         )
-    print(resp.content)
+    print(resp.content.decode('utf-8'))
 
 
 def node_subcommand(platform: PlatformEnvironment, argv):
