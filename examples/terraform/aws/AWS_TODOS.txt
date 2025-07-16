@@ -1,0 +1,4 @@
+AWS Deployment TODOs
+====================
+
+- [ ] Adjust frontend code to read secrets from AWS Secrets Manager instead of environment variables
