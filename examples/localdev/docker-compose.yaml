@@ -159,6 +159,7 @@ services:
       - TENZIR_TOKEN=wsk_e9ee76d4faf4b213745dd5c99a9be11f501d7009ded63f2d5NmDS38vXR
       - TENZIR_NODE_NAME=localdev
       - TENZIR_PLATFORM_CONTROL_ENDPOINT=ws://websocket-gateway:5000
+      - TENZIR_CONSOLE_VERBOSITY=verbose
     depends_on:
       websocket-gateway:
         condition: service_started
