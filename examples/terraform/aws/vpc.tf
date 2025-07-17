@@ -8,14 +8,6 @@ resource "aws_vpc" "tenzir" {
   }
 }
 
-# resource "aws_internet_gateway" "tenzir" {
-#   vpc_id = aws_vpc.tenzir.id
-
-#   tags = {
-#     Name = "tenzir-igw"
-#   }
-# }
-
 resource "aws_subnet" "nodes" {
   vpc_id                  = aws_vpc.tenzir.id
   cidr_block              = "10.0.1.0/24"
@@ -35,17 +27,6 @@ resource "aws_subnet" "platform" {
 
   tags = {
     Name = "tenzir-platform-subnet"
-  }
-}
-
-resource "aws_subnet" "postgres" {
-  vpc_id                  = aws_vpc.tenzir.id
-  cidr_block              = "10.0.3.0/24"
-  availability_zone       = "eu-west-1c"
-  map_public_ip_on_launch = false
-
-  tags = {
-    Name = "tenzir-postgres-subnet"
   }
 }
 
@@ -73,38 +54,48 @@ resource "aws_subnet" "postgres2" {
   }
 }
 
-# resource "aws_route_table" "public" {
-#   vpc_id = aws_vpc.tenzir.id
+resource "aws_security_group" "vpc_endpoint" {
+  name        = "tenzir-vpc-endpoint-sg"
+  description = "Security group for VPC endpoints"
+  vpc_id      = aws_vpc.tenzir.id
 
-#   route {
-#     cidr_block = "0.0.0.0/0"
-#     gateway_id = aws_internet_gateway.tenzir.id
-#   }
+  tags = {
+    Name = "tenzir-vpc-endpoint-sg"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "vpc_endpoint_https" {
+  security_group_id            = aws_security_group.vpc_endpoint.id
+  ip_protocol                  = "tcp"
+  from_port                    = 443
+  to_port                      = 443
+  referenced_security_group_id = aws_security_group.lambda.id
+}
+
+resource "aws_vpc_endpoint" "secrets_manager" {
+  vpc_id              = aws_vpc.tenzir.id
+  service_name        = "com.amazonaws.eu-west-1.secretsmanager"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = [aws_subnet.platform.id]
+  security_group_ids  = [aws_security_group.vpc_endpoint.id]
+  private_dns_enabled = true
+
+  tags = {
+    Name = "tenzir-secrets-manager-endpoint"
+  }
+}
+
+# # Route 53 Resolver VPC endpoint for DNS resolution
+# resource "aws_vpc_endpoint" "route53_resolver" {
+#   vpc_id              = aws_vpc.tenzir.id
+#   service_name        = "com.amazonaws.eu-west-1.route53resolver"
+#   vpc_endpoint_type   = "Interface"
+#   subnet_ids          = [aws_subnet.platform.id]
+#   security_group_ids  = [aws_security_group.vpc_endpoint.id]
+#   private_dns_enabled = true
 
 #   tags = {
-#     Name = "tenzir-public-rt"
+#     Name = "tenzir-route53-resolver-endpoint"
 #   }
 # }
 
-# resource "aws_route_table_association" "nodes" {
-#   subnet_id      = aws_subnet.nodes.id
-#   route_table_id = aws_route_table.public.id
-# }
-
-# resource "aws_route_table_association" "platform" {
-#   subnet_id      = aws_subnet.platform.id
-#   route_table_id = aws_route_table.public.id
-# }
-
-# resource "aws_route_table" "private" {
-#   vpc_id = aws_vpc.tenzir.id
-
-#   tags = {
-#     Name = "tenzir-private-rt"
-#   }
-# }
-
-# resource "aws_route_table_association" "postgres" {
-#   subnet_id      = aws_subnet.postgres.id
-#   route_table_id = aws_route_table.private.id
-# }
