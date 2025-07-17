@@ -12,23 +12,17 @@ resource "aws_security_group" "rds" {
   description = "Security group for Tenzir RDS instance"
   vpc_id      = aws_vpc.tenzir.id
 
-  ingress {
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.lambda.id]
-  }
-
-  # egress {
-  #   from_port   = 0
-  #   to_port     = 0
-  #   protocol    = "-1"
-  #   cidr_blocks = ["0.0.0.0/0"]
-  # }
-
   tags = {
     Name = "tenzir-rds-sg"
   }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "rds_postgres" {
+  security_group_id            = aws_security_group.rds.id
+  ip_protocol                  = "tcp"
+  from_port                    = 5432
+  to_port                      = 5432
+  referenced_security_group_id = aws_security_group.lambda.id
 }
 
 resource "random_password" "db_password" {
@@ -37,7 +31,7 @@ resource "random_password" "db_password" {
 }
 
 resource "aws_secretsmanager_secret" "db_password" {
-  name        = "tenzir-postgres-password"
+  name        = "tenzir-postgres-password-v2"
   description = "Password for Tenzir PostgreSQL database"
 }
 
