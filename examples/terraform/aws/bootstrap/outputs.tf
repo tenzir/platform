@@ -17,3 +17,8 @@ output "lambda_ui_container_registry_id" {
   description = "Registry ID of the Lambda UI container repository"
   value       = aws_ecr_repository.lambda_ui_container.registry_id
 }
+
+output "platform_repository_url" {
+  description = "URL of the platform repository"
+  value       = aws_ecr_repository.platform.repository_url
+}

@@ -13,19 +13,23 @@ async function getDbCredentials() {
 }
 
 exports.handler = async (event) => {
+    let client;
     try {
         console.log('Fetching DB credentials...');
         const dbCreds = await getDbCredentials();
 
         console.log('Creating new PostgreSQL client...');
         const [hostname] = dbCreds.host.split(':');
-        const client = new Client({
+        client = new Client({
             host: hostname,
             port: dbCreds.port,
             database: dbCreds.dbname,
             user: dbCreds.username,
             password: dbCreds.password,
-            ssl: true
+            ssl: {
+                rejectUnauthorized: true,
+                ca: require('fs').readFileSync('/var/task/rds-ca-2019-root.pem')
+            }
         });
 
         console.log('Connecting to PostgreSQL...');
@@ -76,6 +80,8 @@ exports.handler = async (event) => {
             })
         };
     } finally {
-        await client.end();
+        if (client) {
+            await client.end();
+        }
     }
 };
