@@ -1,3 +1,50 @@
+resource "aws_iam_role" "ecr_pull_through_cache" {
+  name = "tenzir-ecr-pull-through-cache-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = [
+            "ecr.amazonaws.com",
+            "pullthroughcache.ecr.amazonaws.com"
+          ]
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "ecr_pull_through_cache" {
+  name = "tenzir-ecr-pull-through-cache-policy"
+  role = aws_iam_role.ecr_pull_through_cache.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_ecr_pull_through_cache_rule" "marketplace" {
+  ecr_repository_prefix = "marketplace"
+  upstream_registry_url = "709825985650.dkr.ecr.us-east-1.amazonaws.com"
+  custom_role_arn       = aws_iam_role.ecr_pull_through_cache.arn
+}
+
 resource "aws_ecs_cluster" "platform" {
   name = "tenzir-platform"
 
@@ -33,6 +80,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+
 resource "aws_security_group" "ecs_service" {
   name        = "tenzir-ecs-service-sg"
   description = "Security group for Tenzir ECS service"
@@ -64,6 +112,46 @@ resource "aws_security_group" "ecs_service" {
   }
 }
 
+resource "aws_security_group" "ecs_api" {
+  name        = "tenzir-ecs-api-sg"
+  description = "Security group for Tenzir ECS API service"
+  vpc_id      = aws_vpc.tenzir.id
+
+  tags = {
+    Name = "tenzir-ecs-api-sg"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "ecs_api_http" {
+  security_group_id = aws_security_group.ecs_api.id
+  ip_protocol       = "tcp"
+  from_port         = 8080
+  to_port           = 8080
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "ecs_api_egress" {
+  security_group_id = aws_security_group.ecs_api.id
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_security_group" "ecs_node" {
+  name        = "tenzir-ecs-node-sg"
+  description = "Security group for Tenzir ECS node service"
+  vpc_id      = aws_vpc.tenzir.id
+
+  tags = {
+    Name = "tenzir-ecs-node-sg"
+  }
+}
+
+resource "aws_vpc_security_group_egress_rule" "ecs_node_egress" {
+  security_group_id = aws_security_group.ecs_node.id
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
 resource "aws_ecs_task_definition" "gateway" {
   family                   = "tenzir-gateway"
   network_mode             = "awsvpc"
@@ -74,8 +162,9 @@ resource "aws_ecs_task_definition" "gateway" {
 
   container_definitions = jsonencode([
     {
-      name  = "gateway"
-      image = "ghcr.io/tenzir/platform:latest"
+      name    = "gateway"
+      image   = "${module.bootstrap.platform_repository_url}:latest"
+      command = ["tenant_manager/ws/server/local.py"]
       
       portMappings = [
         {
@@ -113,10 +202,166 @@ resource "aws_ecs_service" "gateway" {
   network_configuration {
     subnets          = [aws_subnet.platform.id]
     security_groups  = [aws_security_group.ecs_service.id]
-    assign_public_ip = true
+    assign_public_ip = false
   }
 
   depends_on = [
     aws_iam_role_policy_attachment.ecs_task_execution
   ]
 }
+
+resource "aws_ecs_task_definition" "api" {
+  family                   = "tenzir-api"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = 256
+  memory                   = 512
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn           = aws_iam_role.ecs_task_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name  = "api"
+      image = "${module.bootstrap.lambda_api_container_repository_url}:latest"
+      
+      portMappings = [
+        {
+          containerPort = 8080
+          protocol      = "tcp"
+        }
+      ]
+
+      environment = [
+        {
+          name  = "RUN_MODE"
+          value = "ECS"
+        },
+        {
+          name  = "DB_SECRET_ARN"
+          value = aws_secretsmanager_secret.db_password.arn
+        }
+      ]
+      
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/tenzir-api"
+          "awslogs-region"        = "eu-west-1"
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+      
+      essential = true
+    }
+  ])
+}
+
+resource "aws_cloudwatch_log_group" "api" {
+  name              = "/ecs/tenzir-api"
+  retention_in_days = 7
+}
+
+resource "aws_iam_role" "ecs_task_role" {
+  name = "tenzir-ecs-task-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "ecs_task_secrets" {
+  name = "tenzir-ecs-task-secrets-policy"
+  role = aws_iam_role.ecs_task_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = aws_secretsmanager_secret.db_password.arn
+      }
+    ]
+  })
+}
+
+resource "aws_ecs_service" "api" {
+  name            = "api"
+  cluster         = aws_ecs_cluster.platform.id
+  task_definition = aws_ecs_task_definition.api.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = [aws_subnet.platform.id]
+    security_groups  = [aws_security_group.ecs_api.id]
+    assign_public_ip = false
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.ecs_task_execution,
+    aws_iam_role_policy.ecs_task_secrets
+  ]
+}
+
+resource "aws_ecs_task_definition" "node" {
+  family                   = "tenzir-node"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = 256
+  memory                   = 512
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+
+  container_definitions = jsonencode([
+    {
+      name  = "node"
+      image = "709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-node:v5.8.0"
+      
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/tenzir-node"
+          "awslogs-region"        = "eu-west-1"
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+      
+      essential = true
+    }
+  ])
+}
+
+resource "aws_cloudwatch_log_group" "node" {
+  name              = "/ecs/tenzir-node"
+  retention_in_days = 7
+}
+
+resource "aws_ecs_service" "node" {
+  name            = "node"
+  cluster         = aws_ecs_cluster.platform.id
+  task_definition = aws_ecs_task_definition.node.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = [aws_subnet.nodes.id]
+    security_groups  = [aws_security_group.ecs_node.id]
+    assign_public_ip = false
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.ecs_task_execution
+  ]
+}
+
