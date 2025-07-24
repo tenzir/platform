@@ -50,7 +50,7 @@ services:
       - TENANT_MANAGER_AUTH__ISSUER_URL=http://platform:5000/oidc
       - TENANT_MANAGER_AUTH__PUBLIC_BASE_URL=${TENZIR_PLATFORM_API_ENDPOINT}/oidc
       - TENANT_MANAGER_AUTH__APP_AUDIENCE=tenzir-app
-      - TENANT_MANAGER_AUTH__APP_REDIRECT_URLS=${TENZIR_PLATFORM_DOMAIN}/login/oauth/callback,http://localhost:3000/login/oauth/callback,http://localhost:5173/login/oauth/callback
+      - TENANT_MANAGER_AUTH__APP_REDIRECT_URLS=${TENZIR_PLATFORM_UI_ENDPOINT}/login/oauth/callback,http://localhost:3000/login/oauth/callback,http://localhost:5173/login/oauth/callback
       - TENANT_MANAGER_AUTH__CLI_AUDIENCE=tenzir-cli
       - TENANT_MANAGER_AUTH__ADMIN_FUNCTIONS=${TENZIR_PLATFORM_ADMIN_RULES}
       - STORE__TYPE=postgres
