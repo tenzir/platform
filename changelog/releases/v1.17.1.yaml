@@ -1,0 +1,6 @@
+title: Visible zero durations
+description: The app now renders durations of length `0` correctly in the detailed event view.
+changes:
+  - E8IheTUqz8EiZ7CBHA4RgKq8hY
+  - F8m3kRcBwo3399pH4mM8ML1Lsm
+  - ipWblRy987C6nmacHAS0ptdwHd
