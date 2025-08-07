@@ -210,3 +210,4 @@ jobs:
           echo "🎉 Release ${{ github.event.inputs.version }} created successfully!"
           echo "📁 Release file: changelog/releases/${{ github.event.inputs.version }}.yaml"
           echo "📋 Release file copied to main branch"
+          echo "📋 GitHub release: https://github.com/${{ github.repository }}/releases/tag/${{ github.event.inputs.version }}"
