@@ -1,0 +1,4 @@
+title: Fixed Download Urls
+description: This bugfix release fixes an issue where the Tenzir Platform would generate download URLs with an incorrect signature.
+changes:
+  - X5QhILeaE7arpxP2UPcWz9DphE
