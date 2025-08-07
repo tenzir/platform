@@ -174,7 +174,6 @@ jobs:
           git push origin latest --force
 
       - name: Create GitHub Release
-        if: steps.release_type.outputs.is_latest == 'true'
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
           RELEASE_TITLE: ${{ github.event.inputs.title }}
