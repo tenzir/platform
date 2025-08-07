@@ -181,7 +181,7 @@ jobs:
         run: |
           # Format version for changelog URL (replace dots with dashes, remove 'v' prefix)
           VERSION_FOR_URL=$(echo "${{ github.event.inputs.version }}" | sed 's/^v//' | sed 's/\./-/g')
-          CHANGELOG_URL="https://docs.tenzir.com/changelog/node/v${VERSION_FOR_URL}/"
+          CHANGELOG_URL="https://docs.tenzir.com/changelog/platform/v${VERSION_FOR_URL}/"
           # Create release notes file to handle special characters properly
           cat > /tmp/release-notes.md << 'EOF'
           ${{ github.event.inputs.description }}
