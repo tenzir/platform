@@ -49,3 +49,9 @@ output "gateway_alb_hosted_zone_id" {
   value       = aws_lb.gateway.zone_id
 }
 
+output "tenzir_ca_certificate" {
+  description = "Tenzir Root CA certificate (PEM format)"
+  value       = tls_self_signed_cert.ca.cert_pem
+  sensitive   = true
+}
+

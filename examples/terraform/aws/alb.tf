@@ -68,24 +68,62 @@ resource "aws_lb_target_group" "gateway" {
   }
 }
 
-# Generate a self-signed certificate
+# Create root CA private key
+resource "tls_private_key" "ca" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# Create root CA certificate
+resource "tls_self_signed_cert" "ca" {
+  private_key_pem = tls_private_key.ca.private_key_pem
+
+  subject {
+    common_name         = "Tenzir Root CA"
+    organization        = "Tenzir"
+    organizational_unit = "Infrastructure"
+    country             = "US"
+    locality           = "San Francisco"
+    province           = "CA"
+  }
+
+  validity_period_hours = 17520 # 2 years
+  is_ca_certificate     = true
+
+  allowed_uses = [
+    "key_encipherment",
+    "digital_signature",
+    "cert_signing",
+    "crl_signing",
+  ]
+}
+
+# Create server private key
 resource "tls_private_key" "gateway" {
   algorithm = "RSA"
   rsa_bits  = 2048
 }
 
-resource "tls_self_signed_cert" "gateway" {
+# Create certificate signing request for server
+resource "tls_cert_request" "gateway" {
   private_key_pem = tls_private_key.gateway.private_key_pem
 
   subject {
     common_name  = "*.elb.amazonaws.com"
-    organization = "Tenzir Self-Signed"
+    organization = "Tenzir"
   }
 
   dns_names = [
     "*.elb.amazonaws.com",
     "*.eu-west-1.elb.amazonaws.com"
   ]
+}
+
+# Sign the server certificate with CA
+resource "tls_locally_signed_cert" "gateway" {
+  cert_request_pem   = tls_cert_request.gateway.cert_request_pem
+  ca_private_key_pem = tls_private_key.ca.private_key_pem
+  ca_cert_pem        = tls_self_signed_cert.ca.cert_pem
 
   validity_period_hours = 8760 # 1 year
 
@@ -96,13 +134,14 @@ resource "tls_self_signed_cert" "gateway" {
   ]
 }
 
-# Upload the self-signed certificate to ACM
+# Upload the CA-signed certificate to ACM
 resource "aws_acm_certificate" "gateway" {
-  private_key      = tls_private_key.gateway.private_key_pem
-  certificate_body = tls_self_signed_cert.gateway.cert_pem
+  private_key       = tls_private_key.gateway.private_key_pem
+  certificate_body  = tls_locally_signed_cert.gateway.cert_pem
+  certificate_chain = tls_self_signed_cert.ca.cert_pem
 
   tags = {
-    Name = "tenzir-gateway-self-signed-cert"
+    Name = "tenzir-gateway-ca-signed-cert"
   }
 }
 
