@@ -428,6 +428,18 @@ resource "aws_ssm_parameter" "tenzir_demo_subnet_id" {
   value = aws_subnet.nodes.id
 }
 
+resource "aws_ssm_parameter" "gateway_ws_endpoint" {
+  name  = "/tenzir/platform/gateway-ws-endpoint"
+  type  = "String"
+  value = "ws://internal-gateway-service:80"
+}
+
+resource "aws_ssm_parameter" "gateway_http_endpoint" {
+  name  = "/tenzir/platform/gateway-http-endpoint"
+  type  = "String"
+  value = "http://internal-gateway-service:80"
+}
+
 resource "aws_ecs_service" "node" {
   name            = "node"
   cluster         = aws_ecs_cluster.platform.id

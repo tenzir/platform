@@ -68,6 +68,30 @@ resource "aws_iam_role_policy" "lambda_ssm_policy" {
   })
 }
 
+resource "aws_iam_role_policy" "lambda_s3_policy" {
+  name = "tenzir-lambda-s3-policy"
+  role = aws_iam_role.lambda_execution.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          aws_s3_bucket.tenzir_sidepath.arn,
+          "${aws_s3_bucket.tenzir_sidepath.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
 
 resource "aws_security_group" "lambda" {
   name        = "tenzir-lambda-sg"
@@ -115,8 +139,15 @@ resource "aws_lambda_function" "api_function" {
       WORKSPACE_SECRETS_MASTER_SEED_ARN                       = aws_secretsmanager_secret.workspace_secrets_master_seed.arn
       TENZIR_DEMO_NODE_LOGS_GROUP_NAME                        = aws_ssm_parameter.demo_node_logs_group_name.value
       TENANT_MANAGER_AUTH__TRUSTED_AUDIENCES                 = jsonencode({
-        "${local.oidc_issuer_url}" = [aws_cognito_user_pool_client.oauth_client.id]
+        "issuer": "${local.oidc_issuer_url}",
+        "audiences": [aws_cognito_user_pool_client.oauth_client.id],
       })
+      TENANT_MANAGER_AUTH__ADMIN_FUNCTIONS                 = jsonencode([])
+      BASE_PATH                                               = "/"
+      TENANT_MANAGER_SIDEPATH_BUCKET_NAME                     = aws_s3_bucket.tenzir_sidepath.bucket
+      TENZIR_DEMO_NODE_IMAGE                                  = "ghcr.io/tenzir/tenzir-demo"
+      GATEWAY_WS_ENDPOINT                                     = aws_ssm_parameter.gateway_ws_endpoint.value
+      GATEWAY_HTTP_ENDPOINT                                   = aws_ssm_parameter.gateway_http_endpoint.value
     }
   }
 
@@ -128,7 +159,8 @@ resource "aws_lambda_function" "api_function" {
   depends_on = [
     aws_iam_role_policy_attachment.lambda_basic,
     aws_iam_role_policy_attachment.lambda_vpc,
-    aws_iam_role_policy.lambda_ssm_policy
+    aws_iam_role_policy.lambda_ssm_policy,
+    aws_iam_role_policy.lambda_s3_policy
   ]
 
   lifecycle {
