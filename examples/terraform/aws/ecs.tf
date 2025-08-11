@@ -146,8 +146,24 @@ resource "aws_security_group" "ecs_node" {
   }
 }
 
+resource "aws_security_group" "ecs_demo_node" {
+  name        = "tenzir-ecs-demo-node-sg"
+  description = "Security group for Tenzir ECS demo node service"
+  vpc_id      = aws_vpc.tenzir.id
+
+  tags = {
+    Name = "tenzir-ecs-demo-node-sg"
+  }
+}
+
 resource "aws_vpc_security_group_egress_rule" "ecs_node_egress" {
   security_group_id = aws_security_group.ecs_node.id
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "ecs_demo_node_egress" {
+  security_group_id = aws_security_group.ecs_demo_node.id
   ip_protocol       = "-1"
   cidr_ipv4         = "0.0.0.0/0"
 }
@@ -360,6 +376,30 @@ resource "aws_ssm_parameter" "demo_node_logs_group_name" {
   name  = "/tenzir/platform/demo-node-logs-group-name"
   type  = "String"
   value = aws_cloudwatch_log_group.demo_node.name
+}
+
+resource "aws_ssm_parameter" "ecs_cluster_arn" {
+  name  = "/tenzir/platform/ecs-cluster-arn"
+  type  = "String"
+  value = aws_ecs_cluster.platform.arn
+}
+
+resource "aws_ssm_parameter" "ecs_task_execution_role_arn" {
+  name  = "/tenzir/platform/ecs-task-execution-role-arn"
+  type  = "String"
+  value = aws_iam_role.ecs_task_execution.arn
+}
+
+resource "aws_ssm_parameter" "tenzir_demo_node_security_group_id" {
+  name  = "/tenzir/platform/tenzir-demo-node-security-group-id"
+  type  = "String"
+  value = aws_security_group.ecs_demo_node.id
+}
+
+resource "aws_ssm_parameter" "tenzir_demo_subnet_id" {
+  name  = "/tenzir/platform/tenzir-demo-subnet-id"
+  type  = "String"
+  value = aws_subnet.nodes.id
 }
 
 resource "aws_ecs_service" "node" {

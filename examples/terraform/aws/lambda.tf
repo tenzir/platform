@@ -43,6 +43,25 @@ resource "aws_iam_role_policy" "lambda_secrets_policy" {
   })
 }
 
+resource "aws_iam_role_policy" "lambda_ssm_policy" {
+  name = "tenzir-lambda-ssm-policy"
+  role = aws_iam_role.lambda_execution.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters"
+        ]
+        Resource = "arn:aws:ssm:*:*:parameter/tenzir/platform/*"
+      }
+    ]
+  })
+}
+
 
 resource "aws_security_group" "lambda" {
   name        = "tenzir-lambda-sg"
@@ -78,7 +97,11 @@ resource "aws_lambda_function" "api_function" {
 
   environment {
     variables = {
-      DB_SECRET_ARN = aws_secretsmanager_secret.db_password.arn
+      DB_SECRET_ARN                        = aws_secretsmanager_secret.db_password.arn
+      ECS_CLUSTER_ARN                      = aws_ssm_parameter.ecs_cluster_arn.value
+      ECS_TASK_EXECUTION_ROLE_ARN          = aws_ssm_parameter.ecs_task_execution_role_arn.value
+      TENZIR_DEMO_NODE_SECURITY_GROUP_ID   = aws_ssm_parameter.tenzir_demo_node_security_group_id.value
+      TENZIR_DEMO_SUBNET_ID                = aws_ssm_parameter.tenzir_demo_subnet_id.value
     }
   }
 
@@ -89,7 +112,8 @@ resource "aws_lambda_function" "api_function" {
 
   depends_on = [
     aws_iam_role_policy_attachment.lambda_basic,
-    aws_iam_role_policy_attachment.lambda_vpc
+    aws_iam_role_policy_attachment.lambda_vpc,
+    aws_iam_role_policy.lambda_ssm_policy
   ]
 
   lifecycle {
