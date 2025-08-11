@@ -259,6 +259,14 @@ resource "aws_ecs_task_definition" "api" {
         {
           name  = "TENZIR_DEMO_NODE_LOGS_GROUP_NAME"
           value = aws_ssm_parameter.demo_node_logs_group_name.value
+        },
+        {
+          name  = "STORE__TYPE"
+          value = "postgres"
+        },
+        {
+          name  = "STORE__POSTGRES_URI_SECRET_ARN"
+          value = aws_secretsmanager_secret.postgres_uri.arn
         }
       ]
       
@@ -310,7 +318,10 @@ resource "aws_iam_role_policy" "ecs_task_secrets" {
         Action = [
           "secretsmanager:GetSecretValue"
         ]
-        Resource = aws_secretsmanager_secret.db_password.arn
+        Resource = [
+          aws_secretsmanager_secret.db_password.arn,
+          aws_secretsmanager_secret.postgres_uri.arn
+        ]
       }
     ]
   })

@@ -47,6 +47,16 @@ resource "aws_secretsmanager_secret_version" "db_password" {
   })
 }
 
+resource "aws_secretsmanager_secret" "postgres_uri" {
+  name        = "tenzir-postgres-uri"
+  description = "PostgreSQL URI for Tenzir database connection"
+}
+
+resource "aws_secretsmanager_secret_version" "postgres_uri" {
+  secret_id = aws_secretsmanager_secret.postgres_uri.id
+  secret_string = "postgresql://${aws_db_instance.tenzir.username}:${urlencode(random_password.db_password.result)}@${aws_db_instance.tenzir.endpoint}/${aws_db_instance.tenzir.db_name}"
+}
+
 resource "aws_db_instance" "tenzir" {
   identifier = "tenzir-postgres"
 
