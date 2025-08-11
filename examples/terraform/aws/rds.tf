@@ -57,25 +57,14 @@ resource "aws_secretsmanager_secret_version" "postgres_uri" {
   secret_string = "postgresql://${aws_db_instance.tenzir.username}:${urlencode(random_password.db_password.result)}@${aws_db_instance.tenzir.endpoint}/${aws_db_instance.tenzir.db_name}"
 }
 
-# TODO: Initialize these secrets with proper random strings
-resource "random_password" "tenant_manager_app_api_key" {
-  length  = 32
-  special = true
-}
+# TODO: Initialize these secrets with specific formats:
+#  - TENANT_TOKEN_ENCRYPTION_KEY: Generate with `openssl rand 32 | base64`
+#  - APP_API_KEY: Generate with `openssl rand -hex 32`  
+#  - MASTER_SEED: Generate with `openssl rand -hex 64`
 
-resource "aws_secretsmanager_secret" "tenant_manager_app_api_key" {
-  name        = "tenzir-tenant-manager-app-api-key"
-  description = "API key secret for tenant manager app"
-}
-
-resource "aws_secretsmanager_secret_version" "tenant_manager_app_api_key" {
-  secret_id     = aws_secretsmanager_secret.tenant_manager_app_api_key.id
-  secret_string = random_password.tenant_manager_app_api_key.result
-}
-
-resource "random_password" "tenant_token_encryption_key" {
-  length  = 32
-  special = true
+# Generate 32 random bytes for tenant token encryption key (base64 encoded)
+resource "random_bytes" "tenant_token_encryption_key" {
+  length = 32
 }
 
 resource "aws_secretsmanager_secret" "tenant_manager_tenant_token_encryption_key" {
@@ -85,12 +74,27 @@ resource "aws_secretsmanager_secret" "tenant_manager_tenant_token_encryption_key
 
 resource "aws_secretsmanager_secret_version" "tenant_manager_tenant_token_encryption_key" {
   secret_id     = aws_secretsmanager_secret.tenant_manager_tenant_token_encryption_key.id
-  secret_string = random_password.tenant_token_encryption_key.result
+  secret_string = random_bytes.tenant_token_encryption_key.base64
 }
 
-resource "random_password" "workspace_secrets_master_seed" {
-  length  = 32
-  special = true
+# Generate 32 random bytes for app API key (hex encoded)
+resource "random_bytes" "tenant_manager_app_api_key" {
+  length = 32
+}
+
+resource "aws_secretsmanager_secret" "tenant_manager_app_api_key" {
+  name        = "tenzir-tenant-manager-app-api-key"
+  description = "API key secret for tenant manager app"
+}
+
+resource "aws_secretsmanager_secret_version" "tenant_manager_app_api_key" {
+  secret_id     = aws_secretsmanager_secret.tenant_manager_app_api_key.id
+  secret_string = random_bytes.tenant_manager_app_api_key.hex
+}
+
+# Generate 64 random bytes for master seed (hex encoded)
+resource "random_bytes" "workspace_secrets_master_seed" {
+  length = 64
 }
 
 resource "aws_secretsmanager_secret" "workspace_secrets_master_seed" {
@@ -100,7 +104,7 @@ resource "aws_secretsmanager_secret" "workspace_secrets_master_seed" {
 
 resource "aws_secretsmanager_secret_version" "workspace_secrets_master_seed" {
   secret_id     = aws_secretsmanager_secret.workspace_secrets_master_seed.id
-  secret_string = random_password.workspace_secrets_master_seed.result
+  secret_string = random_bytes.workspace_secrets_master_seed.hex
 }
 
 resource "aws_db_instance" "tenzir" {
