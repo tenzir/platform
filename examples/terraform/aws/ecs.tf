@@ -267,6 +267,18 @@ resource "aws_ecs_task_definition" "api" {
         {
           name  = "STORE__POSTGRES_URI_SECRET_ARN"
           value = aws_secretsmanager_secret.postgres_uri.arn
+        },
+        {
+          name  = "TENANT_MANAGER_APP_API_KEY_SECRET_ARN"
+          value = aws_secretsmanager_secret.tenant_manager_app_api_key.arn
+        },
+        {
+          name  = "TENANT_MANAGER_TENANT_TOKEN_ENCRYPTION_KEY_SECRET_ARN"
+          value = aws_secretsmanager_secret.tenant_manager_tenant_token_encryption_key.arn
+        },
+        {
+          name  = "WORKSPACE_SECRETS_MASTER_SEED_ARN"
+          value = aws_secretsmanager_secret.workspace_secrets_master_seed.arn
         }
       ]
       
@@ -320,7 +332,10 @@ resource "aws_iam_role_policy" "ecs_task_secrets" {
         ]
         Resource = [
           aws_secretsmanager_secret.db_password.arn,
-          aws_secretsmanager_secret.postgres_uri.arn
+          aws_secretsmanager_secret.postgres_uri.arn,
+          aws_secretsmanager_secret.tenant_manager_app_api_key.arn,
+          aws_secretsmanager_secret.tenant_manager_tenant_token_encryption_key.arn,
+          aws_secretsmanager_secret.workspace_secrets_master_seed.arn
         ]
       }
     ]

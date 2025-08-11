@@ -57,6 +57,52 @@ resource "aws_secretsmanager_secret_version" "postgres_uri" {
   secret_string = "postgresql://${aws_db_instance.tenzir.username}:${urlencode(random_password.db_password.result)}@${aws_db_instance.tenzir.endpoint}/${aws_db_instance.tenzir.db_name}"
 }
 
+# TODO: Initialize these secrets with proper random strings
+resource "random_password" "tenant_manager_app_api_key" {
+  length  = 32
+  special = true
+}
+
+resource "aws_secretsmanager_secret" "tenant_manager_app_api_key" {
+  name        = "tenzir-tenant-manager-app-api-key"
+  description = "API key secret for tenant manager app"
+}
+
+resource "aws_secretsmanager_secret_version" "tenant_manager_app_api_key" {
+  secret_id     = aws_secretsmanager_secret.tenant_manager_app_api_key.id
+  secret_string = random_password.tenant_manager_app_api_key.result
+}
+
+resource "random_password" "tenant_token_encryption_key" {
+  length  = 32
+  special = true
+}
+
+resource "aws_secretsmanager_secret" "tenant_manager_tenant_token_encryption_key" {
+  name        = "tenzir-tenant-token-encryption-key"
+  description = "Tenant token encryption key secret"
+}
+
+resource "aws_secretsmanager_secret_version" "tenant_manager_tenant_token_encryption_key" {
+  secret_id     = aws_secretsmanager_secret.tenant_manager_tenant_token_encryption_key.id
+  secret_string = random_password.tenant_token_encryption_key.result
+}
+
+resource "random_password" "workspace_secrets_master_seed" {
+  length  = 32
+  special = true
+}
+
+resource "aws_secretsmanager_secret" "workspace_secrets_master_seed" {
+  name        = "tenzir-workspace-secrets-master-seed"
+  description = "Master seed secret for workspace secrets"
+}
+
+resource "aws_secretsmanager_secret_version" "workspace_secrets_master_seed" {
+  secret_id     = aws_secretsmanager_secret.workspace_secrets_master_seed.id
+  secret_string = random_password.workspace_secrets_master_seed.result
+}
+
 resource "aws_db_instance" "tenzir" {
   identifier = "tenzir-postgres"
 
