@@ -239,6 +239,10 @@ resource "aws_ecs_task_definition" "api" {
         {
           name  = "DB_SECRET_ARN"
           value = aws_secretsmanager_secret.db_password.arn
+        },
+        {
+          name  = "TENZIR_DEMO_NODE_LOGS_GROUP_NAME"
+          value = aws_ssm_parameter.demo_node_logs_group_name.value
         }
       ]
       
@@ -345,6 +349,17 @@ resource "aws_ecs_task_definition" "node" {
 resource "aws_cloudwatch_log_group" "node" {
   name              = "/ecs/tenzir-node"
   retention_in_days = 7
+}
+
+resource "aws_cloudwatch_log_group" "demo_node" {
+  name              = "/ecs/tenzir-demo-node"
+  retention_in_days = 7
+}
+
+resource "aws_ssm_parameter" "demo_node_logs_group_name" {
+  name  = "/tenzir/platform/demo-node-logs-group-name"
+  type  = "String"
+  value = aws_cloudwatch_log_group.demo_node.name
 }
 
 resource "aws_ecs_service" "node" {
