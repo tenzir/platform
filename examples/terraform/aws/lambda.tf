@@ -42,7 +42,8 @@ resource "aws_iam_role_policy" "lambda_secrets_policy" {
           aws_secretsmanager_secret.postgres_uri.arn,
           aws_secretsmanager_secret.tenant_manager_app_api_key.arn,
           aws_secretsmanager_secret.tenant_manager_tenant_token_encryption_key.arn,
-          aws_secretsmanager_secret.workspace_secrets_master_seed.arn
+          aws_secretsmanager_secret.workspace_secrets_master_seed.arn,
+          aws_secretsmanager_secret.tenzir_ca_certificate.arn
         ]
       }
     ]
@@ -148,6 +149,9 @@ resource "aws_lambda_function" "api_function" {
       TENZIR_DEMO_NODE_IMAGE                                  = "ghcr.io/tenzir/tenzir-demo"
       GATEWAY_WS_ENDPOINT                                     = aws_ssm_parameter.gateway_ws_endpoint.value
       GATEWAY_HTTP_ENDPOINT                                   = aws_ssm_parameter.gateway_http_endpoint.value
+      TENZIR_CA_CERTIFICATE_SECRET_ARN                        = aws_secretsmanager_secret.tenzir_ca_certificate.arn
+      REQUESTS_CA_BUNDLE                                      = "/etc/ssl/certs/ca-certificates.crt"
+      SSL_CERT_FILE                                           = "/etc/ssl/certs/ca-certificates.crt"
     }
   }
 
