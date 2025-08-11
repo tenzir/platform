@@ -113,6 +113,9 @@ resource "aws_lambda_function" "api_function" {
       TENANT_MANAGER_APP_API_KEY_SECRET_ARN                   = aws_secretsmanager_secret.tenant_manager_app_api_key.arn
       TENANT_MANAGER_TENANT_TOKEN_ENCRYPTION_KEY_SECRET_ARN   = aws_secretsmanager_secret.tenant_manager_tenant_token_encryption_key.arn
       WORKSPACE_SECRETS_MASTER_SEED_ARN                       = aws_secretsmanager_secret.workspace_secrets_master_seed.arn
+      TENZIR_DEMO_NODE_LOGS_GROUP_NAME                        = aws_ssm_parameter.demo_node_logs_group_name.value
+      COGNITO_OIDC_ISSUER_URL                                 = local.oidc_issuer_url
+      COGNITO_OAUTH_CLIENT_ID                                 = aws_cognito_user_pool_client.oauth_client.id
     }
   }
 

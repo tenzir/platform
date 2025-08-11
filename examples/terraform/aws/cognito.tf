@@ -61,3 +61,42 @@ resource "aws_cognito_user_pool_client" "tenzir" {
     refresh_token = "days"
   }
 }
+
+# OAuth client for external integrations
+resource "aws_cognito_user_pool_client" "oauth_client" {
+  name         = "tenzir-oauth-client"
+  user_pool_id = aws_cognito_user_pool.tenzir.id
+
+  # Enable secret generation for OAuth flows
+  generate_secret = true
+  
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_scopes                 = ["email", "openid", "profile"]
+  
+  # Use UI Lambda URL + /oauth/callback as callback URL
+  callback_urls = [
+    "${aws_lambda_function_url.ui_function_url.function_url}oauth/callback"
+  ]
+  
+  prevent_user_existence_errors = "ENABLED"
+  enable_token_revocation       = true
+
+  access_token_validity  = 60
+  id_token_validity      = 60
+  refresh_token_validity = 30
+
+  token_validity_units {
+    access_token  = "minutes"
+    id_token      = "minutes"
+    refresh_token = "days"
+  }
+}
+
+# Data source to get current AWS region
+data "aws_region" "current" {}
+
+# Local value to construct the OIDC issuer URL
+locals {
+  oidc_issuer_url = "https://cognito-idp.${data.aws_region.current.name}.amazonaws.com/${aws_cognito_user_pool.tenzir.id}"
+}

@@ -23,3 +23,19 @@ output "ecr_pull_through_cache_role_arn" {
   value       = aws_iam_role.ecr_pull_through_cache.arn
 }
 
+output "oauth_client_id" {
+  description = "The OAuth client ID"
+  value       = aws_cognito_user_pool_client.oauth_client.id
+}
+
+output "oauth_client_secret" {
+  description = "The OAuth client secret"
+  value       = aws_cognito_user_pool_client.oauth_client.client_secret
+  sensitive   = true
+}
+
+output "oidc_issuer_url" {
+  description = "The OIDC issuer URL for the Cognito User Pool"
+  value       = local.oidc_issuer_url
+}
+
