@@ -57,11 +57,6 @@ resource "aws_secretsmanager_secret_version" "postgres_uri" {
   secret_string = "postgresql://${aws_db_instance.tenzir.username}:${urlencode(random_password.db_password.result)}@${aws_db_instance.tenzir.endpoint}/${aws_db_instance.tenzir.db_name}"
 }
 
-# TODO: Initialize these secrets with specific formats:
-#  - TENANT_TOKEN_ENCRYPTION_KEY: Generate with `openssl rand 32 | base64`
-#  - APP_API_KEY: Generate with `openssl rand -hex 32`  
-#  - MASTER_SEED: Generate with `openssl rand -hex 64`
-
 # Generate 32 random bytes for tenant token encryption key (base64 encoded)
 resource "random_bytes" "tenant_token_encryption_key" {
   length = 32
