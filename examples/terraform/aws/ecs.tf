@@ -130,6 +130,14 @@ resource "aws_vpc_security_group_ingress_rule" "ecs_api_http" {
   cidr_ipv4         = "0.0.0.0/0"
 }
 
+resource "aws_vpc_security_group_ingress_rule" "ecs_service_alb" {
+  security_group_id            = aws_security_group.ecs_service.id
+  ip_protocol                  = "tcp"
+  from_port                    = 80
+  to_port                      = 80
+  referenced_security_group_id = aws_security_group.alb.id
+}
+
 resource "aws_vpc_security_group_egress_rule" "ecs_api_egress" {
   security_group_id = aws_security_group.ecs_api.id
   ip_protocol       = "-1"
@@ -221,8 +229,15 @@ resource "aws_ecs_service" "gateway" {
     assign_public_ip = false
   }
 
+  load_balancer {
+    target_group_arn = aws_lb_target_group.gateway.arn
+    container_name   = "gateway"
+    container_port   = 80
+  }
+
   depends_on = [
-    aws_iam_role_policy_attachment.ecs_task_execution
+    aws_iam_role_policy_attachment.ecs_task_execution,
+    aws_lb_listener.gateway
   ]
 }
 
@@ -431,13 +446,13 @@ resource "aws_ssm_parameter" "tenzir_demo_subnet_id" {
 resource "aws_ssm_parameter" "gateway_ws_endpoint" {
   name  = "/tenzir/platform/gateway-ws-endpoint"
   type  = "String"
-  value = "ws://internal-gateway-service:80"
+  value = "ws://${aws_lb.gateway.dns_name}"
 }
 
 resource "aws_ssm_parameter" "gateway_http_endpoint" {
   name  = "/tenzir/platform/gateway-http-endpoint"
   type  = "String"
-  value = "http://internal-gateway-service:80"
+  value = "http://${aws_lb.gateway.dns_name}"
 }
 
 resource "aws_ecs_service" "node" {

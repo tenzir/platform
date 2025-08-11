@@ -39,3 +39,13 @@ output "oidc_issuer_url" {
   value       = local.oidc_issuer_url
 }
 
+output "gateway_alb_dns_name" {
+  description = "DNS name of the gateway Application Load Balancer"
+  value       = aws_lb.gateway.dns_name
+}
+
+output "gateway_alb_hosted_zone_id" {
+  description = "Hosted zone ID of the gateway Application Load Balancer"
+  value       = aws_lb.gateway.zone_id
+}
+
