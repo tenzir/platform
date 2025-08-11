@@ -68,13 +68,70 @@ resource "aws_lb_target_group" "gateway" {
   }
 }
 
-resource "aws_lb_listener" "gateway" {
+# Generate a self-signed certificate
+resource "tls_private_key" "gateway" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "tls_self_signed_cert" "gateway" {
+  private_key_pem = tls_private_key.gateway.private_key_pem
+
+  subject {
+    common_name  = "*.elb.amazonaws.com"
+    organization = "Tenzir Self-Signed"
+  }
+
+  dns_names = [
+    "*.elb.amazonaws.com",
+    "*.eu-west-1.elb.amazonaws.com"
+  ]
+
+  validity_period_hours = 8760 # 1 year
+
+  allowed_uses = [
+    "key_encipherment",
+    "digital_signature",
+    "server_auth",
+  ]
+}
+
+# Upload the self-signed certificate to ACM
+resource "aws_acm_certificate" "gateway" {
+  private_key      = tls_private_key.gateway.private_key_pem
+  certificate_body = tls_self_signed_cert.gateway.cert_pem
+
+  tags = {
+    Name = "tenzir-gateway-self-signed-cert"
+  }
+}
+
+resource "aws_lb_listener" "gateway_https" {
+  load_balancer_arn = aws_lb.gateway.arn
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+  certificate_arn   = aws_acm_certificate.gateway.arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.gateway.arn
+  }
+}
+
+# Redirect HTTP to HTTPS
+resource "aws_lb_listener" "gateway_http_redirect" {
   load_balancer_arn = aws_lb.gateway.arn
   port              = "80"
   protocol          = "HTTP"
 
   default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.gateway.arn
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
   }
 }

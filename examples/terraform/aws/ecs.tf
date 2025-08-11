@@ -237,7 +237,7 @@ resource "aws_ecs_service" "gateway" {
 
   depends_on = [
     aws_iam_role_policy_attachment.ecs_task_execution,
-    aws_lb_listener.gateway
+    aws_lb_listener.gateway_https
   ]
 }
 
@@ -446,13 +446,13 @@ resource "aws_ssm_parameter" "tenzir_demo_subnet_id" {
 resource "aws_ssm_parameter" "gateway_ws_endpoint" {
   name  = "/tenzir/platform/gateway-ws-endpoint"
   type  = "String"
-  value = "ws://${aws_lb.gateway.dns_name}"
+  value = "wss://${aws_lb.gateway.dns_name}"
 }
 
 resource "aws_ssm_parameter" "gateway_http_endpoint" {
   name  = "/tenzir/platform/gateway-http-endpoint"
   type  = "String"
-  value = "http://${aws_lb.gateway.dns_name}"
+  value = "https://${aws_lb.gateway.dns_name}"
 }
 
 resource "aws_ecs_service" "node" {
