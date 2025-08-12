@@ -34,36 +34,48 @@ resource "aws_acm_certificate" "ui" {
 
 # Route53 records for certificate validation (API)
 resource "aws_route53_record" "api_cert_validation" {
-  count = length(aws_acm_certificate.api.domain_validation_options)
-  
+  for_each = {
+    for dvo in aws_acm_certificate.api.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  }
+
   allow_overwrite = true
-  name            = tolist(aws_acm_certificate.api.domain_validation_options)[count.index].resource_record_name
-  records         = [tolist(aws_acm_certificate.api.domain_validation_options)[count.index].resource_record_value]
+  name            = each.value.name
+  records         = [each.value.record]
   ttl             = 60
-  type            = tolist(aws_acm_certificate.api.domain_validation_options)[count.index].resource_record_type
+  type            = each.value.type
   zone_id         = data.aws_route53_zone.main.zone_id
 }
 
 # Route53 records for certificate validation (UI)
 resource "aws_route53_record" "ui_cert_validation" {
-  count = length(aws_acm_certificate.ui.domain_validation_options)
-  
+  for_each = {
+    for dvo in aws_acm_certificate.ui.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  }
+
   allow_overwrite = true
-  name            = tolist(aws_acm_certificate.ui.domain_validation_options)[count.index].resource_record_name
-  records         = [tolist(aws_acm_certificate.ui.domain_validation_options)[count.index].resource_record_value]
+  name            = each.value.name
+  records         = [each.value.record]
   ttl             = 60
-  type            = tolist(aws_acm_certificate.ui.domain_validation_options)[count.index].resource_record_type
+  type            = each.value.type
   zone_id         = data.aws_route53_zone.main.zone_id
 }
 
 # Certificate validation (API)
 resource "aws_acm_certificate_validation" "api" {
   certificate_arn         = aws_acm_certificate.api.arn
-  validation_record_fqdns = aws_route53_record.api_cert_validation[*].fqdn
+  validation_record_fqdns = [for record in aws_route53_record.api_cert_validation : record.fqdn]
 }
 
 # Certificate validation (UI)
 resource "aws_acm_certificate_validation" "ui" {
   certificate_arn         = aws_acm_certificate.ui.arn
-  validation_record_fqdns = aws_route53_record.ui_cert_validation[*].fqdn
+  validation_record_fqdns = [for record in aws_route53_record.ui_cert_validation : record.fqdn]
 }
