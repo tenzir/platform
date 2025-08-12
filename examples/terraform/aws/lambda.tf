@@ -42,7 +42,8 @@ resource "aws_iam_role_policy" "lambda_secrets_policy" {
           aws_secretsmanager_secret.postgres_uri.arn,
           aws_secretsmanager_secret.tenant_manager_app_api_key.arn,
           aws_secretsmanager_secret.tenant_manager_tenant_token_encryption_key.arn,
-          aws_secretsmanager_secret.workspace_secrets_master_seed.arn
+          aws_secretsmanager_secret.workspace_secrets_master_seed.arn,
+          aws_secretsmanager_secret.auth_secret.arn
         ]
       }
     ]
@@ -180,7 +181,22 @@ resource "aws_lambda_function" "ui_function" {
 
   environment {
     variables = {
-      DB_SECRET_ARN = aws_secretsmanager_secret.db_password.arn
+      # TODO: Convert direct secret access to ARN-based approach later for better security
+      AUTH_TRUST_HOST                                         = "true"
+      PUBLIC_ENABLE_HIGHLIGHT                                 = "false"
+      ORIGIN                                                  = aws_lambda_function_url.ui_function_url.function_url
+      PRIVATE_OIDC_PROVIDER_NAME                             = "tenzir"
+      PRIVATE_OIDC_PROVIDER_CLIENT_ID                        = aws_cognito_user_pool_client.oauth_client.id
+      PRIVATE_OIDC_PROVIDER_CLIENT_SECRET                    = aws_cognito_user_pool_client.oauth_client.client_secret
+      PRIVATE_OIDC_PROVIDER_ISSUER_URL                       = local.oidc_issuer_url
+      PUBLIC_OIDC_PROVIDER_ID                                = "tenzir"
+      PUBLIC_WEBSOCKET_GATEWAY_ENDPOINT                      = aws_ssm_parameter.gateway_ws_endpoint.value
+      PRIVATE_USER_ENDPOINT                                  = "${aws_lambda_function_url.api_function_url.function_url}user"
+      PRIVATE_WEBAPP_ENDPOINT                                = "${aws_lambda_function_url.api_function_url.function_url}webapp"
+      PRIVATE_WEBAPP_KEY                                     = aws_secretsmanager_secret_version.tenant_manager_app_api_key.secret_string
+      AUTH_SECRET                                            = aws_secretsmanager_secret_version.auth_secret.secret_string
+      PUBLIC_DISABLE_DEMO_NODE_AND_TOUR                      = "false"
+      PRIVATE_DRIZZLE_DATABASE_URL                           = aws_secretsmanager_secret_version.postgres_uri.secret_string
     }
   }
 

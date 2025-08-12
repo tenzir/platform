@@ -102,6 +102,21 @@ resource "aws_secretsmanager_secret_version" "workspace_secrets_master_seed" {
   secret_string = random_bytes.workspace_secrets_master_seed.hex
 }
 
+# Generate 32 random bytes for auth secret (hex encoded)
+resource "random_bytes" "auth_secret" {
+  length = 32
+}
+
+resource "aws_secretsmanager_secret" "auth_secret" {
+  name        = "tenzir-auth-secret"
+  description = "Auth secret for UI Lambda"
+}
+
+resource "aws_secretsmanager_secret_version" "auth_secret" {
+  secret_id     = aws_secretsmanager_secret.auth_secret.id
+  secret_string = random_bytes.auth_secret.hex
+}
+
 resource "aws_db_instance" "tenzir" {
   identifier = "tenzir-postgres"
 
