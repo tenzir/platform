@@ -1,5 +1,6 @@
-resource "aws_iam_role" "lambda_execution" {
-  name = "tenzir-lambda-execution-role"
+# API Lambda IAM Role
+resource "aws_iam_role" "api_lambda_execution" {
+  name = "tenzir-api-lambda-execution-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -15,19 +16,19 @@ resource "aws_iam_role" "lambda_execution" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_basic" {
-  role       = aws_iam_role.lambda_execution.name
+resource "aws_iam_role_policy_attachment" "api_lambda_basic" {
+  role       = aws_iam_role.api_lambda_execution.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_vpc" {
-  role       = aws_iam_role.lambda_execution.name
+resource "aws_iam_role_policy_attachment" "api_lambda_vpc" {
+  role       = aws_iam_role.api_lambda_execution.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
-resource "aws_iam_role_policy" "lambda_secrets_policy" {
-  name = "tenzir-lambda-secrets-policy"
-  role = aws_iam_role.lambda_execution.id
+resource "aws_iam_role_policy" "api_lambda_secrets_policy" {
+  name = "tenzir-api-lambda-secrets-policy"
+  role = aws_iam_role.api_lambda_execution.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -50,9 +51,9 @@ resource "aws_iam_role_policy" "lambda_secrets_policy" {
   })
 }
 
-resource "aws_iam_role_policy" "lambda_ssm_policy" {
-  name = "tenzir-lambda-ssm-policy"
-  role = aws_iam_role.lambda_execution.id
+resource "aws_iam_role_policy" "api_lambda_ssm_policy" {
+  name = "tenzir-api-lambda-ssm-policy"
+  role = aws_iam_role.api_lambda_execution.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -69,9 +70,9 @@ resource "aws_iam_role_policy" "lambda_ssm_policy" {
   })
 }
 
-resource "aws_iam_role_policy" "lambda_s3_policy" {
-  name = "tenzir-lambda-s3-policy"
-  role = aws_iam_role.lambda_execution.id
+resource "aws_iam_role_policy" "api_lambda_s3_policy" {
+  name = "tenzir-api-lambda-s3-policy"
+  role = aws_iam_role.api_lambda_execution.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -87,6 +88,56 @@ resource "aws_iam_role_policy" "lambda_s3_policy" {
         Resource = [
           aws_s3_bucket.tenzir_sidepath.arn,
           "${aws_s3_bucket.tenzir_sidepath.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
+# UI Lambda IAM Role
+resource "aws_iam_role" "ui_lambda_execution" {
+  name = "tenzir-ui-lambda-execution-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ui_lambda_basic" {
+  role       = aws_iam_role.ui_lambda_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy_attachment" "ui_lambda_vpc" {
+  role       = aws_iam_role.ui_lambda_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+resource "aws_iam_role_policy" "ui_lambda_secrets_policy" {
+  name = "tenzir-ui-lambda-secrets-policy"
+  role = aws_iam_role.ui_lambda_execution.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = [
+          aws_secretsmanager_secret.postgres_uri.arn,
+          aws_secretsmanager_secret.tenant_manager_app_api_key.arn,
+          aws_secretsmanager_secret.auth_secret.arn
         ]
       }
     ]
@@ -121,7 +172,7 @@ resource "aws_vpc_security_group_egress_rule" "lambda_dns_udp" {
 
 resource "aws_lambda_function" "api_function" {
   function_name = "tenzir-api-function"
-  role         = aws_iam_role.lambda_execution.arn
+  role         = aws_iam_role.api_lambda_execution.arn
   package_type = "Image"
   image_uri    = "${module.bootstrap.lambda_api_container_repository_url}:latest"
   timeout      = 30
@@ -160,10 +211,11 @@ resource "aws_lambda_function" "api_function" {
   }
 
   depends_on = [
-    aws_iam_role_policy_attachment.lambda_basic,
-    aws_iam_role_policy_attachment.lambda_vpc,
-    aws_iam_role_policy.lambda_ssm_policy,
-    aws_iam_role_policy.lambda_s3_policy,
+    aws_iam_role_policy_attachment.api_lambda_basic,
+    aws_iam_role_policy_attachment.api_lambda_vpc,
+    aws_iam_role_policy.api_lambda_secrets_policy,
+    aws_iam_role_policy.api_lambda_ssm_policy,
+    aws_iam_role_policy.api_lambda_s3_policy,
   ]
 
   lifecycle {
@@ -173,7 +225,7 @@ resource "aws_lambda_function" "api_function" {
 
 resource "aws_lambda_function" "ui_function" {
   function_name = "tenzir-ui-function"
-  role         = aws_iam_role.lambda_execution.arn
+  role         = aws_iam_role.ui_lambda_execution.arn
   package_type = "Image"
   image_uri    = "${module.bootstrap.lambda_ui_container_repository_url}:latest"
   timeout      = 30
@@ -206,8 +258,9 @@ resource "aws_lambda_function" "ui_function" {
   }
 
   depends_on = [
-    aws_iam_role_policy_attachment.lambda_basic,
-    aws_iam_role_policy_attachment.lambda_vpc
+    aws_iam_role_policy_attachment.ui_lambda_basic,
+    aws_iam_role_policy_attachment.ui_lambda_vpc,
+    aws_iam_role_policy.ui_lambda_secrets_policy
   ]
 
   lifecycle {
