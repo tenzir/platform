@@ -135,6 +135,7 @@ resource "aws_iam_role_policy" "ui_lambda_secrets_policy" {
           "secretsmanager:GetSecretValue"
         ]
         Resource = [
+          aws_secretsmanager_secret.db_password.arn,
           aws_secretsmanager_secret.postgres_uri.arn,
           aws_secretsmanager_secret.tenant_manager_app_api_key.arn,
           aws_secretsmanager_secret.auth_secret.arn
