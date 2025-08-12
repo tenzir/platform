@@ -74,9 +74,9 @@ resource "aws_cognito_user_pool_client" "oauth_client" {
   allowed_oauth_flows                  = ["code"]
   allowed_oauth_scopes                 = ["email", "openid", "profile"]
   
-  # Use UI Lambda URL + /oauth/callback as callback URL
+  # Use UI custom domain + /login/oauth/callback as callback URL
   callback_urls = [
-    "${aws_lambda_function_url.ui_function_url.function_url}oauth/callback"
+    "https://${local.ui_domain}/login/oauth/callback"
   ]
   
   prevent_user_existence_errors = "ENABLED"

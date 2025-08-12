@@ -184,7 +184,7 @@ resource "aws_lambda_function" "ui_function" {
       # TODO: Convert direct secret access to ARN-based approach later for better security
       AUTH_TRUST_HOST                                         = "true"
       PUBLIC_ENABLE_HIGHLIGHT                                 = "false"
-      ORIGIN                                                  = aws_lambda_function_url.ui_function_url.function_url
+      ORIGIN                                                  = "https://${local.ui_domain}"
       PRIVATE_OIDC_PROVIDER_NAME                             = "tenzir"
       PRIVATE_OIDC_PROVIDER_CLIENT_ID                        = aws_cognito_user_pool_client.oauth_client.id
       PRIVATE_OIDC_PROVIDER_CLIENT_SECRET                    = aws_cognito_user_pool_client.oauth_client.client_secret
@@ -241,4 +241,81 @@ resource "aws_lambda_function_url" "api_function_url" {
     expose_headers    = ["date", "keep-alive"]
     max_age          = 86400
   }
+}
+
+# API Gateway for UI Lambda
+resource "aws_apigatewayv2_api" "ui_api" {
+  name          = "tenzir-ui-api"
+  protocol_type = "HTTP"
+  description   = "API Gateway for Tenzir UI Lambda"
+
+  cors_configuration {
+    allow_credentials = false
+    allow_origins     = ["*"]
+    allow_methods     = ["*"]
+    allow_headers     = ["*"]
+    expose_headers    = ["*"]
+    max_age          = 86400
+  }
+}
+
+resource "aws_apigatewayv2_integration" "ui_lambda" {
+  api_id             = aws_apigatewayv2_api.ui_api.id
+  integration_type   = "AWS_PROXY"
+  integration_method = "POST"
+  integration_uri    = aws_lambda_function.ui_function.invoke_arn
+
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_route" "ui_default" {
+  api_id    = aws_apigatewayv2_api.ui_api.id
+  route_key = "$default"
+  target    = "integrations/${aws_apigatewayv2_integration.ui_lambda.id}"
+}
+
+resource "aws_apigatewayv2_stage" "ui_default" {
+  api_id      = aws_apigatewayv2_api.ui_api.id
+  name        = "$default"
+  auto_deploy = true
+}
+
+resource "aws_lambda_permission" "ui_api_gateway" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.ui_function.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.ui_api.execution_arn}/*/*"
+}
+
+# Custom domain for UI API Gateway
+resource "aws_apigatewayv2_domain_name" "ui" {
+  domain_name = local.ui_domain
+
+  domain_name_configuration {
+    certificate_arn = aws_acm_certificate_validation.ui.certificate_arn
+    endpoint_type   = "REGIONAL"
+    security_policy = "TLS_1_2"
+  }
+}
+
+resource "aws_apigatewayv2_api_mapping" "ui" {
+  api_id      = aws_apigatewayv2_api.ui_api.id
+  domain_name = aws_apigatewayv2_domain_name.ui.id
+  stage       = aws_apigatewayv2_stage.ui_default.id
+}
+
+# Route53 record for UI domain
+resource "aws_route53_record" "ui" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = local.ui_domain
+  type    = "A"
+
+  alias {
+    name                   = aws_apigatewayv2_domain_name.ui.domain_name_configuration[0].target_domain_name
+    zone_id                = aws_apigatewayv2_domain_name.ui.domain_name_configuration[0].hosted_zone_id
+    evaluate_target_health = false
+  }
+
+  depends_on = [aws_apigatewayv2_domain_name.ui]
 }
