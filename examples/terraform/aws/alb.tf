@@ -74,7 +74,7 @@ resource "aws_lb_listener" "gateway_https" {
   port              = "443"
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
-  certificate_arn   = aws_acm_certificate_validation.api.certificate_arn
+  certificate_arn   = aws_acm_certificate_validation.nodes.certificate_arn
 
   default_action {
     type             = "forward"
@@ -96,5 +96,18 @@ resource "aws_lb_listener" "gateway_http_redirect" {
       protocol    = "HTTPS"
       status_code = "HTTP_301"
     }
+  }
+}
+
+# Route53 record for nodes domain
+resource "aws_route53_record" "nodes" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = local.nodes_domain
+  type    = "A"
+
+  alias {
+    name                   = aws_lb.gateway.dns_name
+    zone_id                = aws_lb.gateway.zone_id
+    evaluate_target_health = true
   }
 }

@@ -5,9 +5,10 @@ locals {
   # Construct the base domain
   base_domain = "${local.random_prefix}${var.domain_name}"
   
-  # API and UI domain names
-  api_domain = "api.${local.base_domain}"
-  ui_domain  = "ui.${local.base_domain}"
+  # API, UI, and Nodes domain names
+  api_domain   = "api.${local.base_domain}"
+  ui_domain    = "ui.${local.base_domain}"
+  nodes_domain = "nodes.${local.base_domain}"
 }
 
 # Random ID for subdomain (only created if random_subdomain is true)

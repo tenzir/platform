@@ -319,3 +319,80 @@ resource "aws_route53_record" "ui" {
 
   depends_on = [aws_apigatewayv2_domain_name.ui]
 }
+
+# API Gateway for API Lambda
+resource "aws_apigatewayv2_api" "api_api" {
+  name          = "tenzir-api-api"
+  protocol_type = "HTTP"
+  description   = "API Gateway for Tenzir API Lambda"
+
+  cors_configuration {
+    allow_credentials = false
+    allow_origins     = ["*"]
+    allow_methods     = ["*"]
+    allow_headers     = ["*"]
+    expose_headers    = ["*"]
+    max_age          = 86400
+  }
+}
+
+resource "aws_apigatewayv2_integration" "api_lambda" {
+  api_id             = aws_apigatewayv2_api.api_api.id
+  integration_type   = "AWS_PROXY"
+  integration_method = "POST"
+  integration_uri    = aws_lambda_function.api_function.invoke_arn
+
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_route" "api_default" {
+  api_id    = aws_apigatewayv2_api.api_api.id
+  route_key = "$default"
+  target    = "integrations/${aws_apigatewayv2_integration.api_lambda.id}"
+}
+
+resource "aws_apigatewayv2_stage" "api_default" {
+  api_id      = aws_apigatewayv2_api.api_api.id
+  name        = "$default"
+  auto_deploy = true
+}
+
+resource "aws_lambda_permission" "api_api_gateway" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.api_function.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api_api.execution_arn}/*/*"
+}
+
+# Custom domain for API API Gateway
+resource "aws_apigatewayv2_domain_name" "api" {
+  domain_name = local.api_domain
+
+  domain_name_configuration {
+    certificate_arn = aws_acm_certificate_validation.api.certificate_arn
+    endpoint_type   = "REGIONAL"
+    security_policy = "TLS_1_2"
+  }
+}
+
+resource "aws_apigatewayv2_api_mapping" "api" {
+  api_id      = aws_apigatewayv2_api.api_api.id
+  domain_name = aws_apigatewayv2_domain_name.api.id
+  stage       = aws_apigatewayv2_stage.api_default.id
+}
+
+# Route53 record for API domain
+resource "aws_route53_record" "api" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = local.api_domain
+  type    = "A"
+
+  alias {
+    name                   = aws_apigatewayv2_domain_name.api.domain_name_configuration[0].target_domain_name
+    zone_id                = aws_apigatewayv2_domain_name.api.domain_name_configuration[0].hosted_zone_id
+    evaluate_target_health = false
+  }
+
+  depends_on = [aws_apigatewayv2_domain_name.api]
+}
