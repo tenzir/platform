@@ -49,9 +49,19 @@ output "gateway_alb_hosted_zone_id" {
   value       = aws_lb.gateway.zone_id
 }
 
-output "tenzir_ca_certificate" {
-  description = "Tenzir Root CA certificate (PEM format)"
-  value       = tls_self_signed_cert.ca.cert_pem
-  sensitive   = true
+output "base_domain" {
+  description = "The base domain (with random subdomain if enabled)"
+  value       = local.base_domain
 }
+
+output "api_domain" {
+  description = "The API domain name"
+  value       = local.api_domain
+}
+
+output "ui_domain" {
+  description = "The UI domain name"
+  value       = local.ui_domain
+}
+
 
