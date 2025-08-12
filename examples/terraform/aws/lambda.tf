@@ -92,25 +92,6 @@ resource "aws_iam_role_policy" "lambda_s3_policy" {
   })
 }
 
-resource "aws_iam_role_policy" "lambda_efs_policy" {
-  name = "tenzir-lambda-efs-policy"
-  role = aws_iam_role.lambda_execution.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "elasticfilesystem:ClientMount",
-          "elasticfilesystem:ClientWrite",
-          "elasticfilesystem:ClientRootAccess"
-        ]
-        Resource = aws_efs_file_system.ca_storage.arn
-      }
-    ]
-  })
-}
 
 
 resource "aws_security_group" "lambda" {
