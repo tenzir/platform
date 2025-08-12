@@ -168,16 +168,9 @@ resource "aws_lambda_function" "api_function" {
       TENZIR_DEMO_NODE_IMAGE                                  = "ghcr.io/tenzir/tenzir-demo"
       GATEWAY_WS_ENDPOINT                                     = aws_ssm_parameter.gateway_ws_endpoint.value
       GATEWAY_HTTP_ENDPOINT                                   = aws_ssm_parameter.gateway_http_endpoint.value
-      TENZIR_CA_CERTIFICATE                                   = tls_self_signed_cert.ca.cert_pem
-      REQUESTS_CA_BUNDLE                                      = "/mnt/efs/ca.pem"
-      SSL_CERT_FILE                                           = "/mnt/efs/ca.pem"
     }
   }
 
-  file_system_config {
-    arn              = aws_efs_access_point.ca_file.arn
-    local_mount_path = "/mnt/efs"
-  }
 
   vpc_config {
     subnet_ids         = [aws_subnet.platform.id]
@@ -189,10 +182,6 @@ resource "aws_lambda_function" "api_function" {
     aws_iam_role_policy_attachment.lambda_vpc,
     aws_iam_role_policy.lambda_ssm_policy,
     aws_iam_role_policy.lambda_s3_policy,
-    aws_iam_role_policy.lambda_efs_policy,
-    aws_efs_mount_target.platform,
-    aws_efs_mount_target.nodes,
-    null_resource.create_ca_file_in_efs
   ]
 
   lifecycle {
