@@ -96,6 +96,12 @@ resource "aws_cognito_user_pool_client" "oauth_client" {
 # Data source to get current AWS region
 data "aws_region" "current" {}
 
+# Cognito custom domain
+resource "aws_cognito_user_pool_domain" "tenzir" {
+  domain       = "auth.${local.base_domain}"
+  user_pool_id = aws_cognito_user_pool.tenzir.id
+}
+
 # Local value to construct the OIDC issuer URL
 locals {
   oidc_issuer_url = "https://cognito-idp.${data.aws_region.current.name}.amazonaws.com/${aws_cognito_user_pool.tenzir.id}"
