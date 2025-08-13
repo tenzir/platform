@@ -209,6 +209,24 @@ resource "aws_apprunner_custom_domain_association" "ui" {
   depends_on = [aws_acm_certificate_validation.ui]
 }
 
+# Route53 records for App Runner domain validation
+resource "aws_route53_record" "ui_apprunner_validation" {
+  for_each = {
+    for cert in aws_apprunner_custom_domain_association.ui.certificate_validation_records : cert.name => {
+      name  = cert.name
+      value = cert.value
+      type  = cert.type
+    }
+  }
+
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.value]
+  ttl             = 60
+  type            = each.value.type
+  zone_id         = data.aws_route53_zone.main.zone_id
+}
+
 # Update Route53 record to point to App Runner
 resource "aws_route53_record" "ui_apprunner" {
   zone_id = data.aws_route53_zone.main.zone_id
@@ -217,5 +235,8 @@ resource "aws_route53_record" "ui_apprunner" {
   ttl     = 300
   records = [aws_apprunner_custom_domain_association.ui.dns_target]
 
-  depends_on = [aws_apprunner_custom_domain_association.ui]
+  depends_on = [
+    aws_apprunner_custom_domain_association.ui,
+    aws_route53_record.ui_apprunner_validation
+  ]
 }
