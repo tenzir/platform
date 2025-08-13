@@ -32,7 +32,10 @@ resource "aws_iam_role_policy" "apprunner_secrets_policy" {
           aws_secretsmanager_secret.db_password.arn,
           aws_secretsmanager_secret.postgres_uri.arn,
           aws_secretsmanager_secret.tenant_manager_app_api_key.arn,
-          aws_secretsmanager_secret.auth_secret.arn
+          aws_secretsmanager_secret.auth_secret.arn,
+          aws_secretsmanager_secret.client_secret.arn,
+          aws_secretsmanager_secret.user_endpoint.arn,
+          aws_secretsmanager_secret.webapp_endpoint.arn
         ]
       }
     ]
@@ -159,7 +162,8 @@ resource "aws_apprunner_service" "ui" {
 
   depends_on = [
     aws_iam_role_policy.apprunner_secrets_policy,
-    aws_iam_role_policy_attachment.apprunner_access_role_policy
+    aws_iam_role_policy_attachment.apprunner_access_role_policy,
+    aws_vpc_security_group_ingress_rule.rds_postgres_apprunner
   ]
 }
 
