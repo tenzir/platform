@@ -62,7 +62,7 @@ resource "aws_secretsmanager_secret" "postgres_uri" {
 
 resource "aws_secretsmanager_secret_version" "postgres_uri" {
   secret_id = aws_secretsmanager_secret.postgres_uri.id
-  secret_string = "postgresql://${aws_db_instance.tenzir.username}:${urlencode(random_password.db_password.result)}@${aws_db_instance.tenzir.endpoint}/${aws_db_instance.tenzir.db_name}"
+  secret_string = "postgresql://${aws_db_instance.tenzir.username}:${urlencode(random_password.db_password.result)}@${aws_db_instance.tenzir.endpoint}/${aws_db_instance.tenzir.db_name}?sslmode=require"
 }
 
 # Generate 32 random bytes for tenant token encryption key (base64 encoded)
