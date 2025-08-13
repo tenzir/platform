@@ -8,9 +8,9 @@ output "lambda_api_container_repository_url" {
   value       = module.bootstrap.lambda_api_container_repository_url
 }
 
-output "ui_function_url" {
-  description = "URL of the UI Lambda function"
-  value       = aws_lambda_function_url.ui_function_url.function_url
+output "ui_service_url" {
+  description = "URL of the App Runner UI service"
+  value       = aws_apprunner_service.ui.service_url
 }
 
 output "api_function_url" {

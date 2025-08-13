@@ -41,6 +41,17 @@ resource "aws_subnet" "public" {
   }
 }
 
+resource "aws_subnet" "public2" {
+  vpc_id                  = aws_vpc.tenzir.id
+  cidr_block              = "10.0.6.0/24"
+  availability_zone       = "eu-west-1b"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "tenzir-public-subnet2"
+  }
+}
+
 # An RDS instance needs at least two subnets in two different
 # availability zones, for whatever reason.
 resource "aws_subnet" "postgres1" {
@@ -111,6 +122,14 @@ resource "aws_vpc_security_group_ingress_rule" "vpc_endpoint_https_nodes" {
   from_port         = 443
   to_port           = 443
   cidr_ipv4         = aws_subnet.nodes.cidr_block
+}
+
+resource "aws_vpc_security_group_ingress_rule" "vpc_endpoint_https_apprunner" {
+  security_group_id            = aws_security_group.vpc_endpoint.id
+  ip_protocol                  = "tcp"
+  from_port                    = 443
+  to_port                      = 443
+  referenced_security_group_id = aws_security_group.apprunner_ui.id
 }
 
 resource "aws_vpc_endpoint" "secrets_manager" {
@@ -241,6 +260,11 @@ resource "aws_route_table" "public" {
 
 resource "aws_route_table_association" "public" {
   subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "public2" {
+  subnet_id      = aws_subnet.public2.id
   route_table_id = aws_route_table.public.id
 }
 

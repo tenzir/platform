@@ -94,56 +94,6 @@ resource "aws_iam_role_policy" "api_lambda_s3_policy" {
   })
 }
 
-# UI Lambda IAM Role
-resource "aws_iam_role" "ui_lambda_execution" {
-  name = "tenzir-ui-lambda-execution-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ui_lambda_basic" {
-  role       = aws_iam_role.ui_lambda_execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-resource "aws_iam_role_policy_attachment" "ui_lambda_vpc" {
-  role       = aws_iam_role.ui_lambda_execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-}
-
-resource "aws_iam_role_policy" "ui_lambda_secrets_policy" {
-  name = "tenzir-ui-lambda-secrets-policy"
-  role = aws_iam_role.ui_lambda_execution.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "secretsmanager:GetSecretValue"
-        ]
-        Resource = [
-          aws_secretsmanager_secret.db_password.arn,
-          aws_secretsmanager_secret.postgres_uri.arn,
-          aws_secretsmanager_secret.tenant_manager_app_api_key.arn,
-          aws_secretsmanager_secret.auth_secret.arn
-        ]
-      }
-    ]
-  })
-}
 
 
 
@@ -224,64 +174,7 @@ resource "aws_lambda_function" "api_function" {
   }
 }
 
-resource "aws_lambda_function" "ui_function" {
-  function_name = "tenzir-ui-function"
-  role         = aws_iam_role.ui_lambda_execution.arn
-  package_type = "Image"
-  image_uri    = "${module.bootstrap.lambda_ui_container_repository_url}:latest"
-  timeout      = 30
-  memory_size  = 512
 
-  environment {
-    variables = {
-      # TODO: Convert direct secret access to ARN-based approach later for better security
-      AUTH_TRUST_HOST                                         = "true"
-      PUBLIC_ENABLE_HIGHLIGHT                                 = "false"
-      ORIGIN                                                  = "https://${local.ui_domain}"
-      PRIVATE_OIDC_PROVIDER_NAME                             = "tenzir"
-      PRIVATE_OIDC_PROVIDER_CLIENT_ID                        = aws_cognito_user_pool_client.oauth_client.id
-      PRIVATE_OIDC_PROVIDER_CLIENT_SECRET                    = aws_cognito_user_pool_client.oauth_client.client_secret
-      PRIVATE_OIDC_PROVIDER_ISSUER_URL                       = local.oidc_issuer_url
-      PUBLIC_OIDC_PROVIDER_ID                                = "tenzir"
-      PUBLIC_WEBSOCKET_GATEWAY_ENDPOINT                      = aws_ssm_parameter.gateway_ws_endpoint.value
-      PRIVATE_USER_ENDPOINT                                  = "${aws_lambda_function_url.api_function_url.function_url}user"
-      PRIVATE_WEBAPP_ENDPOINT                                = "${aws_lambda_function_url.api_function_url.function_url}webapp"
-      PRIVATE_WEBAPP_KEY                                     = aws_secretsmanager_secret_version.tenant_manager_app_api_key.secret_string
-      AUTH_SECRET                                            = aws_secretsmanager_secret_version.auth_secret.secret_string
-      PUBLIC_DISABLE_DEMO_NODE_AND_TOUR                      = "false"
-      PRIVATE_DRIZZLE_DATABASE_URL                           = aws_secretsmanager_secret_version.postgres_uri.secret_string
-    }
-  }
-
-  vpc_config {
-    subnet_ids         = [aws_subnet.platform.id]
-    security_group_ids = [aws_security_group.lambda.id]
-  }
-
-  depends_on = [
-    aws_iam_role_policy_attachment.ui_lambda_basic,
-    aws_iam_role_policy_attachment.ui_lambda_vpc,
-    aws_iam_role_policy.ui_lambda_secrets_policy
-  ]
-
-  lifecycle {
-    ignore_changes = [image_uri]
-  }
-}
-
-resource "aws_lambda_function_url" "ui_function_url" {
-  function_name      = aws_lambda_function.ui_function.function_name
-  authorization_type = "NONE"
-
-  cors {
-    allow_credentials = false
-    allow_origins     = ["*"]
-    allow_methods     = ["*"]
-    allow_headers     = ["date", "keep-alive"]
-    expose_headers    = ["date", "keep-alive"]
-    max_age          = 86400
-  }
-}
 
 resource "aws_lambda_function_url" "api_function_url" {
   function_name      = aws_lambda_function.api_function.function_name
@@ -297,82 +190,6 @@ resource "aws_lambda_function_url" "api_function_url" {
   }
 }
 
-# API Gateway for UI Lambda
-resource "aws_apigatewayv2_api" "ui_api" {
-  name          = "tenzir-ui-api"
-  protocol_type = "HTTP"
-  description   = "API Gateway for Tenzir UI Lambda"
-
-  cors_configuration {
-    allow_credentials = false
-    allow_origins     = ["*"]
-    allow_methods     = ["*"]
-    allow_headers     = ["*"]
-    expose_headers    = ["*"]
-    max_age          = 86400
-  }
-}
-
-resource "aws_apigatewayv2_integration" "ui_lambda" {
-  api_id             = aws_apigatewayv2_api.ui_api.id
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
-  integration_uri    = aws_lambda_function.ui_function.invoke_arn
-
-  payload_format_version = "2.0"
-}
-
-resource "aws_apigatewayv2_route" "ui_default" {
-  api_id    = aws_apigatewayv2_api.ui_api.id
-  route_key = "$default"
-  target    = "integrations/${aws_apigatewayv2_integration.ui_lambda.id}"
-}
-
-resource "aws_apigatewayv2_stage" "ui_default" {
-  api_id      = aws_apigatewayv2_api.ui_api.id
-  name        = "$default"
-  auto_deploy = true
-}
-
-resource "aws_lambda_permission" "ui_api_gateway" {
-  statement_id  = "AllowExecutionFromAPIGateway"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.ui_function.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.ui_api.execution_arn}/*/*"
-}
-
-# Custom domain for UI API Gateway
-resource "aws_apigatewayv2_domain_name" "ui" {
-  domain_name = local.ui_domain
-
-  domain_name_configuration {
-    certificate_arn = aws_acm_certificate_validation.ui.certificate_arn
-    endpoint_type   = "REGIONAL"
-    security_policy = "TLS_1_2"
-  }
-}
-
-resource "aws_apigatewayv2_api_mapping" "ui" {
-  api_id      = aws_apigatewayv2_api.ui_api.id
-  domain_name = aws_apigatewayv2_domain_name.ui.id
-  stage       = aws_apigatewayv2_stage.ui_default.id
-}
-
-# Route53 record for UI domain
-resource "aws_route53_record" "ui" {
-  zone_id = data.aws_route53_zone.main.zone_id
-  name    = local.ui_domain
-  type    = "A"
-
-  alias {
-    name                   = aws_apigatewayv2_domain_name.ui.domain_name_configuration[0].target_domain_name
-    zone_id                = aws_apigatewayv2_domain_name.ui.domain_name_configuration[0].hosted_zone_id
-    evaluate_target_health = false
-  }
-
-  depends_on = [aws_apigatewayv2_domain_name.ui]
-}
 
 # API Gateway for API Lambda
 resource "aws_apigatewayv2_api" "api_api" {
