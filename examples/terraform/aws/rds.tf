@@ -33,6 +33,14 @@ resource "aws_vpc_security_group_ingress_rule" "rds_postgres_apprunner" {
   referenced_security_group_id = aws_security_group.apprunner_ui.id
 }
 
+resource "aws_vpc_security_group_ingress_rule" "rds_postgres_ecs_gateway" {
+  security_group_id            = aws_security_group.rds.id
+  ip_protocol                  = "tcp"
+  from_port                    = 5432
+  to_port                      = 5432
+  referenced_security_group_id = aws_security_group.ecs_service.id
+}
+
 resource "random_password" "db_password" {
   length  = 16
   special = true
