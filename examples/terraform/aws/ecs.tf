@@ -46,7 +46,7 @@ resource "aws_ecr_pull_through_cache_rule" "marketplace" {
 }
 
 resource "aws_ecs_cluster" "platform" {
-  name = "tenzir-platform"
+  name = "tenzir-platform-aws-edition"
 
   setting {
     name  = "containerInsights"
