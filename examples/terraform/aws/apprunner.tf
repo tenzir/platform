@@ -135,7 +135,7 @@ resource "aws_apprunner_service" "ui" {
           PRIVATE_DRIZZLE_DATABASE_URL                           = aws_secretsmanager_secret.postgres_uri.arn
         }
       }
-      image_identifier      = "${module.bootstrap.lambda_ui_container_repository_url}:latest"
+      image_identifier      = "${module.bootstrap.ui_repository_url}:latest"
       image_repository_type = "ECR"
     }
     auto_deployments_enabled = false

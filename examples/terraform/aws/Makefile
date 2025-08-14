@@ -1,6 +1,7 @@
 # Variables
-ECR_REPOSITORY_UI = $(shell terraform output -json | jq -r '.lambda_ui_container_repository_url.value')
-ECR_REPOSITORY_API = $(shell terraform output -json | jq -r '.lambda_api_container_repository_url.value')
+ECR_REPOSITORY_UI = $(shell terraform output -json | jq -r '.ui_repository_url.value')
+ECR_REPOSITORY_API = $(shell terraform output -json | jq -r '.platform_api_repository_url.value')
+ECR_REPOSITORY_GATEWAY = $(shell terraform output -json | jq -r '.gateway_repository_url.value')
 IMAGE_TAG ?= latest
 
 .PHONY: build-ui build-api build push-ui push-api push login update-ui update-api update

@@ -1,11 +1,16 @@
-output "lambda_ui_container_repository_url" {
-  description = "URL of the Lambda UI container repository"
-  value       = module.bootstrap.lambda_ui_container_repository_url
+output "ui_repository_url" {
+  description = "URL of the unified UI repository"
+  value       = module.bootstrap.ui_repository_url
 }
 
-output "lambda_api_container_repository_url" {
-  description = "URL of the Lambda API container repository"
-  value       = module.bootstrap.lambda_api_container_repository_url
+output "platform_api_repository_url" {
+  description = "URL of the unified platform API repository"
+  value       = module.bootstrap.platform_api_repository_url
+}
+
+output "gateway_repository_url" {
+  description = "URL of the unified gateway repository"
+  value       = module.bootstrap.gateway_repository_url
 }
 
 output "ui_service_url" {

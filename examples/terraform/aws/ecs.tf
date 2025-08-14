@@ -102,7 +102,7 @@ resource "aws_ecs_task_definition" "gateway" {
   container_definitions = jsonencode([
     {
       name    = "gateway"
-      image   = "${module.bootstrap.platform_repository_url}:latest"
+      image   = "${module.bootstrap.gateway_repository_url}:latest"
       command = ["tenant_manager/ws/server/aws.py"]
       
       portMappings = [

@@ -197,7 +197,7 @@ resource "aws_lambda_function" "api_function" {
   function_name = "tenzir-api-function"
   role         = aws_iam_role.api_lambda_execution.arn
   package_type = "Image"
-  image_uri    = "${module.bootstrap.lambda_api_container_repository_url}:latest"
+  image_uri    = "${module.bootstrap.platform_api_repository_url}:latest"
   timeout      = 30
   memory_size  = 512
 
