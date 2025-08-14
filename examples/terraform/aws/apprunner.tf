@@ -120,7 +120,8 @@ resource "aws_apprunner_service" "ui" {
           PRIVATE_OIDC_PROVIDER_NAME                             = "tenzir"
           PRIVATE_OIDC_PROVIDER_CLIENT_ID                        = aws_cognito_user_pool_client.app_client.id
           PRIVATE_OIDC_PROVIDER_ISSUER_URL                       = local.oidc_issuer_url
-          PUBLIC_OIDC_PROVIDER_ID                                = "tenzir"
+          PUBLIC_OIDC_PROVIDER_ID                                = "cognito"
+          PUBLIC_OIDC_SCOPES                                     = "openid profile email"
           PUBLIC_WEBSOCKET_GATEWAY_ENDPOINT                      = aws_ssm_parameter.gateway_ws_endpoint.value
           PUBLIC_DISABLE_DEMO_NODE_AND_TOUR                      = "false"
         }
