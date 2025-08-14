@@ -96,9 +96,9 @@ resource "aws_cognito_user_pool_client" "oauth_client" {
 # Data source to get current AWS region
 data "aws_region" "current" {}
 
-# Cognito custom domain
+# Cognito managed domain
 resource "aws_cognito_user_pool_domain" "tenzir" {
-  domain       = "auth.${local.base_domain}"
+  domain       = "tenzir-auth-${random_id.subdomain[0].hex}"
   user_pool_id = aws_cognito_user_pool.tenzir.id
 }
 
