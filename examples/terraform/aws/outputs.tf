@@ -18,10 +18,6 @@ output "api_function_url" {
   value       = aws_lambda_function_url.api_function_url.function_url
 }
 
-output "ecr_pull_through_cache_role_arn" {
-  description = "ARN of the ECR pull-through cache role"
-  value       = aws_iam_role.ecr_pull_through_cache.arn
-}
 
 output "oauth_client_id" {
   description = "The OAuth client ID"
