@@ -144,7 +144,7 @@ resource "aws_lambda_function" "api_function" {
       TENZIR_DEMO_NODE_LOGS_GROUP_NAME                        = aws_ssm_parameter.demo_node_logs_group_name.value
       TENANT_MANAGER_AUTH__TRUSTED_AUDIENCES                 = jsonencode({
         "issuer": "${local.oidc_issuer_url}",
-        "audiences": [aws_cognito_user_pool_client.oauth_client.id],
+        "audiences": [aws_cognito_user_pool_client.app_client.id],
       })
       TENANT_MANAGER_AUTH__ADMIN_FUNCTIONS                 = jsonencode([])
       BASE_PATH                                               = "/"

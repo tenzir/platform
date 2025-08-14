@@ -36,35 +36,10 @@ resource "aws_cognito_user_pool" "tenzir" {
   }
 }
 
-resource "aws_cognito_user_pool_client" "tenzir" {
-  name         = "tenzir-client"
-  user_pool_id = aws_cognito_user_pool.tenzir.id
 
-  generate_secret                      = false
-  prevent_user_existence_errors        = "ENABLED"
-  enable_token_revocation              = true
-  enable_propagate_additional_user_context_data = false
-
-  explicit_auth_flows = [
-    "ALLOW_USER_PASSWORD_AUTH",
-    "ALLOW_USER_SRP_AUTH",
-    "ALLOW_REFRESH_TOKEN_AUTH"
-  ]
-
-  access_token_validity  = 60
-  id_token_validity      = 60
-  refresh_token_validity = 30
-
-  token_validity_units {
-    access_token  = "minutes"
-    id_token      = "minutes"
-    refresh_token = "days"
-  }
-}
-
-# OAuth client for external integrations
-resource "aws_cognito_user_pool_client" "oauth_client" {
-  name         = "tenzir-oauth-client"
+# App client for authentication
+resource "aws_cognito_user_pool_client" "app_client" {
+  name         = "tenzir-app"
   user_pool_id = aws_cognito_user_pool.tenzir.id
 
   # Enable secret generation for OAuth flows

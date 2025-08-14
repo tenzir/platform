@@ -25,12 +25,12 @@ output "ecr_pull_through_cache_role_arn" {
 
 output "oauth_client_id" {
   description = "The OAuth client ID"
-  value       = aws_cognito_user_pool_client.oauth_client.id
+  value       = aws_cognito_user_pool_client.app_client.id
 }
 
 output "oauth_client_secret" {
   description = "The OAuth client secret"
-  value       = aws_cognito_user_pool_client.oauth_client.client_secret
+  value       = aws_cognito_user_pool_client.app_client.client_secret
   sensitive   = true
 }
 

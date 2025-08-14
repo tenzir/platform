@@ -118,7 +118,7 @@ resource "aws_apprunner_service" "ui" {
           PUBLIC_ENABLE_HIGHLIGHT                                 = "false"
           ORIGIN                                                  = "https://${local.ui_domain}"
           PRIVATE_OIDC_PROVIDER_NAME                             = "tenzir"
-          PRIVATE_OIDC_PROVIDER_CLIENT_ID                        = aws_cognito_user_pool_client.oauth_client.id
+          PRIVATE_OIDC_PROVIDER_CLIENT_ID                        = aws_cognito_user_pool_client.app_client.id
           PRIVATE_OIDC_PROVIDER_ISSUER_URL                       = local.oidc_issuer_url
           PUBLIC_OIDC_PROVIDER_ID                                = "tenzir"
           PUBLIC_WEBSOCKET_GATEWAY_ENDPOINT                      = aws_ssm_parameter.gateway_ws_endpoint.value
@@ -176,7 +176,7 @@ resource "aws_secretsmanager_secret" "client_secret" {
 
 resource "aws_secretsmanager_secret_version" "client_secret" {
   secret_id     = aws_secretsmanager_secret.client_secret.id
-  secret_string = aws_cognito_user_pool_client.oauth_client.client_secret
+  secret_string = aws_cognito_user_pool_client.app_client.client_secret
 }
 
 resource "aws_secretsmanager_secret" "user_endpoint" {
