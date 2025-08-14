@@ -8,3 +8,14 @@ variable "random_subdomain" {
   type        = bool
   default     = false
 }
+
+variable "amazon_client_id" {
+  description = "Amazon Login with Amazon client ID"
+  type        = string
+}
+
+variable "amazon_client_secret" {
+  description = "Amazon Login with Amazon client secret"
+  type        = string
+  sensitive   = true
+}
