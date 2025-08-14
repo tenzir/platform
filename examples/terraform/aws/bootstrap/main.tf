@@ -24,3 +24,12 @@ resource "aws_ecr_repository" "platform" {
     scan_on_push = true
   }
 }
+
+resource "aws_ecr_repository" "node" {
+  name = "tenzir-sovereign-platform/node"
+  force_delete = true
+  
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}

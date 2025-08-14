@@ -22,3 +22,8 @@ output "platform_repository_url" {
   description = "URL of the platform repository"
   value       = aws_ecr_repository.platform.repository_url
 }
+
+output "node_repository_url" {
+  description = "URL of the node repository"
+  value       = aws_ecr_repository.node.repository_url
+}

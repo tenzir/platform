@@ -224,7 +224,7 @@ resource "aws_lambda_function" "api_function" {
       }])
       BASE_PATH                                               = ""
       TENANT_MANAGER_SIDEPATH_BUCKET_NAME                     = aws_s3_bucket.tenzir_sidepath.bucket
-      TENZIR_DEMO_NODE_IMAGE                                  = "ghcr.io/tenzir/tenzir-demo"
+      TENZIR_DEMO_NODE_IMAGE                                  = "${module.bootstrap.node_repository_url}:latest"
       GATEWAY_WS_ENDPOINT                                     = aws_ssm_parameter.gateway_ws_endpoint.value
       GATEWAY_HTTP_ENDPOINT                                   = aws_ssm_parameter.gateway_http_endpoint.value
     }
