@@ -94,6 +94,78 @@ resource "aws_iam_role_policy" "api_lambda_s3_policy" {
   })
 }
 
+resource "aws_iam_role_policy" "api_lambda_cloudformation_policy" {
+  name = "tenzir-api-lambda-cloudformation-policy"
+  role = aws_iam_role.api_lambda_execution.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "cloudformation:CreateStack",
+          "cloudformation:UpdateStack",
+          "cloudformation:DeleteStack",
+          "cloudformation:DescribeStacks",
+          "cloudformation:DescribeStackEvents",
+          "cloudformation:DescribeStackResources",
+          "cloudformation:GetStackPolicy",
+          "cloudformation:GetTemplate",
+          "cloudformation:ListStackResources",
+          "cloudformation:ListStacks",
+          "cloudformation:ValidateTemplate"
+        ]
+        Resource = "arn:aws:cloudformation:*:*:stack/demo-*/*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "api_lambda_ecs_policy" {
+  name = "tenzir-api-lambda-ecs-policy"
+  role = aws_iam_role.api_lambda_execution.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecs:CreateService",
+          "ecs:UpdateService",
+          "ecs:DeleteService",
+          "ecs:ListTasks",
+          "ecs:DescribeTasks",
+          "ecs:DescribeServices"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "ecs:cluster" = aws_ssm_parameter.ecs_cluster_arn.value
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ecs:RegisterTaskDefinition",
+          "ecs:DeregisterTaskDefinition",
+          "ecs:ListTaskDefinitions"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "iam:PassRole"
+        ]
+        Resource = aws_ssm_parameter.ecs_task_execution_role_arn.value
+      }
+    ]
+  })
+}
+
 
 
 
@@ -170,6 +242,8 @@ resource "aws_lambda_function" "api_function" {
     aws_iam_role_policy.api_lambda_secrets_policy,
     aws_iam_role_policy.api_lambda_ssm_policy,
     aws_iam_role_policy.api_lambda_s3_policy,
+    aws_iam_role_policy.api_lambda_cloudformation_policy,
+    aws_iam_role_policy.api_lambda_ecs_policy,
   ]
 
   lifecycle {
