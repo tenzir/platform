@@ -451,13 +451,13 @@ resource "aws_ssm_parameter" "tenzir_demo_subnet_id" {
 resource "aws_ssm_parameter" "gateway_ws_endpoint" {
   name  = "/tenzir/platform/gateway-ws-endpoint"
   type  = "String"
-  value = "wss://${aws_lb.gateway.dns_name}"
+  value = "wss://${local.nodes_domain}"
 }
 
 resource "aws_ssm_parameter" "gateway_http_endpoint" {
   name  = "/tenzir/platform/gateway-http-endpoint"
   type  = "String"
-  value = "https://${aws_lb.gateway.dns_name}"
+  value = "https://${local.nodes_domain}"
 }
 
 resource "aws_ecs_service" "node" {
