@@ -86,30 +86,31 @@ resource "aws_security_group" "ecs_service" {
   description = "Security group for Tenzir ECS service"
   vpc_id      = aws_vpc.tenzir.id
 
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   tags = {
     Name = "tenzir-ecs-service-sg"
   }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "ecs_service_http" {
+  security_group_id = aws_security_group.ecs_service.id
+  ip_protocol       = "tcp"
+  from_port         = 80
+  to_port           = 80
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "ecs_service_https" {
+  security_group_id = aws_security_group.ecs_service.id
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "ecs_service_egress" {
+  security_group_id = aws_security_group.ecs_service.id
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
 }
 
 resource "aws_security_group" "ecs_api" {
