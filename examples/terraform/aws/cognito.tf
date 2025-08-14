@@ -55,7 +55,7 @@ resource "aws_cognito_user_pool_client" "app_client" {
   allowed_oauth_scopes                 = ["email", "openid", "profile"]
   
   # Enable identity providers
-  supported_identity_providers = ["COGNITO", "LoginWithAmazon"]
+  supported_identity_providers = ["COGNITO"]
   
   # Use UI custom domain + /login/oauth/callback as callback URL
   callback_urls = [
