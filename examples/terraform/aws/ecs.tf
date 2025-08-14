@@ -150,7 +150,7 @@ resource "aws_ecs_task_definition" "gateway" {
     {
       name    = "gateway"
       image   = "${module.bootstrap.platform_repository_url}:latest"
-      command = ["tenant_manager/ws/server/local.py"]
+      command = ["tenant_manager/ws/server/aws.py"]
       
       portMappings = [
         {
@@ -183,6 +183,10 @@ resource "aws_ecs_task_definition" "gateway" {
         {
           name  = "STORE__POSTGRES_URI_SECRET_ARN"
           value = aws_secretsmanager_secret.postgres_uri.arn
+        },
+        {
+          name  = "WORKSPACE_SECRETS_MASTER_SEED_ARN"
+          value = aws_secretsmanager_secret.workspace_secrets_master_seed.arn
         }
       ]
       
@@ -237,7 +241,8 @@ resource "aws_iam_role_policy" "gateway_task_secrets" {
         Resource = [
           aws_secretsmanager_secret.postgres_uri.arn,
           aws_secretsmanager_secret.tenant_manager_app_api_key.arn,
-          aws_secretsmanager_secret.tenant_manager_tenant_token_encryption_key.arn
+          aws_secretsmanager_secret.tenant_manager_tenant_token_encryption_key.arn,
+          aws_secretsmanager_secret.workspace_secrets_master_seed.arn
         ]
       }
     ]
