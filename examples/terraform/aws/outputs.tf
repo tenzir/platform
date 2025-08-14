@@ -69,10 +69,9 @@ output "admin_username" {
   value       = aws_cognito_user.admin.username
 }
 
-output "admin_password" {
-  description = "Default admin password for Cognito (stored in Secrets Manager)"
+output "admin_initial_password" {
+  description = "Initial admin password for Cognito (change after first login)"
   value       = random_password.admin_password.result
-  sensitive   = true
 }
 
 
