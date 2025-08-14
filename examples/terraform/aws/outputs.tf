@@ -72,6 +72,7 @@ output "admin_username" {
 output "admin_initial_password" {
   description = "Initial admin password for Cognito (change after first login)"
   value       = random_password.admin_password.result
+  sensitive   = true
 }
 
 
