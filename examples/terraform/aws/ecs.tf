@@ -295,6 +295,10 @@ resource "aws_ecs_task_definition" "api" {
         {
           name  = "WORKSPACE_SECRETS_MASTER_SEED_ARN"
           value = aws_secretsmanager_secret.workspace_secrets_master_seed.arn
+        },
+        {
+          name  = "BASE_PATH"
+          value = ""
         }
       ]
       

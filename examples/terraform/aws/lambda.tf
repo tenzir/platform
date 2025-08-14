@@ -150,7 +150,7 @@ resource "aws_lambda_function" "api_function" {
         "auth_fn": "auth_user",
         "user_id": aws_cognito_user.admin.sub
       }])
-      BASE_PATH                                               = "/"
+      BASE_PATH                                               = ""
       TENANT_MANAGER_SIDEPATH_BUCKET_NAME                     = aws_s3_bucket.tenzir_sidepath.bucket
       TENZIR_DEMO_NODE_IMAGE                                  = "ghcr.io/tenzir/tenzir-demo"
       GATEWAY_WS_ENDPOINT                                     = aws_ssm_parameter.gateway_ws_endpoint.value
