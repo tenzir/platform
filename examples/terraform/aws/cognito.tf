@@ -170,25 +170,6 @@ resource "aws_cognito_user_pool_ui_customization" "tenzir" {
   EOF
 }
 
-# Amazon identity provider
-resource "aws_cognito_identity_provider" "amazon" {
-  user_pool_id  = aws_cognito_user_pool.tenzir.id
-  provider_name = "LoginWithAmazon"
-  provider_type = "LoginWithAmazon"
-
-  provider_details = {
-    client_id     = var.amazon_client_id
-    client_secret = var.amazon_client_secret
-    authorize_scopes = "profile"
-  }
-
-  attribute_mapping = {
-    email    = "email"
-    username = "user_id"
-    name     = "name"
-  }
-}
-
 # Generate random password for admin user
 resource "random_password" "admin_password" {
   length  = 24
