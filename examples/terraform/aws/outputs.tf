@@ -64,4 +64,15 @@ output "ui_domain" {
   value       = local.ui_domain
 }
 
+output "admin_username" {
+  description = "Default admin username for Cognito"
+  value       = aws_cognito_user.admin.username
+}
+
+output "admin_password" {
+  description = "Default admin password for Cognito (stored in Secrets Manager)"
+  value       = random_password.admin_password.result
+  sensitive   = true
+}
+
 
