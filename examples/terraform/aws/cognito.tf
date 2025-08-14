@@ -80,7 +80,7 @@ resource "aws_cognito_user_pool_domain" "tenzir" {
 # Amazon identity provider
 resource "aws_cognito_identity_provider" "amazon" {
   user_pool_id  = aws_cognito_user_pool.tenzir.id
-  provider_name = "Amazon"
+  provider_name = "LoginWithAmazon"
   provider_type = "LoginWithAmazon"
 
   provider_details = {
