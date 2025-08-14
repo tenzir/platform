@@ -146,7 +146,10 @@ resource "aws_lambda_function" "api_function" {
         "issuer": "${local.oidc_issuer_url}",
         "audiences": [aws_cognito_user_pool_client.app_client.id],
       })
-      TENANT_MANAGER_AUTH__ADMIN_FUNCTIONS                 = jsonencode([])
+      TENANT_MANAGER_AUTH__ADMIN_FUNCTIONS                 = jsonencode([{
+        "auth_fn": "auth_user",
+        "user_id": aws_cognito_user.admin.sub
+      }])
       BASE_PATH                                               = "/"
       TENANT_MANAGER_SIDEPATH_BUCKET_NAME                     = aws_s3_bucket.tenzir_sidepath.bucket
       TENZIR_DEMO_NODE_IMAGE                                  = "ghcr.io/tenzir/tenzir-demo"
