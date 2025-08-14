@@ -15,5 +15,3 @@ provider "aws" {
   profile = "tenzir-playground"
   region  = "eu-west-1"
 }
-
-data "aws_region" "current" {}
