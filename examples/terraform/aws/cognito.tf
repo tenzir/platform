@@ -184,6 +184,39 @@ resource "aws_cognito_identity_provider" "amazon" {
   }
 }
 
+# Generate random password for admin user
+resource "random_password" "admin_password" {
+  length  = 24
+  special = true
+}
+
+# Store admin password in Secrets Manager
+resource "aws_secretsmanager_secret" "admin_password" {
+  name                    = "tenzir/cognito/admin-password"
+  description             = "Admin user password for Tenzir Cognito user pool"
+  recovery_window_in_days = 7
+}
+
+resource "aws_secretsmanager_secret_version" "admin_password" {
+  secret_id     = aws_secretsmanager_secret.admin_password.id
+  secret_string = random_password.admin_password.result
+}
+
+# Create default admin user
+resource "aws_cognito_user" "admin" {
+  user_pool_id = aws_cognito_user_pool.tenzir.id
+  username     = "admin"
+  
+  attributes = {
+    email          = "admin@${var.domain_name}"
+    email_verified = true
+  }
+  
+  password = random_password.admin_password.result
+  
+  message_action = "SUPPRESS"
+}
+
 # Local value to construct the OIDC issuer URL
 locals {
   oidc_issuer_url = "https://cognito-idp.${data.aws_region.current.name}.amazonaws.com/${aws_cognito_user_pool.tenzir.id}"
