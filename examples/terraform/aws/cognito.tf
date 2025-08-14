@@ -59,7 +59,13 @@ resource "aws_cognito_user_pool_client" "app_client" {
   
   prevent_user_existence_errors = "ENABLED"
   enable_token_revocation       = true
-
+  
+  # Disable SRP auth flows (OAuth only)
+  explicit_auth_flows = ["ALLOW_REFRESH_TOKEN_AUTH"]
+  
+  # Enable refresh token rotation
+  auth_session_validity = 3
+  
   access_token_validity  = 60
   id_token_validity      = 60
   refresh_token_validity = 30
