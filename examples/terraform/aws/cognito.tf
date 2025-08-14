@@ -3,6 +3,11 @@ resource "aws_cognito_user_pool" "tenzir" {
 
   username_attributes      = ["email"]
   auto_verified_attributes = ["email"]
+  
+  # Disable self-signup
+  admin_create_user_config {
+    allow_admin_create_user_only = true
+  }
 
   password_policy {
     minimum_length    = 8
