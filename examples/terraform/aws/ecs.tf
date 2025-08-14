@@ -116,8 +116,8 @@ resource "aws_vpc_security_group_egress_rule" "ecs_service_egress" {
 resource "aws_vpc_security_group_ingress_rule" "ecs_service_alb" {
   security_group_id            = aws_security_group.ecs_service.id
   ip_protocol                  = "tcp"
-  from_port                    = 80
-  to_port                      = 80
+  from_port                    = 5000
+  to_port                      = 5000
   referenced_security_group_id = aws_security_group.alb.id
 }
 
@@ -154,7 +154,7 @@ resource "aws_ecs_task_definition" "gateway" {
       
       portMappings = [
         {
-          containerPort = 80
+          containerPort = 5000
           protocol      = "tcp"
         }
       ]
@@ -265,7 +265,7 @@ resource "aws_ecs_service" "gateway" {
   load_balancer {
     target_group_arn = aws_lb_target_group.gateway.arn
     container_name   = "gateway"
-    container_port   = 80
+    container_port   = 5000
   }
 
   depends_on = [
