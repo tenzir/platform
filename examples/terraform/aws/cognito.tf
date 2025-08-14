@@ -210,10 +210,10 @@ resource "aws_secretsmanager_secret_version" "admin_password" {
 # Create default admin user
 resource "aws_cognito_user" "admin" {
   user_pool_id = aws_cognito_user_pool.tenzir.id
-  username     = "admin"
+  username     = "admin@${local.base_domain}"
   
   attributes = {
-    email          = "admin@${var.domain_name}"
+    email          = "admin@${local.base_domain}"
     email_verified = true
   }
   
