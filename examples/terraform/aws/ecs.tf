@@ -144,6 +144,7 @@ resource "aws_ecs_task_definition" "gateway" {
   cpu                      = 256
   memory                   = 512
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn           = aws_iam_role.gateway_task_role.arn
 
   container_definitions = jsonencode([
     {
@@ -155,6 +156,33 @@ resource "aws_ecs_task_definition" "gateway" {
         {
           containerPort = 80
           protocol      = "tcp"
+        }
+      ]
+
+      environment = [
+        {
+          name  = "BASE_PATH"
+          value = ""
+        },
+        {
+          name  = "TENZIR_PROXY_TIMEOUT"
+          value = "60"
+        },
+        {
+          name  = "TENANT_MANAGER_APP_API_KEY_SECRET_ARN"
+          value = aws_secretsmanager_secret.tenant_manager_app_api_key.arn
+        },
+        {
+          name  = "TENANT_MANAGER_TENANT_TOKEN_ENCRYPTION_KEY_SECRET_ARN"
+          value = aws_secretsmanager_secret.tenant_manager_tenant_token_encryption_key.arn
+        },
+        {
+          name  = "STORE__TYPE"
+          value = "postgres"
+        },
+        {
+          name  = "STORE__POSTGRES_URI_SECRET_ARN"
+          value = aws_secretsmanager_secret.postgres_uri.arn
         }
       ]
       
@@ -175,6 +203,45 @@ resource "aws_ecs_task_definition" "gateway" {
 resource "aws_cloudwatch_log_group" "gateway" {
   name              = "/ecs/tenzir-gateway"
   retention_in_days = 7
+}
+
+resource "aws_iam_role" "gateway_task_role" {
+  name = "tenzir-gateway-task-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "gateway_task_secrets" {
+  name = "tenzir-gateway-task-secrets-policy"
+  role = aws_iam_role.gateway_task_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = [
+          aws_secretsmanager_secret.postgres_uri.arn,
+          aws_secretsmanager_secret.tenant_manager_app_api_key.arn,
+          aws_secretsmanager_secret.tenant_manager_tenant_token_encryption_key.arn
+        ]
+      }
+    ]
+  })
 }
 
 resource "aws_ecs_service" "gateway" {
@@ -198,7 +265,8 @@ resource "aws_ecs_service" "gateway" {
 
   depends_on = [
     aws_iam_role_policy_attachment.ecs_task_execution,
-    aws_lb_listener.gateway_https
+    aws_lb_listener.gateway_https,
+    aws_iam_role_policy.gateway_task_secrets
   ]
 }
 
