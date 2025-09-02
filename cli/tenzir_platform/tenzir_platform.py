@@ -3,11 +3,12 @@
 
 """Tenzir Platform CLI.
 
-Usage: tenzir-platform <command> [<args>...]
+Usage: tenzir-platform [-v|--verbose] <command> [<args>...]
        tenzir-platform [--help] [--version]
 
 Options:
   -h, --help                  Show this screen.
+  -v, --verbose               Enable verbose logging.
   --version                   Show version.
 
 Commands:
@@ -26,6 +27,7 @@ from docopt import docopt
 from requests import HTTPError
 import sys
 import importlib.metadata
+import traceback
 
 from tenzir_platform.subcommand_auth import auth_subcommand
 from tenzir_platform.subcommand_alert import alert_subcommand
@@ -40,12 +42,14 @@ from tenzir_platform.helpers.exceptions import PlatformCliError
 version = importlib.metadata.version("tenzir-platform")
 
 
-def _pretty_print_cli_error(e: PlatformCliError):
-    print(f"\033[91mError:\033[0m {e.error}")
+def _pretty_print_cli_error(e: PlatformCliError, verbose: bool):
+    print(f"\033[91mError:\033[0m {e.error}", file=sys.stderr)
     for context in e.contexts:
-        print(f"  {context}")
+        print(f"  {context}", file=sys.stderr)
     for hint in e.hints:
-        print(f"(hint) {hint}")
+        print(f"(hint) {hint}", file=sys.stderr)
+    if verbose:
+       traceback.print_exc(file=sys.stderr)
 
 
 def main():
@@ -54,8 +58,11 @@ def main():
     arguments = docopt(
         __doc__, version=f"Tenzir Platform CLI {version}", options_first=True
     )
+    verbose = arguments["--verbose"]
     try:
         platform = PlatformEnvironment.load()
+        if not verbose:
+            verbose = platform.verbose
         argv = [arguments["<command>"]] + arguments["<args>"]
         if arguments["<command>"] == "auth":
             auth_subcommand(platform, argv)
@@ -88,14 +95,16 @@ def main():
                     detail = f" Error: {error_json['error']}"
             except Exception:
                 pass
-            error = PlatformCliError(f"failed to communicate with the platform")
+            error = PlatformCliError(str(e))
             error.add_hint(f"status code {e.response.status_code}")
             if detail:
                 error.add_hint(f"detail: {detail}")
-            _pretty_print_cli_error(error)
+            if verbose and e.response is not None:
+                error.add_hint(f"response: {e.response.content}")
+            _pretty_print_cli_error(error, verbose)
             exit(-1)
     except PlatformCliError as e:
-        _pretty_print_cli_error(e)
+        _pretty_print_cli_error(e, verbose)
         exit(-1)
 
 
