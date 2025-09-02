@@ -37,7 +37,7 @@ class PlatformEnvironment(BaseSettings):
     client_secret: Optional[str] = None
     client_secret_file: Optional[str] = None
 
-    # Set the OIDC audience, falls back to CLIENT_ID if not set.
+    # Overrides the OIDC audience.
     audience: Optional[str] = None
 
     # Override the default OIDC scopes.
