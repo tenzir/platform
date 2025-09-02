@@ -61,6 +61,10 @@ class IdTokenClient:
         self.issuer = platform.issuer_url
         self.client_id = platform.client_id
         self.client_secret = platform.client_secret
+        self.audience = (
+            platform.audience if platform.audience is not None else platform.client_id
+        )
+        self.scope = platform.scope
         if platform.client_secret_file is not None:
             with open(platform.client_secret_file, "r") as f:
                 self.client_secret = f.read()
@@ -83,8 +87,7 @@ class IdTokenClient:
             signing_key.key,
             algorithms=["RS256"],
             issuer=self.issuer,
-            # for id tokens, the audience is the client_id
-            audience=self.client_id,
+            audience=self.audience,
         )
         return ValidOidcToken(validated_token)
 
@@ -100,7 +103,7 @@ class IdTokenClient:
     def _device_code_flow(self) -> dict[str, str]:
         device_code_payload = {
             "client_id": self.client_id,
-            "scope": "openid email",
+            "scope": self.scope if self.scope is not None else "openid email",
         }
 
         device_code_response = requests.post(
@@ -174,7 +177,7 @@ class IdTokenClient:
         client_secret = self.client_secret
         client_credentials_payload = {
             "grant_type": "client_credentials",
-            "scope": "openid",
+            "scope": self.scope if self.scope is not None else "openid email",
             "client_id": self.client_id,
             "client_secret": client_secret,
             "audience": self.client_id,

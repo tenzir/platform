@@ -238,7 +238,10 @@ def delete(client: AppClient, workspace_id: str, node: str):
     resp.raise_for_status()
     print(f"deleted node {node_id}")
 
-def proxy(client: AppClient, workspace_id: str, node: str, endpoint: str, body: Optional[str]):
+
+def proxy(
+    client: AppClient, workspace_id: str, node: str, endpoint: str, body: Optional[str]
+):
     node_id = _resolve_node_identifier(client, workspace_id, node)
     endpoint = endpoint.lstrip("/")
     resp = client.post(
@@ -251,7 +254,7 @@ def proxy(client: AppClient, workspace_id: str, node: str, endpoint: str, body: 
         raise PlatformCliError(f"failed to proxy request to node {node}").add_hint(
             f"platform error: {e}"
         )
-    print(resp.content.decode('utf-8'))
+    print(resp.content.decode("utf-8"))
 
 
 def node_subcommand(platform: PlatformEnvironment, argv):

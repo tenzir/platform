@@ -37,6 +37,12 @@ class PlatformEnvironment(BaseSettings):
     client_secret: Optional[str] = None
     client_secret_file: Optional[str] = None
 
+    # Set the OIDC audience, falls back to CLIENT_ID if not set.
+    audience: Optional[str] = None
+
+    # Override the default OIDC scopes.
+    scope: Optional[str] = None
+
     # Additional headers that should be sent with any request
     # to the Tenzir Platform.
     extra_headers: dict[str, str] = {}
