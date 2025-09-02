@@ -58,11 +58,10 @@ def main():
     arguments = docopt(
         __doc__, version=f"Tenzir Platform CLI {version}", options_first=True
     )
-    verbose = arguments["--verbose"]
     try:
         platform = PlatformEnvironment.load()
-        if not verbose:
-            verbose = platform.verbose
+        if arguments["--verbose"]:
+            platform.verbose = True
         argv = [arguments["<command>"]] + arguments["<args>"]
         if arguments["<command>"] == "auth":
             auth_subcommand(platform, argv)
@@ -99,12 +98,12 @@ def main():
             error.add_hint(f"status code {e.response.status_code}")
             if detail:
                 error.add_hint(f"detail: {detail}")
-            if verbose and e.response is not None:
+            if platform.verbose and e.response is not None:
                 error.add_hint(f"response: {e.response.content}")
-            _pretty_print_cli_error(error, verbose)
+            _pretty_print_cli_error(error, platform.verbose)
             exit(-1)
     except PlatformCliError as e:
-        _pretty_print_cli_error(e, verbose)
+        _pretty_print_cli_error(e, platform.verbose)
         exit(-1)
 
 
