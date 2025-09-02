@@ -177,7 +177,7 @@ class IdTokenClient:
         client_secret = self.client_secret
         client_credentials_payload = {
             "grant_type": "client_credentials",
-            "scope": self.scope if self.scope is not None else "openid email",
+            "scope": self.scope if self.scope is not None else "openid",
             "client_id": self.client_id,
             "client_secret": client_secret,
             "audience": self.client_id,
