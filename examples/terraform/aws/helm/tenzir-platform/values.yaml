@@ -1,0 +1,277 @@
+# Default values for tenzir-platform.
+# This is a YAML-formatted file.
+
+# Global configuration
+global:
+  domain: "example.org"
+  randomSubdomain: false
+  region: "eu-west-1"
+  
+# Container images
+images:
+  gateway:
+    repository: "tenzir-sovereign-platform/gateway"
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  ui:
+    repository: "tenzir-sovereign-platform/ui"
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  api:
+    repository: "tenzir-sovereign-platform/platform-api"
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  node:
+    repository: "tenzir-sovereign-platform/node"
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+# Gateway service configuration
+gateway:
+  enabled: true
+  replicaCount: 1
+  
+  service:
+    type: LoadBalancer
+    port: 443
+    targetPort: 5000
+    annotations: {}
+  
+  ingress:
+    enabled: true
+    className: ""
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: nodes.example.org
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: gateway-tls
+        hosts:
+          - nodes.example.org
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  
+  env:
+    BASE_PATH: ""
+    TENZIR_PROXY_TIMEOUT: "60"
+    STORE__TYPE: "postgres"
+
+# UI service configuration
+ui:
+  enabled: true
+  replicaCount: 1
+  
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 3000
+  
+  ingress:
+    enabled: true
+    className: ""
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: ui.example.org
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: ui-tls
+        hosts:
+          - ui.example.org
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  
+  env:
+    AUTH_TRUST_HOST: "true"
+    PUBLIC_ENABLE_HIGHLIGHT: "false"
+    PUBLIC_DISABLE_DEMO_NODE_AND_TOUR: "false"
+    PRIVATE_OIDC_PROVIDER_NAME: "tenzir"
+    PUBLIC_OIDC_PROVIDER_ID: "cognito"
+    PUBLIC_OIDC_SCOPES: "openid profile email"
+
+# API service configuration
+api:
+  enabled: true
+  replicaCount: 1
+  
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+  
+  ingress:
+    enabled: true
+    className: ""
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: api.example.org
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: api-tls
+        hosts:
+          - api.example.org
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  
+  env:
+    STORE__TYPE: "postgres"
+    BASE_PATH: ""
+
+# PostgreSQL configuration
+postgresql:
+  enabled: true
+  auth:
+    database: "tenzir"
+    username: "tenzir_admin"
+    existingSecret: "postgres-credentials"
+    secretKeys:
+      adminPasswordKey: "password"
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: ""
+    
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+  
+  metrics:
+    enabled: false
+
+# S3 bucket configuration (using MinIO as alternative for Kubernetes)
+minio:
+  enabled: true
+  mode: standalone
+  
+  persistence:
+    enabled: true
+    size: 20Gi
+  
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  
+  buckets:
+    - name: tenzir-sidepath
+      policy: none
+      purge: false
+
+# Authentication configuration
+auth:
+  provider: "oidc"
+  oidc:
+    issuerUrl: ""
+    clientId: ""
+    clientSecret: ""
+
+# Secrets configuration
+secrets:
+  # Whether to create secrets or use existing ones
+  create: true
+  
+  # Names of existing secrets (if create: false)
+  postgres:
+    name: "postgres-credentials"
+    usernameKey: "username"
+    passwordKey: "password"
+    uriKey: "uri"
+  
+  auth:
+    name: "auth-secret"
+    secretKey: "secret"
+  
+  tenantManager:
+    appApiKey:
+      name: "tenant-manager-app-api-key"
+      key: "key"
+    
+    tenantTokenEncryptionKey:
+      name: "tenant-token-encryption-key"
+      key: "key"
+  
+  workspaceSecrets:
+    masterSeed:
+      name: "workspace-secrets-master-seed"
+      key: "seed"
+
+# Service Account configuration
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Security Context
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Node selector, tolerations and affinity
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Monitoring and observability
+monitoring:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+    namespace: monitoring
+    interval: 30s
+    scrapeTimeout: 10s
+
+# Logging
+logging:
+  enabled: true
+  level: INFO
+  format: json
