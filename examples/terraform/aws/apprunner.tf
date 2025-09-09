@@ -164,7 +164,15 @@ resource "aws_apprunner_service" "ui" {
   depends_on = [
     aws_iam_role_policy.apprunner_secrets_policy,
     aws_iam_role_policy_attachment.apprunner_access_role_policy,
-    aws_vpc_security_group_ingress_rule.rds_postgres_apprunner
+    aws_vpc_security_group_ingress_rule.rds_postgres_apprunner,
+    # Ensure all secrets and their versions exist before creating the service
+    aws_secretsmanager_secret_version.client_secret,
+    aws_secretsmanager_secret_version.user_endpoint,
+    aws_secretsmanager_secret_version.webapp_endpoint,
+    aws_secretsmanager_secret_version.db_password,
+    aws_secretsmanager_secret_version.postgres_uri,
+    aws_secretsmanager_secret_version.tenant_manager_app_api_key,
+    aws_secretsmanager_secret_version.auth_secret
   ]
 }
 
