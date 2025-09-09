@@ -1,0 +1,60 @@
+1. Get the application URLs by running these commands:
+{{- if .Values.ui.ingress.enabled }}
+{{- range $host := .Values.ui.ingress.hosts }}
+  {{- range .paths }}
+  UI: http{{ if $.Values.ui.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.ui.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "tenzir-platform.fullname" . }}-ui)
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  UI: http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.ui.service.type }}
+     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+           You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "tenzir-platform.fullname" . }}-ui'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "tenzir-platform.fullname" . }}-ui --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  UI: http://$SERVICE_IP:{{ .Values.ui.service.port }}
+{{- else if contains "ClusterIP" .Values.ui.service.type }}
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "tenzir-platform.name" . }},app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=ui" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
+{{- end }}
+
+{{- if .Values.api.ingress.enabled }}
+{{- range $host := .Values.api.ingress.hosts }}
+  {{- range .paths }}
+  API: http{{ if $.Values.api.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- end }}
+
+{{- if .Values.gateway.ingress.enabled }}
+{{- range $host := .Values.gateway.ingress.hosts }}
+  {{- range .paths }}
+  Gateway: http{{ if $.Values.gateway.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- end }}
+
+2. Get the database connection details:
+{{- if .Values.postgresql.enabled }}
+  Database Host: {{ include "tenzir-platform.fullname" . }}-postgresql
+  Database Port: 5432
+  Database Name: {{ .Values.postgresql.auth.database }}
+  Database User: {{ .Values.postgresql.auth.username }}
+  
+  To get the database password run:
+    kubectl get secret --namespace {{ .Release.Namespace }} {{ .Values.secrets.postgres.name }} -o jsonpath="{.data.password}" | base64 --decode
+{{- end }}
+
+3. Configuration Notes:
+   - Make sure to configure your OIDC provider settings in values.yaml
+   - Update the domain names to match your environment
+   - Consider enabling monitoring if you have Prometheus installed
+   - For production use, configure proper resource limits and persistent storage
+
+4. Troubleshooting:
+   - Check pod status: kubectl get pods -n {{ .Release.Namespace }}
+   - View logs: kubectl logs -f deployment/{{ include "tenzir-platform.fullname" . }}-<component> -n {{ .Release.Namespace }}
+   - Check ingress status: kubectl get ingress -n {{ .Release.Namespace }}

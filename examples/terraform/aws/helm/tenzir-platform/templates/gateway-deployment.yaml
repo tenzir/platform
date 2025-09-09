@@ -1,0 +1,95 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tenzir-platform.fullname" . }}-gateway
+  labels:
+    {{- include "tenzir-platform.gateway.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.gateway.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "tenzir-platform.gateway.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "tenzir-platform.gateway.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "tenzir-platform.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: gateway
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.images.gateway.repository }}:{{ .Values.images.gateway.tag }}"
+          imagePullPolicy: {{ .Values.images.gateway.pullPolicy }}
+          command: ["tenant_manager/ws/server/aws.py"]
+          ports:
+            - name: http
+              containerPort: 5000
+              protocol: TCP
+          env:
+            - name: BASE_PATH
+              value: "{{ .Values.gateway.env.BASE_PATH }}"
+            - name: TENZIR_PROXY_TIMEOUT
+              value: "{{ .Values.gateway.env.TENZIR_PROXY_TIMEOUT }}"
+            - name: STORE__TYPE
+              value: "{{ .Values.gateway.env.STORE__TYPE }}"
+            - name: STORE__POSTGRES_URI
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgres.name }}
+                  key: {{ .Values.secrets.postgres.uriKey }}
+            - name: TENANT_MANAGER_APP_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.tenantManager.appApiKey.name }}
+                  key: {{ .Values.secrets.tenantManager.appApiKey.key }}
+            - name: TENANT_MANAGER_TENANT_TOKEN_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.tenantManager.tenantTokenEncryptionKey.name }}
+                  key: {{ .Values.secrets.tenantManager.tenantTokenEncryptionKey.key }}
+            - name: WORKSPACE_SECRETS_MASTER_SEED
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.workspaceSecrets.masterSeed.name }}
+                  key: {{ .Values.secrets.workspaceSecrets.masterSeed.key }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.gateway.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
