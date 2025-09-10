@@ -221,30 +221,30 @@ resource "aws_apprunner_custom_domain_association" "ui" {
 # Route53 records for App Runner domain validation
 # Using tolist() workaround to handle unknown values in certificate_validation_records
 # See: https://github.com/hashicorp/terraform-provider-aws/issues/23460
-locals {
-  validation_records = tolist(aws_apprunner_custom_domain_association.ui.certificate_validation_records)
-}
+# locals {
+#   validation_records = tolist(aws_apprunner_custom_domain_association.ui.certificate_validation_records)
+# }
 
-resource "aws_route53_record" "ui_apprunner_validation" {
-  count = length(local.validation_records)
+# resource "aws_route53_record" "ui_apprunner_validation" {
+#   count = length(local.validation_records)
   
-  allow_overwrite = true
-  name            = local.validation_records[count.index].name
-  records         = [local.validation_records[count.index].value]
-  ttl             = 60
-  type            = local.validation_records[count.index].type
-  zone_id         = module.bootstrap.route53_zone_id
-}
+#   allow_overwrite = true
+#   name            = local.validation_records[count.index].name
+#   records         = [local.validation_records[count.index].value]
+#   ttl             = 60
+#   type            = local.validation_records[count.index].type
+#   zone_id         = module.bootstrap.route53_zone_id
+# }
 
-# Update Route53 record to point to App Runner
-resource "aws_route53_record" "ui_apprunner" {
-  zone_id = module.bootstrap.route53_zone_id
-  name    = module.bootstrap.ui_domain
-  type    = "CNAME"
-  ttl     = 300
-  records = [aws_apprunner_custom_domain_association.ui.dns_target]
+# # Update Route53 record to point to App Runner
+# resource "aws_route53_record" "ui_apprunner" {
+#   zone_id = module.bootstrap.route53_zone_id
+#   name    = module.bootstrap.ui_domain
+#   type    = "CNAME"
+#   ttl     = 300
+#   records = [aws_apprunner_custom_domain_association.ui.dns_target]
 
-  depends_on = [
-    aws_apprunner_custom_domain_association.ui
-  ]
-}
+#   depends_on = [
+#     aws_apprunner_custom_domain_association.ui
+#   ]
+# }
