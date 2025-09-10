@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Tenzir Platform - AWS Cloud Native Edition'
+Description: 'Tenzir Platform AWS Infrastructure - CloudFormation Template'
 
 Parameters:
   DomainName:
@@ -9,151 +9,104 @@ Parameters:
   RandomSubdomain:
     Type: String
     Default: 'false'
-    AllowedValues: ['true', 'false']
+    AllowedValues:
+      - 'true'
+      - 'false'
     Description: Whether to prepend a random subdomain to the domain name
   
   TrustingRoleArn:
     Type: String
     Description: The ARN of the trusting role to assume for AWS operations
+  
+  UseExternalOIDC:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Whether to use an external OIDC provider instead of AWS Cognito
+  
+  ExternalOIDCIssuerURL:
+    Type: String
+    Default: ''
+    Description: The issuer URL for external OIDC provider (required when UseExternalOIDC is true)
+  
+  ExternalOIDCClientID:
+    Type: String
+    Default: ''
+    Description: The client ID for external OIDC provider (required when UseExternalOIDC is true)
+  
+  ExternalOIDCClientSecret:
+    Type: String
+    Default: ''
+    NoEcho: true
+    Description: The client secret for external OIDC provider (required when UseExternalOIDC is true)
 
 Conditions:
   UseRandomSubdomain: !Equals [!Ref RandomSubdomain, 'true']
+  UseExternalOIDCProvider: !Equals [!Ref UseExternalOIDC, 'true']
+  UseCognito: !Not [!Condition UseExternalOIDCProvider]
 
 Resources:
-  # Random ID Generator (using Lambda since CloudFormation doesn't have native random)
-  RandomIdGeneratorRole:
-    Type: AWS::IAM::Role
-    AssumeRolePolicyDocument:
-      Version: '2012-10-17'
-      Statement:
-        - Effect: Allow
-          Principal:
-            Service: lambda.amazonaws.com
-          Action: sts:AssumeRole
-    ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-
-  RandomIdGenerator:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: tenzir-random-id-generator
-      Runtime: python3.9
-      Handler: index.handler
-      Role: !GetAtt RandomIdGeneratorRole.Arn
-      Code:
-        ZipFile: |
-          import cfnresponse
-          import secrets
-          
-          def handler(event, context):
-              if event['RequestType'] == 'Create':
-                  # Generate 3 random bytes (6 hex chars)
-                  random_hex = secrets.token_hex(3)
-                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Value': random_hex})
-              else:
-                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Value': event.get('PhysicalResourceId', 'default-hex')})
-
-  SubdomainHex:
-    Type: Custom::RandomId
+  # Random IDs and Naming
+  SubdomainRandom:
+    Type: AWS::CloudFormation::CustomResource
     Condition: UseRandomSubdomain
     Properties:
-      ServiceToken: !GetAtt RandomIdGenerator.Arn
+      ServiceToken: !GetAtt RandomGeneratorFunction.Arn
+      Length: 6
 
-  # Route53 Zone (data source equivalent)
-  Route53Zone:
-    Type: AWS::Route53::HostedZone
+  BucketSuffixRandom:
+    Type: AWS::CloudFormation::CustomResource
     Properties:
-      Name: !Ref DomainName
+      ServiceToken: !GetAtt RandomGeneratorFunction.Arn
+      Length: 32
 
-  # ECR Repositories (Bootstrap module equivalent)
-  NodeRepository:
-    Type: AWS::ECR::Repository
+  RandomGeneratorFunction:
+    Type: AWS::Lambda::Function
     Properties:
-      RepositoryName: tenzir-sovereign-platform/node
-      ImageScanningConfiguration:
-        ScanOnPush: true
+      FunctionName: !Sub 'tenzir-random-generator-${AWS::StackName}'
+      Runtime: python3.9
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          import json
+          import random
+          import string
+          import cfnresponse
+          
+          def handler(event, context):
+              try:
+                  if event['RequestType'] == 'Delete':
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                      return
+                  
+                  length = int(event['ResourceProperties'].get('Length', 16))
+                  chars = string.ascii_lowercase + string.digits
+                  random_string = ''.join(random.choice(chars) for _ in range(length))
+                  
+                  response_data = {'Value': random_string}
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
+              except Exception as e:
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, str(e))
+      Role: !GetAtt RandomGeneratorRole.Arn
+      Timeout: 60
 
-  PlatformApiRepository:
-    Type: AWS::ECR::Repository
+  RandomGeneratorRole:
+    Type: AWS::IAM::Role
     Properties:
-      RepositoryName: tenzir-sovereign-platform/platform-api
-      ImageScanningConfiguration:
-        ScanOnPush: true
-
-  GatewayRepository:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: tenzir-sovereign-platform/gateway
-      ImageScanningConfiguration:
-        ScanOnPush: true
-
-  UiRepository:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: tenzir-sovereign-platform/ui
-      ImageScanningConfiguration:
-        ScanOnPush: true
-
-  # ACM Certificates
-  ApiCertificate:
-    Type: AWS::CertificateManager::Certificate
-    Properties:
-      DomainName: !Sub 
-        - 'api.${BaseDomain}'
-        - BaseDomain: !If
-          - UseRandomSubdomain
-          - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-          - !Ref DomainName
-      ValidationMethod: DNS
-      DomainValidationOptions:
-        - DomainName: !Sub 
-            - 'api.${BaseDomain}'
-            - BaseDomain: !If
-              - UseRandomSubdomain
-              - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-              - !Ref DomainName
-          HostedZoneId: !Ref Route53Zone
-
-  UiCertificate:
-    Type: AWS::CertificateManager::Certificate
-    Properties:
-      DomainName: !Sub 
-        - 'ui.${BaseDomain}'
-        - BaseDomain: !If
-          - UseRandomSubdomain
-          - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-          - !Ref DomainName
-      ValidationMethod: DNS
-      DomainValidationOptions:
-        - DomainName: !Sub 
-            - 'ui.${BaseDomain}'
-            - BaseDomain: !If
-              - UseRandomSubdomain
-              - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-              - !Ref DomainName
-          HostedZoneId: !Ref Route53Zone
-
-  NodesCertificate:
-    Type: AWS::CertificateManager::Certificate
-    Properties:
-      DomainName: !Sub 
-        - 'nodes.${BaseDomain}'
-        - BaseDomain: !If
-          - UseRandomSubdomain
-          - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-          - !Ref DomainName
-      ValidationMethod: DNS
-      DomainValidationOptions:
-        - DomainName: !Sub 
-            - 'nodes.${BaseDomain}'
-            - BaseDomain: !If
-              - UseRandomSubdomain
-              - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-              - !Ref DomainName
-          HostedZoneId: !Ref Route53Zone
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
   # VPC and Networking
-  TenzirVPC:
+  VPC:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: 10.0.0.0/16
@@ -163,73 +116,72 @@ Resources:
         - Key: Name
           Value: tenzir-vpc
 
-  NodesSubnet:
+  SubnetNodes:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       CidrBlock: 10.0.1.0/24
-      AvailabilityZone: !Sub '${AWS::Region}a'
+      AvailabilityZone: !Select [0, !GetAZs '']
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
           Value: tenzir-nodes-subnet
 
-  PlatformSubnet:
+  SubnetPlatform:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       CidrBlock: 10.0.2.0/24
-      AvailabilityZone: !Sub '${AWS::Region}b'
+      AvailabilityZone: !Select [1, !GetAZs '']
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
           Value: tenzir-platform-subnet
 
-  PublicSubnet:
+  SubnetPublic:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       CidrBlock: 10.0.3.0/24
-      AvailabilityZone: !Sub '${AWS::Region}a'
+      AvailabilityZone: !Select [0, !GetAZs '']
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
           Value: tenzir-public-subnet
 
-  PublicSubnet2:
+  SubnetPublic2:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       CidrBlock: 10.0.6.0/24
-      AvailabilityZone: !Sub '${AWS::Region}b'
+      AvailabilityZone: !Select [1, !GetAZs '']
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
           Value: tenzir-public-subnet2
 
-  PostgresSubnet1:
+  SubnetPostgres1:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       CidrBlock: 10.0.5.0/24
-      AvailabilityZone: !Sub '${AWS::Region}b'
+      AvailabilityZone: !Select [1, !GetAZs '']
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
           Value: tenzir-postgres-subnet1
 
-  PostgresSubnet2:
+  SubnetPostgres2:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       CidrBlock: 10.0.4.0/24
-      AvailabilityZone: !Sub '${AWS::Region}c'
+      AvailabilityZone: !Select [2, !GetAZs '']
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
           Value: tenzir-postgres-subnet2
 
-  # Internet Gateway
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
@@ -240,11 +192,10 @@ Resources:
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
 
-  # Elastic IP for NAT Gateway
-  NatEIP:
+  NATElasticIP:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
@@ -252,91 +203,87 @@ Resources:
         - Key: Name
           Value: tenzir-nat-eip
 
-  # NAT Gateway
-  NatGateway:
+  NATGateway:
     Type: AWS::EC2::NatGateway
     Properties:
-      AllocationId: !GetAtt NatEIP.AllocationId
-      SubnetId: !Ref PublicSubnet
+      AllocationId: !GetAtt NATElasticIP.AllocationId
+      SubnetId: !Ref SubnetPublic
       Tags:
         - Key: Name
           Value: tenzir-nat-gateway
 
-  # Route Tables
-  PlatformRouteTable:
+  RouteTablePublic:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: !Ref TenzirVPC
-      Tags:
-        - Key: Name
-          Value: tenzir-platform-rt
-
-  PublicRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       Tags:
         - Key: Name
           Value: tenzir-public-rt
 
-  # Routes
-  PublicRoute:
+  RoutePublic:
     Type: AWS::EC2::Route
     DependsOn: AttachGateway
     Properties:
-      RouteTableId: !Ref PublicRouteTable
+      RouteTableId: !Ref RouteTablePublic
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
 
-  NatRoute:
+  SubnetRouteTableAssociationPublic:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetPublic
+      RouteTableId: !Ref RouteTablePublic
+
+  SubnetRouteTableAssociationPublic2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetPublic2
+      RouteTableId: !Ref RouteTablePublic
+
+  RouteTablePlatform:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: tenzir-platform-rt
+
+  RoutePlatformNAT:
     Type: AWS::EC2::Route
     Properties:
-      RouteTableId: !Ref PlatformRouteTable
+      RouteTableId: !Ref RouteTablePlatform
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NatGateway
+      NatGatewayId: !Ref NATGateway
 
-  # Route Table Associations
-  NodesSubnetRouteTableAssociation:
+  SubnetRouteTableAssociationPlatform:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref NodesSubnet
-      RouteTableId: !Ref PlatformRouteTable
+      SubnetId: !Ref SubnetPlatform
+      RouteTableId: !Ref RouteTablePlatform
 
-  PlatformSubnetRouteTableAssociation:
+  SubnetRouteTableAssociationNodes:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref PlatformSubnet
-      RouteTableId: !Ref PlatformRouteTable
-
-  PublicSubnetRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PublicSubnet
-      RouteTableId: !Ref PublicRouteTable
-
-  PublicSubnet2RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PublicSubnet2
-      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref SubnetNodes
+      RouteTableId: !Ref RouteTablePlatform
 
   # Security Groups
-  VpcEndpointSecurityGroup:
+  SecurityGroupVPCEndpoint:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: tenzir-vpc-endpoint-sg
       GroupDescription: Security group for VPC endpoints
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       Tags:
         - Key: Name
           Value: tenzir-vpc-endpoint-sg
 
-  LambdaSecurityGroup:
+  SecurityGroupLambda:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: tenzir-lambda-sg
       GroupDescription: Security group for Tenzir Lambda function
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
@@ -348,12 +295,43 @@ Resources:
         - Key: Name
           Value: tenzir-lambda-sg
 
-  ECSServiceSecurityGroup:
+  SecurityGroupAppRunner:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: tenzir-apprunner-ui-sg
+      GroupDescription: Security group for Tenzir App Runner UI service
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: !GetAtt VPC.CidrBlock
+      Tags:
+        - Key: Name
+          Value: tenzir-apprunner-ui-sg
+
+  SecurityGroupRDS:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: tenzir-rds-sg
+      GroupDescription: Security group for Tenzir RDS instance
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: tenzir-rds-sg
+
+  SecurityGroupECS:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: tenzir-ecs-service-sg
       GroupDescription: Security group for Tenzir ECS service
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -363,23 +341,16 @@ Resources:
           FromPort: 443
           ToPort: 443
           CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 5000
-          ToPort: 5000
-          SourceSecurityGroupId: !Ref AlbSecurityGroup
-      SecurityGroupEgress:
-        - IpProtocol: -1
-          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
           Value: tenzir-ecs-service-sg
 
-  EcsDemoNodeSecurityGroup:
+  SecurityGroupECSDemoNode:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: tenzir-ecs-demo-node-sg
       GroupDescription: Security group for Tenzir ECS demo node service
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
@@ -387,12 +358,15 @@ Resources:
         - Key: Name
           Value: tenzir-ecs-demo-node-sg
 
-  AlbSecurityGroup:
+  SecurityGroupALB:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: tenzir-alb-sg
       GroupDescription: Security group for Tenzir Application Load Balancer
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -402,99 +376,128 @@ Resources:
           FromPort: 443
           ToPort: 443
           CidrIp: 0.0.0.0/0
-      SecurityGroupEgress:
-        - IpProtocol: -1
-          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
           Value: tenzir-alb-sg
 
-  RdsSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
+  # Security Group Rules
+  SGRuleVPCEndpointFromLambda:
+    Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      GroupName: tenzir-rds-sg
-      GroupDescription: Security group for Tenzir RDS instance
-      VpcId: !Ref TenzirVPC
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 5432
-          ToPort: 5432
-          SourceSecurityGroupId: !Ref LambdaSecurityGroup
-        - IpProtocol: tcp
-          FromPort: 5432
-          ToPort: 5432
-          SourceSecurityGroupId: !Ref AppRunnerSecurityGroup
-        - IpProtocol: tcp
-          FromPort: 5432
-          ToPort: 5432
-          SourceSecurityGroupId: !Ref ECSServiceSecurityGroup
-      Tags:
-        - Key: Name
-          Value: tenzir-rds-sg
+      GroupId: !Ref SecurityGroupVPCEndpoint
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      SourceSecurityGroupId: !Ref SecurityGroupLambda
 
-  AppRunnerSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
+  SGRuleVPCEndpointFromPlatform:
+    Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      GroupName: tenzir-apprunner-ui-sg
-      GroupDescription: Security group for Tenzir App Runner UI service
-      VpcId: !Ref TenzirVPC
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 3000
-          ToPort: 3000
-          CidrIp: 10.0.0.0/16
-      SecurityGroupEgress:
-        - IpProtocol: -1
-          CidrIp: 0.0.0.0/0
-      Tags:
-        - Key: Name
-          Value: tenzir-apprunner-ui-sg
+      GroupId: !Ref SecurityGroupVPCEndpoint
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: !GetAtt SubnetPlatform.CidrBlock
+
+  SGRuleVPCEndpointFromNodes:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupVPCEndpoint
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: !GetAtt SubnetNodes.CidrBlock
+
+  SGRuleVPCEndpointFromAppRunner:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupVPCEndpoint
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      SourceSecurityGroupId: !Ref SecurityGroupAppRunner
+
+  SGRuleRDSFromLambda:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupRDS
+      IpProtocol: tcp
+      FromPort: 5432
+      ToPort: 5432
+      SourceSecurityGroupId: !Ref SecurityGroupLambda
+
+  SGRuleRDSFromAppRunner:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupRDS
+      IpProtocol: tcp
+      FromPort: 5432
+      ToPort: 5432
+      SourceSecurityGroupId: !Ref SecurityGroupAppRunner
+
+  SGRuleRDSFromECS:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupRDS
+      IpProtocol: tcp
+      FromPort: 5432
+      ToPort: 5432
+      SourceSecurityGroupId: !Ref SecurityGroupECS
+
+  SGRuleECSFromALB:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupECS
+      IpProtocol: tcp
+      FromPort: 5000
+      ToPort: 5000
+      SourceSecurityGroupId: !Ref SecurityGroupALB
 
   # VPC Endpoints
-  SecretsManagerEndpoint:
+  VPCEndpointSecretsManager:
     Type: AWS::EC2::VPCEndpoint
     Properties:
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       ServiceName: !Sub 'com.amazonaws.${AWS::Region}.secretsmanager'
       VpcEndpointType: Interface
       SubnetIds:
-        - !Ref PlatformSubnet
+        - !Ref SubnetPlatform
       SecurityGroupIds:
-        - !Ref VpcEndpointSecurityGroup
+        - !Ref SecurityGroupVPCEndpoint
       PrivateDnsEnabled: true
 
-  ECRApiEndpoint:
+  VPCEndpointECRAPI:
     Type: AWS::EC2::VPCEndpoint
     Properties:
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       ServiceName: !Sub 'com.amazonaws.${AWS::Region}.ecr.api'
       VpcEndpointType: Interface
       SubnetIds:
-        - !Ref PlatformSubnet
+        - !Ref SubnetPlatform
       SecurityGroupIds:
-        - !Ref VpcEndpointSecurityGroup
+        - !Ref SecurityGroupVPCEndpoint
       PrivateDnsEnabled: true
 
-  ECRDkrEndpoint:
+  VPCEndpointECRDKR:
     Type: AWS::EC2::VPCEndpoint
     Properties:
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       ServiceName: !Sub 'com.amazonaws.${AWS::Region}.ecr.dkr'
       VpcEndpointType: Interface
       SubnetIds:
-        - !Ref PlatformSubnet
+        - !Ref SubnetPlatform
       SecurityGroupIds:
-        - !Ref VpcEndpointSecurityGroup
+        - !Ref SecurityGroupVPCEndpoint
       PrivateDnsEnabled: true
 
-  S3Endpoint:
+  VPCEndpointS3:
     Type: AWS::EC2::VPCEndpoint
     Properties:
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
       VpcEndpointType: Gateway
       RouteTableIds:
-        - !Ref PlatformRouteTable
+        - !Ref RouteTablePlatform
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -505,206 +508,247 @@ Resources:
             Resource:
               - !Sub 'arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket/*'
 
-  STSEndpoint:
+  VPCEndpointSTS:
     Type: AWS::EC2::VPCEndpoint
     Properties:
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       ServiceName: !Sub 'com.amazonaws.${AWS::Region}.sts'
       VpcEndpointType: Interface
       SubnetIds:
-        - !Ref PlatformSubnet
+        - !Ref SubnetPlatform
       SecurityGroupIds:
-        - !Ref VpcEndpointSecurityGroup
+        - !Ref SecurityGroupVPCEndpoint
       PrivateDnsEnabled: true
 
+  # ECR Repositories
+  ECRRepositoryNode:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: tenzir-sovereign-platform/node
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 10 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+
+  ECRRepositoryPlatformAPI:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: tenzir-sovereign-platform/platform-api
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 10 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+
+  ECRRepositoryGateway:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: tenzir-sovereign-platform/gateway
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 10 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+
+  ECRRepositoryUI:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: tenzir-sovereign-platform/ui
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 10 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+
   # S3 Buckets
-  BucketSuffixGenerator:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: tenzir-bucket-suffix-generator
-      Runtime: python3.9
-      Handler: index.handler
-      Role: !GetAtt RandomIdGeneratorRole.Arn
-      Code:
-        ZipFile: |
-          import cfnresponse
-          import secrets
-          
-          def handler(event, context):
-              if event['RequestType'] == 'Create':
-                  # Generate 16 random bytes (32 hex chars)
-                  random_hex = secrets.token_hex(16)
-                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Value': random_hex})
-              else:
-                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Value': event.get('PhysicalResourceId', 'default-suffix')})
-
-  BucketSuffix:
-    Type: Custom::RandomId
-    Properties:
-      ServiceToken: !GetAtt BucketSuffixGenerator.Arn
-
-  TenzirBlobsBucket:
+  S3BucketBlobs:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub 'tenzir-blobs-${BucketSuffix.Value}'
+      BucketName: !Sub 'tenzir-blobs-${BucketSuffixRandom.Value}'
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
 
-  TenzirSidepathBucket:
+  S3BucketSidepath:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub 'tenzir-sidepath-${BucketSuffix.Value}'
+      BucketName: !Sub 'tenzir-sidepath-${BucketSuffixRandom.Value}'
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-
-  # Secrets Manager - Database Password
-  DatabasePasswordSecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub 
-        - 'tenzir-postgres-password-v2-${SubdomainValue}'
-        - SubdomainValue: !If
-          - UseRandomSubdomain
-          - !Ref SubdomainHex.Value
-          - ''
-      Description: Password for Tenzir PostgreSQL database
-      GenerateSecretString:
-        SecretStringTemplate: '{"username": "tenzir_admin"}'
-        GenerateStringKey: 'password'
-        PasswordLength: 16
-        ExcludeCharacters: '"@/\'
-
-  # Additional Random Secrets
-  TenantTokenEncryptionKey:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub 
-        - 'tenzir-tenant-token-encryption-key-${SubdomainValue}'
-        - SubdomainValue: !If
-          - UseRandomSubdomain
-          - !Ref SubdomainHex.Value
-          - ''
-      Description: Tenant token encryption key secret
-      GenerateSecretString:
-        PasswordLength: 32
-        RequireEachIncludedType: false
-        IncludeSpace: false
-        ExcludePunctuation: true
-
-  TenantManagerAppApiKey:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub 
-        - 'tenzir-tenant-manager-app-api-key-${SubdomainValue}'
-        - SubdomainValue: !If
-          - UseRandomSubdomain
-          - !Ref SubdomainHex.Value
-          - ''
-      Description: API key secret for tenant manager app
-      GenerateSecretString:
-        PasswordLength: 32
-        RequireEachIncludedType: false
-        IncludeSpace: false
-        ExcludePunctuation: true
-
-  WorkspaceSecretsMasterSeed:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub 
-        - 'tenzir-workspace-secrets-master-seed-${SubdomainValue}'
-        - SubdomainValue: !If
-          - UseRandomSubdomain
-          - !Ref SubdomainHex.Value
-          - ''
-      Description: Master seed secret for workspace secrets
-      GenerateSecretString:
-        PasswordLength: 64
-        RequireEachIncludedType: false
-        IncludeSpace: false
-        ExcludePunctuation: true
-
-  AuthSecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub 
-        - 'tenzir-auth-secret-${SubdomainValue}'
-        - SubdomainValue: !If
-          - UseRandomSubdomain
-          - !Ref SubdomainHex.Value
-          - ''
-      Description: Auth secret for UI Lambda
-      GenerateSecretString:
-        PasswordLength: 32
-        RequireEachIncludedType: false
-        IncludeSpace: false
-        ExcludePunctuation: true
 
   # RDS Database
-  DbSubnetGroup:
+  DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
       DBSubnetGroupName: tenzir-db-subnet-group
-      DBSubnetGroupDescription: Subnet group for Tenzir database
+      DBSubnetGroupDescription: Subnet group for Tenzir RDS instance
       SubnetIds:
-        - !Ref PostgresSubnet1
-        - !Ref PostgresSubnet2
+        - !Ref SubnetPostgres1
+        - !Ref SubnetPostgres2
       Tags:
         - Key: Name
           Value: tenzir-db-subnet-group
 
-  TenzirDatabase:
+  DBPasswordSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub 'tenzir-postgres-password-v2-${SubdomainRandom.Value}'
+      Description: Password for Tenzir PostgreSQL database
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "tenzir_admin"}'
+        GenerateStringKey: password
+        PasswordLength: 16
+        ExcludeCharacters: '"@/\'
+
+  PostgresURISecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub 'tenzir-postgres-uri-${SubdomainRandom.Value}'
+      Description: PostgreSQL URI for Tenzir database connection
+
+  TenantTokenEncryptionKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub 'tenzir-tenant-token-encryption-key-${SubdomainRandom.Value}'
+      Description: Tenant token encryption key secret
+      GenerateSecretString:
+        PasswordLength: 32
+        ExcludeCharacters: ''
+        RequireEachIncludedType: false
+
+  TenantManagerAppAPIKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub 'tenzir-tenant-manager-app-api-key-${SubdomainRandom.Value}'
+      Description: API key secret for tenant manager app
+      GenerateSecretString:
+        PasswordLength: 64
+        ExcludeCharacters: ''
+        RequireEachIncludedType: false
+
+  WorkspaceSecretsMasterSeedSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub 'tenzir-workspace-secrets-master-seed-${SubdomainRandom.Value}'
+      Description: Master seed secret for workspace secrets
+      GenerateSecretString:
+        PasswordLength: 128
+        ExcludeCharacters: ''
+        RequireEachIncludedType: false
+
+  AuthSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub 'tenzir-auth-secret-${SubdomainRandom.Value}'
+      Description: Auth secret for UI Lambda
+      GenerateSecretString:
+        PasswordLength: 64
+        ExcludeCharacters: ''
+        RequireEachIncludedType: false
+
+  DBInstance:
     Type: AWS::RDS::DBInstance
-    DeletionPolicy: Delete
     Properties:
       DBInstanceIdentifier: tenzir-postgres
-      DBInstanceClass: db.t3.micro
       Engine: postgres
       EngineVersion: '17.5'
+      DBInstanceClass: db.t3.micro
       AllocatedStorage: '20'
       MaxAllocatedStorage: 100
       StorageType: gp2
       StorageEncrypted: true
       DBName: tenzir
-      MasterUsername: tenzir_admin
-      ManageMasterUserPassword: true
-      MasterUserSecret:
-        SecretArn: !Ref DatabasePasswordSecret
+      MasterUsername: !Sub '{{resolve:secretsmanager:${DBPasswordSecret}:SecretString:username}}'
+      MasterUserPassword: !Sub '{{resolve:secretsmanager:${DBPasswordSecret}:SecretString:password}}'
       VPCSecurityGroups:
-        - !Ref RdsSecurityGroup
-      DBSubnetGroupName: !Ref DbSubnetGroup
+        - !Ref SecurityGroupRDS
+      DBSubnetGroupName: !Ref DBSubnetGroup
       BackupRetentionPeriod: 7
-      PreferredBackupWindow: '03:00-04:00'
-      PreferredMaintenanceWindow: 'sun:04:00-sun:05:00'
+      PreferredBackupWindow: 03:00-04:00
+      PreferredMaintenanceWindow: sun:04:00-sun:05:00
       DeletionProtection: false
       Tags:
         - Key: Name
           Value: tenzir-postgres
 
-  # Create additional secrets for database connection
-  PostgresUriSecret:
-    Type: AWS::SecretsManager::Secret
+  # Update PostgresURISecret with the actual connection string
+  PostgresURISecretVersion:
+    Type: AWS::SecretsManager::SecretVersion
     Properties:
-      Name: !Sub 
-        - 'tenzir-postgres-uri-${SubdomainValue}'
-        - SubdomainValue: !If
-          - UseRandomSubdomain
-          - !Ref SubdomainHex.Value
-          - ''
-      Description: PostgreSQL URI for Tenzir database connection
-      SecretString: !Sub 
-        - 'postgresql://tenzir_admin:${Password}@${Endpoint}/tenzir?sslmode=require'
-        - Password: !Sub '{{resolve:secretsmanager:${DatabasePasswordSecret}:SecretString:password}}'
-          Endpoint: !GetAtt TenzirDatabase.Endpoint.Address
+      SecretId: !Ref PostgresURISecret
+      SecretString: !Sub |
+        postgresql://${DBInstance.MasterUsername}:{{resolve:secretsmanager:${DBPasswordSecret}:SecretString:password}}@${DBInstance.Endpoint.Address}:${DBInstance.Endpoint.Port}/tenzir?sslmode=require
 
-  # Cognito User Pool
-  TenzirUserPool:
+  # Cognito User Pool (conditional)
+  CognitoUserPool:
     Type: AWS::Cognito::UserPool
+    Condition: UseCognito
     Properties:
       UserPoolName: tenzir-user-pool
       UsernameAttributes:
@@ -715,10 +759,10 @@ Resources:
         AllowAdminCreateUserOnly: true
       Policies:
         PasswordPolicy:
-          MinimumLength: 8
+          MinimumLength: 16
           RequireLowercase: true
           RequireNumbers: true
-          RequireSymbols: true
+          RequireSymbols: false
           RequireUppercase: true
       VerificationMessageTemplate:
         DefaultEmailOption: CONFIRM_WITH_CODE
@@ -733,12 +777,15 @@ Resources:
           StringAttributeConstraints:
             MinLength: '1'
             MaxLength: '256'
+      UserPoolTags:
+        Name: tenzir-user-pool
 
-  TenzirUserPoolClient:
+  CognitoUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
+    Condition: UseCognito
     Properties:
       ClientName: tenzir-app
-      UserPoolId: !Ref TenzirUserPool
+      UserPoolId: !Ref CognitoUserPool
       GenerateSecret: true
       AllowedOAuthFlowsUserPoolClient: true
       AllowedOAuthFlows:
@@ -750,12 +797,7 @@ Resources:
       SupportedIdentityProviders:
         - COGNITO
       CallbackURLs:
-        - !Sub 
-          - 'https://ui.${BaseDomain}/login/oauth/callback'
-          - BaseDomain: !If
-            - UseRandomSubdomain
-            - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-            - !Ref DomainName
+        - !Sub 'https://ui.${DomainName}/login/oauth/callback'
       PreventUserExistenceErrors: ENABLED
       EnableTokenRevocation: true
       ExplicitAuthFlows:
@@ -769,143 +811,39 @@ Resources:
         IdToken: minutes
         RefreshToken: days
 
-  TenzirUserPoolDomain:
+  CognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
+    Condition: UseCognito
     Properties:
-      Domain: !Sub 
-        - 'tenzir-auth-${SubdomainValue}'
-        - SubdomainValue: !If
-          - UseRandomSubdomain
-          - !Ref SubdomainHex.Value
-          - 'default'
-      UserPoolId: !Ref TenzirUserPool
+      Domain: !Sub 'tenzir-auth-${SubdomainRandom.Value}'
+      UserPoolId: !Ref CognitoUserPool
 
-  # Admin User Password
   AdminPasswordSecret:
     Type: AWS::SecretsManager::Secret
+    Condition: UseCognito
     Properties:
-      Name: !Sub 
-        - 'tenzir/cognito/admin-password-${SubdomainValue}'
-        - SubdomainValue: !If
-          - UseRandomSubdomain
-          - !Ref SubdomainHex.Value
-          - ''
+      Name: !Sub 'tenzir/cognito/admin-password-${SubdomainRandom.Value}'
       Description: Admin user password for Tenzir Cognito user pool
       GenerateSecretString:
         PasswordLength: 24
-        RequireEachIncludedType: true
+        ExcludeCharacters: ''
 
-  # Admin User (requires custom resource since CloudFormation doesn't support this directly)
-  AdminUserCreatorRole:
-    Type: AWS::IAM::Role
+  CognitoAdminUser:
+    Type: AWS::Cognito::UserPoolUser
+    Condition: UseCognito
     Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: CognitoAdminUserPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - cognito-idp:AdminCreateUser
-                  - cognito-idp:AdminDeleteUser
-                  - cognito-idp:AdminSetUserPassword
-                  - secretsmanager:GetSecretValue
-                Resource: '*'
-
-  AdminUserCreator:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: tenzir-admin-user-creator
-      Runtime: python3.9
-      Handler: index.handler
-      Role: !GetAtt AdminUserCreatorRole.Arn
-      Code:
-        ZipFile: |
-          import boto3
-          import cfnresponse
-          import json
-          
-          def handler(event, context):
-              cognito = boto3.client('cognito-idp')
-              secrets = boto3.client('secretsmanager')
-              
-              user_pool_id = event['ResourceProperties']['UserPoolId']
-              username = event['ResourceProperties']['Username']
-              password_secret_arn = event['ResourceProperties']['PasswordSecretArn']
-              
-              try:
-                  if event['RequestType'] == 'Create':
-                      # Get password from secrets manager
-                      secret_response = secrets.get_secret_value(SecretId=password_secret_arn)
-                      password = secret_response['SecretString']
-                      
-                      # Create user
-                      response = cognito.admin_create_user(
-                          UserPoolId=user_pool_id,
-                          Username=username,
-                          UserAttributes=[
-                              {
-                                  'Name': 'email',
-                                  'Value': username
-                              },
-                              {
-                                  'Name': 'email_verified',
-                                  'Value': 'true'
-                              }
-                          ],
-                          TemporaryPassword=password,
-                          MessageAction='SUPPRESS'
-                      )
-                      
-                      # Set permanent password
-                      cognito.admin_set_user_password(
-                          UserPoolId=user_pool_id,
-                          Username=username,
-                          Password=password,
-                          Permanent=True
-                      )
-                      
-                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Username': username})
-                  
-                  elif event['RequestType'] == 'Delete':
-                      try:
-                          cognito.admin_delete_user(
-                              UserPoolId=user_pool_id,
-                              Username=username
-                          )
-                      except cognito.exceptions.UserNotFoundException:
-                          pass  # User already deleted
-                      
-                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
-                  
-                  else:
-                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
-              
-              except Exception as e:
-                  print(f'Error: {str(e)}')
-                  cfnresponse.send(event, context, cfnresponse.FAILED, {})
-
-  AdminUser:
-    Type: Custom::AdminUser
-    Properties:
-      ServiceToken: !GetAtt AdminUserCreator.Arn
-      UserPoolId: !Ref TenzirUserPool
-      Username: !Sub 
-        - 'admin@${BaseDomain}'
-        - BaseDomain: !If
-          - UseRandomSubdomain
-          - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-          - !Ref DomainName
-      PasswordSecretArn: !Ref AdminPasswordSecret
+      UserPoolId: !Ref CognitoUserPool
+      Username: !Sub 'admin@${DomainName}'
+      UserAttributes:
+        - Name: email
+          Value: !Sub 'admin@${DomainName}'
+        - Name: email_verified
+          Value: 'true'
+      DesiredDeliveryMediums:
+        - EMAIL
+      ForceAliasCreation: true
+      TemporaryPassword: !Sub '{{resolve:secretsmanager:${AdminPasswordSecret}:SecretString:password}}'
+      MessageAction: SUPPRESS
 
   # ECS Cluster
   ECSCluster:
@@ -919,7 +857,6 @@ Resources:
         - Key: Name
           Value: tenzir-platform
 
-  # ECS Task Execution Role
   ECSTaskExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -934,7 +871,6 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
 
-  # Gateway Task Role
   GatewayTaskRole:
     Type: AWS::IAM::Role
     Properties:
@@ -955,107 +891,82 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource:
-                  - !Ref PostgresUriSecret
-                  - !Ref TenantManagerAppApiKey
-                  - !Ref TenantTokenEncryptionKey
-                  - !Ref WorkspaceSecretsMasterSeed
+                  - !Ref PostgresURISecret
+                  - !Ref TenantManagerAppAPIKeySecret
+                  - !Ref TenantTokenEncryptionKeySecret
+                  - !Ref WorkspaceSecretsMasterSeedSecret
 
-  # CloudWatch Log Groups
   GatewayLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /ecs/tenzir-gateway
       RetentionInDays: 7
 
-  DemoNodeLogGroup:
-    Type: AWS::Logs::LogGroup
+  GatewayTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
     Properties:
-      LogGroupName: /ecs/tenzir-demo-node
-      RetentionInDays: 7
-
-  # SSM Parameters
-  DemoNodeLogsGroupNameParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: /tenzir/platform/demo-node-logs-group-name
-      Type: String
-      Value: !Ref DemoNodeLogGroup
-
-  ECSClusterArnParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: /tenzir/platform/ecs-cluster-arn
-      Type: String
-      Value: !GetAtt ECSCluster.Arn
-
-  ECSTaskExecutionRoleArnParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: /tenzir/platform/ecs-task-execution-role-arn
-      Type: String
-      Value: !GetAtt ECSTaskExecutionRole.Arn
-
-  TenzirDemoNodeSecurityGroupIdParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: /tenzir/platform/tenzir-demo-node-security-group-id
-      Type: String
-      Value: !Ref EcsDemoNodeSecurityGroup
-
-  TenzirDemoSubnetIdParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: /tenzir/platform/tenzir-demo-subnet-id
-      Type: String
-      Value: !Ref NodesSubnet
-
-  GatewayWsEndpointParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: /tenzir/platform/gateway-ws-endpoint
-      Type: String
-      Value: !Sub 
-        - 'wss://nodes.${BaseDomain}'
-        - BaseDomain: !If
-          - UseRandomSubdomain
-          - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-          - !Ref DomainName
-
-  GatewayHttpEndpointParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: /tenzir/platform/gateway-http-endpoint
-      Type: String
-      Value: !Sub 
-        - 'https://nodes.${BaseDomain}'
-        - BaseDomain: !If
-          - UseRandomSubdomain
-          - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-          - !Ref DomainName
+      Family: tenzir-gateway
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: '256'
+      Memory: '512'
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt GatewayTaskRole.Arn
+      ContainerDefinitions:
+        - Name: gateway
+          Image: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/tenzir-sovereign-platform/gateway:latest'
+          Command:
+            - tenant_manager/ws/server/aws.py
+          PortMappings:
+            - ContainerPort: 5000
+              Protocol: tcp
+          Environment:
+            - Name: BASE_PATH
+              Value: ''
+            - Name: TENZIR_PROXY_TIMEOUT
+              Value: '60'
+            - Name: TENANT_MANAGER_APP_API_KEY_SECRET_ARN
+              Value: !Ref TenantManagerAppAPIKeySecret
+            - Name: TENANT_MANAGER_TENANT_TOKEN_ENCRYPTION_KEY_SECRET_ARN
+              Value: !Ref TenantTokenEncryptionKeySecret
+            - Name: STORE__TYPE
+              Value: postgres
+            - Name: STORE__POSTGRES_URI_SECRET_ARN
+              Value: !Ref PostgresURISecret
+            - Name: WORKSPACE_SECRETS_MASTER_SEED_ARN
+              Value: !Ref WorkspaceSecretsMasterSeedSecret
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: /ecs/tenzir-gateway
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+          Essential: true
 
   # Application Load Balancer
-  GatewayALB:
+  ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Name: tenzir-gateway-alb
       Type: application
       Scheme: internet-facing
       SecurityGroups:
-        - !Ref AlbSecurityGroup
+        - !Ref SecurityGroupALB
       Subnets:
-        - !Ref PublicSubnet
-        - !Ref PublicSubnet2
+        - !Ref SubnetPublic
+        - !Ref SubnetPublic2
       Tags:
         - Key: Name
           Value: tenzir-gateway-alb
 
-  GatewayTargetGroup:
+  ALBTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       Name: tenzir-gateway-tg
       Port: 80
       Protocol: HTTP
-      VpcId: !Ref TenzirVPC
+      VpcId: !Ref VPC
       TargetType: ip
       HealthCheckEnabled: true
       HealthCheckIntervalSeconds: 30
@@ -1071,79 +982,73 @@ Resources:
         - Key: Name
           Value: tenzir-gateway-tg
 
-  GatewayHTTPSListener:
+  # ACM Certificates
+  APICertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub 'api.${DomainName}'
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Sub 'api.${DomainName}'
+          HostedZoneId: !Sub '{{resolve:ssm:/hostedzone/${DomainName}}}'
+      Tags:
+        - Key: Name
+          Value: tenzir-api-cert
+
+  UICertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub 'ui.${DomainName}'
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Sub 'ui.${DomainName}'
+          HostedZoneId: !Sub '{{resolve:ssm:/hostedzone/${DomainName}}}'
+      Tags:
+        - Key: Name
+          Value: tenzir-ui-cert
+
+  NodesCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub 'nodes.${DomainName}'
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Sub 'nodes.${DomainName}'
+          HostedZoneId: !Sub '{{resolve:ssm:/hostedzone/${DomainName}}}'
+      Tags:
+        - Key: Name
+          Value: tenzir-nodes-cert
+
+  ALBListenerHTTPS:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
-      LoadBalancerArn: !Ref GatewayALB
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroup
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
       Port: 443
       Protocol: HTTPS
       SslPolicy: ELBSecurityPolicy-TLS-1-2-2017-01
       Certificates:
         - CertificateArn: !Ref NodesCertificate
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref GatewayTargetGroup
 
-  GatewayHTTPListener:
+  ALBListenerHTTP:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
-      LoadBalancerArn: !Ref GatewayALB
-      Port: 80
-      Protocol: HTTP
       DefaultActions:
         - Type: redirect
           RedirectConfig:
-            Protocol: HTTPS
             Port: '443'
+            Protocol: HTTPS
             StatusCode: HTTP_301
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
 
-  # ECS Task Definition
-  GatewayTaskDefinition:
-    Type: AWS::ECS::TaskDefinition
-    Properties:
-      Family: tenzir-gateway
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      Cpu: '256'
-      Memory: '512'
-      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
-      TaskRoleArn: !GetAtt GatewayTaskRole.Arn
-      ContainerDefinitions:
-        - Name: gateway
-          Image: !Sub '${GatewayRepository.RepositoryUri}:latest'
-          Command:
-            - tenant_manager/ws/server/aws.py
-          PortMappings:
-            - ContainerPort: 5000
-              Protocol: tcp
-          Environment:
-            - Name: BASE_PATH
-              Value: ''
-            - Name: TENZIR_PROXY_TIMEOUT
-              Value: '60'
-            - Name: TENANT_MANAGER_APP_API_KEY_SECRET_ARN
-              Value: !Ref TenantManagerAppApiKey
-            - Name: TENANT_MANAGER_TENANT_TOKEN_ENCRYPTION_KEY_SECRET_ARN
-              Value: !Ref TenantTokenEncryptionKey
-            - Name: STORE__TYPE
-              Value: postgres
-            - Name: STORE__POSTGRES_URI_SECRET_ARN
-              Value: !Ref PostgresUriSecret
-            - Name: WORKSPACE_SECRETS_MASTER_SEED_ARN
-              Value: !Ref WorkspaceSecretsMasterSeed
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref GatewayLogGroup
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: ecs
-          Essential: true
-
-  # ECS Service
-  GatewayECSService:
+  GatewayService:
     Type: AWS::ECS::Service
-    DependsOn: GatewayHTTPSListener
+    DependsOn:
+      - ALBListenerHTTPS
     Properties:
       ServiceName: gateway
       Cluster: !Ref ECSCluster
@@ -1153,17 +1058,17 @@ Resources:
       NetworkConfiguration:
         AwsvpcConfiguration:
           Subnets:
-            - !Ref PlatformSubnet
+            - !Ref SubnetPlatform
           SecurityGroups:
-            - !Ref ECSServiceSecurityGroup
+            - !Ref SecurityGroupECS
           AssignPublicIp: DISABLED
       LoadBalancers:
-        - TargetGroupArn: !Ref GatewayTargetGroup
+        - TargetGroupArn: !Ref ALBTargetGroup
           ContainerName: gateway
           ContainerPort: 5000
 
-  # Lambda Function for API
-  ApiLambdaRole:
+  # Lambda Function
+  APILambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: tenzir-api-lambda-execution-role
@@ -1186,11 +1091,11 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource:
-                  - !Ref DatabasePasswordSecret
-                  - !Ref PostgresUriSecret
-                  - !Ref TenantManagerAppApiKey
-                  - !Ref TenantTokenEncryptionKey
-                  - !Ref WorkspaceSecretsMasterSeed
+                  - !Ref DBPasswordSecret
+                  - !Ref PostgresURISecret
+                  - !Ref TenantManagerAppAPIKeySecret
+                  - !Ref TenantTokenEncryptionKeySecret
+                  - !Ref WorkspaceSecretsMasterSeedSecret
                   - !Ref AuthSecret
         - PolicyName: tenzir-api-lambda-ssm-policy
           PolicyDocument:
@@ -1212,8 +1117,8 @@ Resources:
                   - s3:DeleteObject
                   - s3:ListBucket
                 Resource:
-                  - !GetAtt TenzirSidepathBucket.Arn
-                  - !Sub '${TenzirSidepathBucket.Arn}/*'
+                  - !GetAtt S3BucketSidepath.Arn
+                  - !Sub '${S3BucketSidepath.Arn}/*'
         - PolicyName: tenzir-api-lambda-cloudformation-policy
           PolicyDocument:
             Version: '2012-10-17'
@@ -1247,7 +1152,7 @@ Resources:
                 Resource: '*'
                 Condition:
                   StringEquals:
-                    'ecs:cluster': !GetAtt ECSCluster.Arn
+                    ecs:cluster: !GetAtt ECSCluster.Arn
               - Effect: Allow
                 Action:
                   - ecs:RegisterTaskDefinition
@@ -1259,51 +1164,103 @@ Resources:
                   - iam:PassRole
                 Resource: !GetAtt ECSTaskExecutionRole.Arn
 
-  ApiLambdaFunction:
+  # SSM Parameters
+  DemoNodeLogsGroupNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /tenzir/platform/demo-node-logs-group-name
+      Type: String
+      Value: /ecs/tenzir-demo-node
+
+  ECSClusterArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /tenzir/platform/ecs-cluster-arn
+      Type: String
+      Value: !GetAtt ECSCluster.Arn
+
+  ECSTaskExecutionRoleArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /tenzir/platform/ecs-task-execution-role-arn
+      Type: String
+      Value: !GetAtt ECSTaskExecutionRole.Arn
+
+  DemoNodeSecurityGroupIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /tenzir/platform/tenzir-demo-node-security-group-id
+      Type: String
+      Value: !Ref SecurityGroupECSDemoNode
+
+  DemoSubnetIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /tenzir/platform/tenzir-demo-subnet-id
+      Type: String
+      Value: !Ref SubnetNodes
+
+  GatewayWSEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /tenzir/platform/gateway-ws-endpoint
+      Type: String
+      Value: !Sub 'wss://nodes.${DomainName}'
+
+  GatewayHTTPEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /tenzir/platform/gateway-http-endpoint
+      Type: String
+      Value: !Sub 'https://nodes.${DomainName}'
+
+  APILambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: tenzir-api-function
-      Role: !GetAtt ApiLambdaRole.Arn
+      Role: !GetAtt APILambdaExecutionRole.Arn
       PackageType: Image
-      ImageUri: !Sub '${PlatformApiRepository.RepositoryUri}:latest'
+      Code:
+        ImageUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/tenzir-sovereign-platform/platform-api:latest'
       Timeout: 30
       MemorySize: 512
       Environment:
         Variables:
-          DB_SECRET_ARN: !Ref DatabasePasswordSecret
+          DB_SECRET_ARN: !Ref DBPasswordSecret
           ECS_CLUSTER_ARN: !Ref ECSClusterArnParameter
           ECS_TASK_EXECUTION_ROLE_ARN: !Ref ECSTaskExecutionRoleArnParameter
-          TENZIR_DEMO_NODE_SECURITY_GROUP_ID: !Ref TenzirDemoNodeSecurityGroupIdParameter
-          TENZIR_DEMO_SUBNET_ID: !Ref TenzirDemoSubnetIdParameter
+          TENZIR_DEMO_NODE_SECURITY_GROUP_ID: !Ref DemoNodeSecurityGroupIdParameter
+          TENZIR_DEMO_SUBNET_ID: !Ref DemoSubnetIdParameter
           STORE__TYPE: postgres
-          STORE__POSTGRES_URI_SECRET_ARN: !Ref PostgresUriSecret
-          TENANT_MANAGER_APP_API_KEY_SECRET_ARN: !Ref TenantManagerAppApiKey
-          TENANT_MANAGER_TENANT_TOKEN_ENCRYPTION_KEY_SECRET_ARN: !Ref TenantTokenEncryptionKey
-          WORKSPACE_SECRETS_MASTER_SEED_ARN: !Ref WorkspaceSecretsMasterSeed
+          STORE__POSTGRES_URI_SECRET_ARN: !Ref PostgresURISecret
+          TENANT_MANAGER_APP_API_KEY_SECRET_ARN: !Ref TenantManagerAppAPIKeySecret
+          TENANT_MANAGER_TENANT_TOKEN_ENCRYPTION_KEY_SECRET_ARN: !Ref TenantTokenEncryptionKeySecret
+          WORKSPACE_SECRETS_MASTER_SEED_ARN: !Ref WorkspaceSecretsMasterSeedSecret
           TENZIR_DEMO_NODE_LOGS_GROUP_NAME: !Ref DemoNodeLogsGroupNameParameter
-          TENANT_MANAGER_AUTH__TRUSTED_AUDIENCES: !Sub |
-            {
-              "issuer": "https://cognito-idp.${AWS::Region}.amazonaws.com/${TenzirUserPool}",
-              "audiences": ["${TenzirUserPoolClient}"]
-            }
-          TENANT_MANAGER_AUTH__ADMIN_FUNCTIONS: !Sub '[{"auth_fn": "auth_user", "user_id": "${AdminUser}"}]'
+          TENANT_MANAGER_AUTH__TRUSTED_AUDIENCES: !If
+            - UseExternalOIDCProvider
+            - !Sub '{"issuer": "${ExternalOIDCIssuerURL}", "audiences": ["${ExternalOIDCClientID}"]}'
+            - !Sub '{"issuer": "https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}", "audiences": ["${CognitoUserPoolClient}"]}'
+          TENANT_MANAGER_AUTH__ADMIN_FUNCTIONS: !If
+            - UseCognito
+            - !Sub '[{"auth_fn": "auth_user", "user_id": "${CognitoAdminUser}"}]'
+            - '[]'
           BASE_PATH: ''
-          TENANT_MANAGER_SIDEPATH_BUCKET_NAME: !Ref TenzirSidepathBucket
-          TENZIR_DEMO_NODE_IMAGE: !Sub '${NodeRepository.RepositoryUri}:latest'
-          GATEWAY_WS_ENDPOINT: !Ref GatewayWsEndpointParameter
-          GATEWAY_HTTP_ENDPOINT: !Ref GatewayHttpEndpointParameter
+          TENANT_MANAGER_SIDEPATH_BUCKET_NAME: !Ref S3BucketSidepath
+          TENZIR_DEMO_NODE_IMAGE: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/tenzir-sovereign-platform/node:latest'
+          GATEWAY_WS_ENDPOINT: !Ref GatewayWSEndpointParameter
+          GATEWAY_HTTP_ENDPOINT: !Ref GatewayHTTPEndpointParameter
       VpcConfig:
         SubnetIds:
-          - !Ref PlatformSubnet
+          - !Ref SubnetPlatform
         SecurityGroupIds:
-          - !Ref LambdaSecurityGroup
+          - !Ref SecurityGroupLambda
 
-  # Lambda Function URL
-  ApiLambdaFunctionUrl:
+  APILambdaFunctionUrl:
     Type: AWS::Lambda::Url
     Properties:
-      TargetFunctionArn: !Ref ApiLambdaFunction
       AuthType: NONE
+      TargetFunctionArn: !Ref APILambdaFunction
       Cors:
         AllowCredentials: false
         AllowOrigins:
@@ -1318,8 +1275,8 @@ Resources:
           - keep-alive
         MaxAge: 86400
 
-  # API Gateway for Lambda
-  ApiGatewayApi:
+  # API Gateway
+  APIGateway:
     Type: AWS::ApiGatewayV2::Api
     Properties:
       Name: tenzir-api-api
@@ -1337,93 +1294,54 @@ Resources:
           - '*'
         MaxAge: 86400
 
-  ApiGatewayIntegration:
+  APIGatewayIntegration:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
-      ApiId: !Ref ApiGatewayApi
+      ApiId: !Ref APIGateway
       IntegrationType: AWS_PROXY
       IntegrationMethod: POST
-      IntegrationUri: !GetAtt ApiLambdaFunction.Arn
+      IntegrationUri: !GetAtt APILambdaFunction.Arn
       PayloadFormatVersion: '2.0'
 
-  ApiGatewayRoute:
+  APIGatewayRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
-      ApiId: !Ref ApiGatewayApi
+      ApiId: !Ref APIGateway
       RouteKey: $default
-      Target: !Sub 'integrations/${ApiGatewayIntegration}'
+      Target: !Sub 'integrations/${APIGatewayIntegration}'
 
-  ApiGatewayStage:
+  APIGatewayStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
-      ApiId: !Ref ApiGatewayApi
+      ApiId: !Ref APIGateway
       StageName: $default
       AutoDeploy: true
 
-  ApiGatewayLambdaPermission:
+  APILambdaPermission:
     Type: AWS::Lambda::Permission
     Properties:
+      FunctionName: !Ref APILambdaFunction
       Action: lambda:InvokeFunction
-      FunctionName: !Ref ApiLambdaFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub '${ApiGatewayApi.ExecutionArn}/*/*'
+      SourceArn: !Sub '${APIGateway.Arn}/*/*'
 
-  # API Gateway Custom Domain
-  ApiGatewayDomainName:
+  APIGatewayDomainName:
     Type: AWS::ApiGatewayV2::DomainName
     Properties:
-      DomainName: !Sub 
-        - 'api.${BaseDomain}'
-        - BaseDomain: !If
-          - UseRandomSubdomain
-          - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-          - !Ref DomainName
+      DomainName: !Sub 'api.${DomainName}'
       DomainNameConfigurations:
-        - CertificateArn: !Ref ApiCertificate
+        - CertificateArn: !Ref APICertificate
           EndpointType: REGIONAL
           SecurityPolicy: TLS_1_2
 
-  ApiGatewayApiMapping:
+  APIGatewayMapping:
     Type: AWS::ApiGatewayV2::ApiMapping
     Properties:
-      ApiId: !Ref ApiGatewayApi
-      DomainName: !Ref ApiGatewayDomainName
-      Stage: !Ref ApiGatewayStage
+      ApiId: !Ref APIGateway
+      DomainName: !Ref APIGatewayDomainName
+      Stage: !Ref APIGatewayStage
 
-  # Route53 Records
-  NodesRoute53Record:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId: !Ref Route53Zone
-      Name: !Sub 
-        - 'nodes.${BaseDomain}'
-        - BaseDomain: !If
-          - UseRandomSubdomain
-          - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-          - !Ref DomainName
-      Type: A
-      AliasTarget:
-        DNSName: !GetAtt GatewayALB.DNSName
-        HostedZoneId: !GetAtt GatewayALB.CanonicalHostedZoneID
-        EvaluateTargetHealth: true
-
-  ApiRoute53Record:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId: !Ref Route53Zone
-      Name: !Sub 
-        - 'api.${BaseDomain}'
-        - BaseDomain: !If
-          - UseRandomSubdomain
-          - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-          - !Ref DomainName
-      Type: A
-      AliasTarget:
-        DNSName: !GetAtt ApiGatewayDomainName.RegionalDomainName
-        HostedZoneId: !GetAtt ApiGatewayDomainName.RegionalHostedZoneId
-        EvaluateTargetHealth: false
-
-  # App Runner IAM Roles
+  # App Runner
   AppRunnerInstanceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -1444,13 +1362,10 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource:
-                  - !Ref DatabasePasswordSecret
-                  - !Ref PostgresUriSecret
-                  - !Ref TenantManagerAppApiKey
+                  - !Ref DBPasswordSecret
+                  - !Ref PostgresURISecret
+                  - !Ref TenantManagerAppAPIKeySecret
                   - !Ref AuthSecret
-                  - !Ref ClientSecret
-                  - !Ref UserEndpointSecret
-                  - !Ref WebappEndpointSecret
 
   AppRunnerAccessRole:
     Type: AWS::IAM::Role
@@ -1466,57 +1381,42 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
 
-  # App Runner VPC Connector
-  AppRunnerVpcConnector:
+  AppRunnerVPCConnector:
     Type: AWS::AppRunner::VpcConnector
     Properties:
       VpcConnectorName: tenzir-ui-vpc-connector
       Subnets:
-        - !Ref PlatformSubnet
+        - !Ref SubnetPlatform
       SecurityGroups:
-        - !Ref AppRunnerSecurityGroup
+        - !Ref SecurityGroupAppRunner
       Tags:
         - Key: Name
           Value: tenzir-ui-vpc-connector
 
-  # Additional Secrets for App Runner
-  ClientSecret:
+  ClientSecretSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub 
-        - 'tenzir/apprunner/ui/client-secret-${SubdomainValue}'
-        - SubdomainValue: !If
-          - UseRandomSubdomain
-          - !Ref SubdomainHex.Value
-          - ''
+      Name: !Sub 'tenzir/apprunner/ui/client-secret-${SubdomainRandom.Value}'
       Description: OIDC Client Secret for App Runner UI
-      SecretString: !Sub '{{resolve:secretsmanager:${TenzirUserPoolClient}:SecretString:client_secret}}'
+      SecretString: !If
+        - UseExternalOIDCProvider
+        - !Ref ExternalOIDCClientSecret
+        - !GetAtt CognitoUserPoolClient.ClientSecret
 
   UserEndpointSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub 
-        - 'tenzir/apprunner/ui/user-endpoint-${SubdomainValue}'
-        - SubdomainValue: !If
-          - UseRandomSubdomain
-          - !Ref SubdomainHex.Value
-          - ''
+      Name: !Sub 'tenzir/apprunner/ui/user-endpoint-${SubdomainRandom.Value}'
       Description: User Endpoint for App Runner UI
-      SecretString: !Sub '${ApiLambdaFunctionUrl.FunctionUrl}user'
+      SecretString: !Sub '${APILambdaFunctionUrl.FunctionUrl}user'
 
   WebappEndpointSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub 
-        - 'tenzir/apprunner/ui/webapp-endpoint-${SubdomainValue}'
-        - SubdomainValue: !If
-          - UseRandomSubdomain
-          - !Ref SubdomainHex.Value
-          - ''
+      Name: !Sub 'tenzir/apprunner/ui/webapp-endpoint-${SubdomainRandom.Value}'
       Description: Webapp Endpoint for App Runner UI
-      SecretString: !Sub '${ApiLambdaFunctionUrl.FunctionUrl}webapp'
+      SecretString: !Sub '${APILambdaFunctionUrl.FunctionUrl}webapp'
 
-  # App Runner Service
   AppRunnerService:
     Type: AWS::AppRunner::Service
     Properties:
@@ -1530,27 +1430,31 @@ Resources:
             RuntimeEnvironmentVariables:
               AUTH_TRUST_HOST: 'true'
               PUBLIC_ENABLE_HIGHLIGHT: 'false'
-              ORIGIN: !Sub 
-                - 'https://ui.${BaseDomain}'
-                - BaseDomain: !If
-                  - UseRandomSubdomain
-                  - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-                  - !Ref DomainName
+              ORIGIN: !Sub 'https://ui.${DomainName}'
               PRIVATE_OIDC_PROVIDER_NAME: tenzir
-              PRIVATE_OIDC_PROVIDER_CLIENT_ID: !Ref TenzirUserPoolClient
-              PRIVATE_OIDC_PROVIDER_ISSUER_URL: !Sub 'https://cognito-idp.${AWS::Region}.amazonaws.com/${TenzirUserPool}'
-              PUBLIC_OIDC_PROVIDER_ID: cognito
-              PUBLIC_OIDC_SCOPES: 'openid profile email'
-              PUBLIC_WEBSOCKET_GATEWAY_ENDPOINT: !Ref GatewayWsEndpointParameter
+              PRIVATE_OIDC_PROVIDER_CLIENT_ID: !If
+                - UseExternalOIDCProvider
+                - !Ref ExternalOIDCClientID
+                - !Ref CognitoUserPoolClient
+              PRIVATE_OIDC_PROVIDER_ISSUER_URL: !If
+                - UseExternalOIDCProvider
+                - !Ref ExternalOIDCIssuerURL
+                - !Sub 'https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}'
+              PUBLIC_OIDC_PROVIDER_ID: !If
+                - UseExternalOIDCProvider
+                - external
+                - cognito
+              PUBLIC_OIDC_SCOPES: openid profile email
+              PUBLIC_WEBSOCKET_GATEWAY_ENDPOINT: !Ref GatewayWSEndpointParameter
               PUBLIC_DISABLE_DEMO_NODE_AND_TOUR: 'false'
             RuntimeEnvironmentSecrets:
-              PRIVATE_OIDC_PROVIDER_CLIENT_SECRET: !Ref ClientSecret
+              PRIVATE_OIDC_PROVIDER_CLIENT_SECRET: !Ref ClientSecretSecret
               PRIVATE_USER_ENDPOINT: !Ref UserEndpointSecret
               PRIVATE_WEBAPP_ENDPOINT: !Ref WebappEndpointSecret
-              PRIVATE_WEBAPP_KEY: !Ref TenantManagerAppApiKey
+              PRIVATE_WEBAPP_KEY: !Ref TenantManagerAppAPIKeySecret
               AUTH_SECRET: !Ref AuthSecret
-              PRIVATE_DRIZZLE_DATABASE_URL: !Ref PostgresUriSecret
-          ImageIdentifier: !Sub '${UiRepository.RepositoryUri}:latest'
+              PRIVATE_DRIZZLE_DATABASE_URL: !Ref PostgresURISecret
+          ImageIdentifier: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/tenzir-sovereign-platform/ui:latest'
           ImageRepositoryType: ECR
         AutoDeploymentsEnabled: false
       InstanceConfiguration:
@@ -1562,110 +1466,89 @@ Resources:
           IsPubliclyAccessible: true
         EgressConfiguration:
           EgressType: VPC
-          VpcConnectorArn: !GetAtt AppRunnerVpcConnector.VpcConnectorArn
+          VpcConnectorArn: !Ref AppRunnerVPCConnector
       Tags:
         - Key: Name
           Value: tenzir-ui-apprunner
 
-  # App Runner Custom Domain
-  AppRunnerCustomDomainAssociation:
-    Type: AWS::AppRunner::CustomDomainAssociation
-    Properties:
-      DomainName: !Sub 
-        - 'ui.${BaseDomain}'
-        - BaseDomain: !If
-          - UseRandomSubdomain
-          - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-          - !Ref DomainName
-      ServiceArn: !GetAtt AppRunnerService.ServiceArn
-
-  # Route53 record for App Runner
-  UiRoute53Record:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId: !Ref Route53Zone
-      Name: !Sub 
-        - 'ui.${BaseDomain}'
-        - BaseDomain: !If
-          - UseRandomSubdomain
-          - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-          - !Ref DomainName
-      Type: CNAME
-      TTL: 300
-      ResourceRecords:
-        - !GetAtt AppRunnerCustomDomainAssociation.DNSTarget
-
 Outputs:
-  UiRepositoryUrl:
+  UIRepositoryURL:
     Description: URL of the unified UI repository
-    Value: !GetAtt UiRepository.RepositoryUri
+    Value: !GetAtt ECRRepositoryUI.RepositoryUri
 
-  PlatformApiRepositoryUrl:
+  PlatformAPIRepositoryURL:
     Description: URL of the unified platform API repository
-    Value: !GetAtt PlatformApiRepository.RepositoryUri
+    Value: !GetAtt ECRRepositoryPlatformAPI.RepositoryUri
 
-  GatewayRepositoryUrl:
+  GatewayRepositoryURL:
     Description: URL of the unified gateway repository
-    Value: !GetAtt GatewayRepository.RepositoryUri
+    Value: !GetAtt ECRRepositoryGateway.RepositoryUri
 
-  UiServiceUrl:
+  UIServiceURL:
     Description: URL of the App Runner UI service
     Value: !GetAtt AppRunnerService.ServiceUrl
 
-  ApiFunctionUrl:
+  APIFunctionURL:
     Description: URL of the API Lambda function
-    Value: !GetAtt ApiLambdaFunctionUrl.FunctionUrl
+    Value: !GetAtt APILambdaFunctionUrl.FunctionUrl
 
-  OauthClientId:
-    Description: The OAuth client ID
-    Value: !Ref TenzirUserPoolClient
+  OAuthClientID:
+    Description: The OAuth client ID (Cognito or external OIDC)
+    Value: !If
+      - UseExternalOIDCProvider
+      - !Ref ExternalOIDCClientID
+      - !Ref CognitoUserPoolClient
 
-  OidcIssuerUrl:
-    Description: The OIDC issuer URL for the Cognito User Pool
-    Value: !Sub 'https://cognito-idp.${AWS::Region}.amazonaws.com/${TenzirUserPool}'
+  OAuthClientSecret:
+    Description: The OAuth client secret (Cognito or external OIDC)
+    Value: !If
+      - UseExternalOIDCProvider
+      - !Ref ExternalOIDCClientSecret
+      - !GetAtt CognitoUserPoolClient.ClientSecret
 
-  GatewayAlbDnsName:
+  OIDCIssuerURL:
+    Description: The OIDC issuer URL (Cognito or external OIDC)
+    Value: !If
+      - UseExternalOIDCProvider
+      - !Ref ExternalOIDCIssuerURL
+      - !Sub 'https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}'
+
+  GatewayALBDNSName:
     Description: DNS name of the gateway Application Load Balancer
-    Value: !GetAtt GatewayALB.DNSName
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
 
-  GatewayAlbHostedZoneId:
+  GatewayALBHostedZoneID:
     Description: Hosted zone ID of the gateway Application Load Balancer
-    Value: !GetAtt GatewayALB.CanonicalHostedZoneID
+    Value: !GetAtt ApplicationLoadBalancer.CanonicalHostedZoneID
 
   BaseDomain:
     Description: The base domain (with random subdomain if enabled)
     Value: !If
       - UseRandomSubdomain
-      - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
+      - !Sub 'tenant-${SubdomainRandom.Value}.${DomainName}'
       - !Ref DomainName
 
-  ApiDomain:
+  APIDomain:
     Description: The API domain name
-    Value: !Sub 
-      - 'api.${BaseDomain}'
-      - BaseDomain: !If
-        - UseRandomSubdomain
-        - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-        - !Ref DomainName
+    Value: !Sub 'api.${DomainName}'
 
-  UiDomain:
+  UIDomain:
     Description: The UI domain name
-    Value: !Sub 
-      - 'ui.${BaseDomain}'
-      - BaseDomain: !If
-        - UseRandomSubdomain
-        - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-        - !Ref DomainName
+    Value: !Sub 'ui.${DomainName}'
 
   AdminUsername:
-    Description: Default admin username for Cognito
-    Value: !Sub 
-      - 'admin@${BaseDomain}'
-      - BaseDomain: !If
-        - UseRandomSubdomain
-        - !Sub 'tenant-${SubdomainHex.Value}.${DomainName}'
-        - !Ref DomainName
+    Condition: UseCognito
+    Description: Default admin username for Cognito (only available when using Cognito)
+    Value: !Sub 'admin@${DomainName}'
 
-  AdminInitialPasswordSecretArn:
-    Description: ARN of the secret containing the initial admin password
-    Value: !Ref AdminPasswordSecret
+  AdminInitialPassword:
+    Condition: UseCognito
+    Description: Initial admin password for Cognito (only available when using Cognito, change after first login)
+    Value: !Sub '{{resolve:secretsmanager:${AdminPasswordSecret}:SecretString:password}}'
+
+  OIDCProviderType:
+    Description: The type of OIDC provider being used
+    Value: !If
+      - UseExternalOIDCProvider
+      - external
+      - cognito
