@@ -12,7 +12,6 @@ This CloudFormation template provides the equivalent AWS infrastructure setup fo
 
 - **DomainName**: Your base domain name (e.g., example.org)
 - **RandomSubdomain**: Whether to add a random subdomain prefix (true/false)
-- **TrustingRoleArn**: ARN of the trusting role for AWS operations
 - **UseExternalOIDC**: Use external OIDC provider instead of Cognito (true/false)
 - **ExternalOIDCIssuerURL**: OIDC issuer URL (required if UseExternalOIDC=true)
 - **ExternalOIDCClientID**: OIDC client ID (required if UseExternalOIDC=true)
@@ -29,7 +28,6 @@ aws cloudformation create-stack \
   --parameters \
     ParameterKey=DomainName,ParameterValue=example.org \
     ParameterKey=RandomSubdomain,ParameterValue=false \
-    ParameterKey=TrustingRoleArn,ParameterValue=arn:aws:iam::123456789012:role/TrustingRole \
     ParameterKey=UseExternalOIDC,ParameterValue=false \
   --capabilities CAPABILITY_NAMED_IAM
 ```
