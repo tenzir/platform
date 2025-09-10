@@ -80,4 +80,9 @@ output "oidc_provider_type" {
   value       = var.use_external_oidc ? "external" : "cognito"
 }
 
+output "route53_zone_id" {
+  description = "The Route53 hosted zone ID"
+  value       = module.bootstrap.route53_zone_id
+}
+
 
