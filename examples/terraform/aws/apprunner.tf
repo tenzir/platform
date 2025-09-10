@@ -219,23 +219,22 @@ resource "aws_apprunner_custom_domain_association" "ui" {
 }
 
 # Route53 records for App Runner domain validation
-# TODO: Verify if App Runner handles domain validation internally
-# resource "aws_route53_record" "ui_apprunner_validation" {
-#   for_each = {
-#     for cert in aws_apprunner_custom_domain_association.ui.certificate_validation_records : cert.name => {
-#       name  = cert.name
-#       value = cert.value
-#       type  = cert.type
-#     }
-#   }
+# Using tolist() workaround to handle unknown values in certificate_validation_records
+# See: https://github.com/hashicorp/terraform-provider-aws/issues/23460
+locals {
+  validation_records = tolist(aws_apprunner_custom_domain_association.ui.certificate_validation_records)
+}
 
-#   allow_overwrite = true
-#   name            = each.value.name
-#   records         = [each.value.value]
-#   ttl             = 60
-#   type            = each.value.type
-#   zone_id         = module.bootstrap.route53_zone_id
-# }
+resource "aws_route53_record" "ui_apprunner_validation" {
+  count = length(local.validation_records)
+  
+  allow_overwrite = true
+  name            = local.validation_records[count.index].name
+  records         = [local.validation_records[count.index].value]
+  ttl             = 60
+  type            = local.validation_records[count.index].type
+  zone_id         = module.bootstrap.route53_zone_id
+}
 
 # Update Route53 record to point to App Runner
 resource "aws_route53_record" "ui_apprunner" {
