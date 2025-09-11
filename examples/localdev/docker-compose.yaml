@@ -119,7 +119,7 @@ services:
       - TENZIR_PLATFORM_CLI_CLIENT_SECRET=xxxx
 
   postgres:
-    image: postgres:14.5
+    image: postgres:17.6
     restart: always
     environment:
       - POSTGRES_USER=${TENZIR_PLATFORM_POSTGRES_USER}
