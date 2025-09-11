@@ -109,7 +109,7 @@ services:
   # For production deployments, we suggest to replace this by an external
   # postgres instance that is centrally managed and backed up regularly.
   postgres:
-    image: postgres:14.5
+    image: postgres:17.6
     restart: unless-stopped
     environment:
       - POSTGRES_USER=${TENZIR_PLATFORM_POSTGRES_USER}
