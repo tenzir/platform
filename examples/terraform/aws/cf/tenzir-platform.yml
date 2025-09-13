@@ -1,6 +1,35 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Tenzir Platform AWS Infrastructure - CloudFormation Template'
 
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Domain Configuration"
+        Parameters:
+          - DomainName
+          - RandomSubdomain
+      - Label:
+          default: "Authentication Configuration"
+        Parameters:
+          - UseExternalOIDC
+          - ExternalOIDCIssuerURL
+          - ExternalOIDCClientID
+          - ExternalOIDCClientSecret
+    ParameterLabels:
+      DomainName:
+        default: "Domain Name"
+      RandomSubdomain:
+        default: "Use Random Subdomain"
+      UseExternalOIDC:
+        default: "Use External OIDC Provider"
+      ExternalOIDCIssuerURL:
+        default: "External OIDC Issuer URL"
+      ExternalOIDCClientID:
+        default: "External OIDC Client ID"
+      ExternalOIDCClientSecret:
+        default: "External OIDC Client Secret"
+
 Parameters:
   DomainName:
     Type: String
@@ -20,23 +49,23 @@ Parameters:
     AllowedValues:
       - 'true'
       - 'false'
-    Description: Whether to use an external OIDC provider instead of AWS Cognito
+    Description: Whether to use an external OIDC provider instead of AWS Cognito. If false, a Cognito User Pool will be created with default admin user.
   
   ExternalOIDCIssuerURL:
     Type: String
     Default: ''
-    Description: The issuer URL for external OIDC provider (required when UseExternalOIDC is true)
+    Description: The issuer URL for your external OIDC provider (e.g., https://auth.example.com). Only required when 'Use External OIDC Provider' is true.
   
   ExternalOIDCClientID:
     Type: String
     Default: ''
-    Description: The client ID for external OIDC provider (required when UseExternalOIDC is true)
+    Description: The client ID from your external OIDC provider. Only required when 'Use External OIDC Provider' is true.
   
   ExternalOIDCClientSecret:
     Type: String
     Default: ''
     NoEcho: true
-    Description: The client secret for external OIDC provider (required when UseExternalOIDC is true)
+    Description: The client secret from your external OIDC provider. Only required when 'Use External OIDC Provider' is true.
 
 Conditions:
   UseRandomSubdomain: !Equals [!Ref RandomSubdomain, 'true']
@@ -99,6 +128,74 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  # Hosted zone lookup (mirrors Terraform data source)
+  HostedZoneLookupFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'tenzir-hostedzone-lookup-${AWS::StackName}'
+      Runtime: python3.9
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+
+          def handler(event, context):
+              try:
+                  if event['RequestType'] == 'Delete':
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                      return
+
+                  domain = event['ResourceProperties'].get('DomainName', '')
+                  if not domain:
+                      raise Exception('DomainName property is required')
+
+                  fqdn = domain if domain.endswith('.') else domain + '.'
+                  r53 = boto3.client('route53')
+                  resp = r53.list_hosted_zones_by_name(DNSName=fqdn, MaxItems='1')
+                  zone_id = None
+                  for z in resp.get('HostedZones', []):
+                      if z.get('Name') == fqdn and not z.get('Config', {}).get('PrivateZone', False):
+                          zone_id = z.get('Id', '').split('/')[-1]
+                          break
+
+                  if not zone_id:
+                      raise Exception(f'Public hosted zone for {domain} not found')
+
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {'ZoneId': zone_id})
+              except Exception as e:
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, str(e))
+      Role: !GetAtt HostedZoneLookupRole.Arn
+      Timeout: 60
+
+  HostedZoneLookupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: Route53ListZones
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - route53:ListHostedZonesByName
+                Resource: '*'
+
+  HostedZoneLookup:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt HostedZoneLookupFunction.Arn
+      DomainName: !Ref DomainName
 
   # VPC and Networking
   VPC:
@@ -515,106 +612,12 @@ Resources:
         - !Ref SecurityGroupVPCEndpoint
       PrivateDnsEnabled: true
 
-  # ECR Repositories
-  ECRRepositoryNode:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: tenzir-sovereign-platform/node
-      ImageScanningConfiguration:
-        ScanOnPush: true
-      LifecyclePolicy:
-        LifecyclePolicyText: |
-          {
-            "rules": [
-              {
-                "rulePriority": 1,
-                "description": "Keep last 10 images",
-                "selection": {
-                  "tagStatus": "any",
-                  "countType": "imageCountMoreThan",
-                  "countNumber": 10
-                },
-                "action": {
-                  "type": "expire"
-                }
-              }
-            ]
-          }
-
-  ECRRepositoryPlatformAPI:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: tenzir-sovereign-platform/platform-api
-      ImageScanningConfiguration:
-        ScanOnPush: true
-      LifecyclePolicy:
-        LifecyclePolicyText: |
-          {
-            "rules": [
-              {
-                "rulePriority": 1,
-                "description": "Keep last 10 images",
-                "selection": {
-                  "tagStatus": "any",
-                  "countType": "imageCountMoreThan",
-                  "countNumber": 10
-                },
-                "action": {
-                  "type": "expire"
-                }
-              }
-            ]
-          }
-
-  ECRRepositoryGateway:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: tenzir-sovereign-platform/gateway
-      ImageScanningConfiguration:
-        ScanOnPush: true
-      LifecyclePolicy:
-        LifecyclePolicyText: |
-          {
-            "rules": [
-              {
-                "rulePriority": 1,
-                "description": "Keep last 10 images",
-                "selection": {
-                  "tagStatus": "any",
-                  "countType": "imageCountMoreThan",
-                  "countNumber": 10
-                },
-                "action": {
-                  "type": "expire"
-                }
-              }
-            ]
-          }
-
-  ECRRepositoryUI:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: tenzir-sovereign-platform/ui
-      ImageScanningConfiguration:
-        ScanOnPush: true
-      LifecyclePolicy:
-        LifecyclePolicyText: |
-          {
-            "rules": [
-              {
-                "rulePriority": 1,
-                "description": "Keep last 10 images",
-                "selection": {
-                  "tagStatus": "any",
-                  "countType": "imageCountMoreThan",
-                  "countNumber": 10
-                },
-                "action": {
-                  "type": "expire"
-                }
-              }
-            ]
-          }
+  # ECR Repositories - Using external repositories
+  # The following repositories are managed externally:
+  # - 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-ui
+  # - 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-api
+  # - 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway
+  # - 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-node
 
   # S3 Buckets
   S3BucketBlobs:
@@ -925,7 +928,7 @@ Resources:
       TaskRoleArn: !GetAtt GatewayTaskRole.Arn
       ContainerDefinitions:
         - Name: gateway
-          Image: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/tenzir-sovereign-platform/gateway:latest'
+          Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway:latest
           Command:
             - tenant_manager/ws/server/aws.py
           PortMappings:
@@ -1000,7 +1003,7 @@ Resources:
       ValidationMethod: DNS
       DomainValidationOptions:
         - DomainName: !Sub 'api.${DomainName}'
-          HostedZoneId: !Sub '{{resolve:ssm:/hostedzone/${DomainName}}}'
+          HostedZoneId: !GetAtt HostedZoneLookup.ZoneId
       Tags:
         - Key: Name
           Value: tenzir-api-cert
@@ -1012,7 +1015,7 @@ Resources:
       ValidationMethod: DNS
       DomainValidationOptions:
         - DomainName: !Sub 'ui.${DomainName}'
-          HostedZoneId: !Sub '{{resolve:ssm:/hostedzone/${DomainName}}}'
+          HostedZoneId: !GetAtt HostedZoneLookup.ZoneId
       Tags:
         - Key: Name
           Value: tenzir-ui-cert
@@ -1024,7 +1027,7 @@ Resources:
       ValidationMethod: DNS
       DomainValidationOptions:
         - DomainName: !Sub 'nodes.${DomainName}'
-          HostedZoneId: !Sub '{{resolve:ssm:/hostedzone/${DomainName}}}'
+          HostedZoneId: !GetAtt HostedZoneLookup.ZoneId
       Tags:
         - Key: Name
           Value: tenzir-nodes-cert
@@ -1231,7 +1234,7 @@ Resources:
       Role: !GetAtt APILambdaExecutionRole.Arn
       PackageType: Image
       Code:
-        ImageUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/tenzir-sovereign-platform/platform-api:latest'
+        ImageUri: 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-api:latest
       Timeout: 30
       MemorySize: 512
       Environment:
@@ -1257,7 +1260,7 @@ Resources:
             - '[]'
           BASE_PATH: ''
           TENANT_MANAGER_SIDEPATH_BUCKET_NAME: !Ref S3BucketSidepath
-          TENZIR_DEMO_NODE_IMAGE: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/tenzir-sovereign-platform/node:latest'
+          TENZIR_DEMO_NODE_IMAGE: 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-node:latest
           GATEWAY_WS_ENDPOINT: !Ref GatewayWSEndpointParameter
           GATEWAY_HTTP_ENDPOINT: !Ref GatewayHTTPEndpointParameter
       VpcConfig:
@@ -1489,7 +1492,7 @@ Resources:
                 Value: !Ref AuthSecret
               - Name: PRIVATE_DRIZZLE_DATABASE_URL
                 Value: !Ref PostgresURISecret
-          ImageIdentifier: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/tenzir-sovereign-platform/ui:latest'
+          ImageIdentifier: 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-ui:latest
           ImageRepositoryType: ECR
         AutoDeploymentsEnabled: false
       InstanceConfiguration:
@@ -1508,16 +1511,16 @@ Resources:
 
 Outputs:
   UIRepositoryURL:
-    Description: URL of the unified UI repository
-    Value: !GetAtt ECRRepositoryUI.RepositoryUri
+    Description: URL of the external UI repository
+    Value: 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-ui
 
   PlatformAPIRepositoryURL:
-    Description: URL of the unified platform API repository
-    Value: !GetAtt ECRRepositoryPlatformAPI.RepositoryUri
+    Description: URL of the external platform API repository
+    Value: 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-api
 
   GatewayRepositoryURL:
-    Description: URL of the unified gateway repository
-    Value: !GetAtt ECRRepositoryGateway.RepositoryUri
+    Description: URL of the external gateway repository
+    Value: 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway
 
   UIServiceURL:
     Description: URL of the App Runner UI service
