@@ -114,7 +114,7 @@ services:
       - postgres_ssl:/postgres-ssl
 
   postgres:
-    image: postgres:14.5
+    image: postgres:17.6
     restart: always
     command: >
       -c ssl=on
