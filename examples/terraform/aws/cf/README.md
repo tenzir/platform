@@ -10,12 +10,19 @@ This CloudFormation template provides the equivalent AWS infrastructure setup fo
 
 ## Parameters
 
-- **DomainName**: Your base domain name (e.g., example.org)
-- **RandomSubdomain**: Whether to add a random subdomain prefix (true/false)
-- **UseExternalOIDC**: Use external OIDC provider instead of Cognito (true/false)
-- **ExternalOIDCIssuerURL**: OIDC issuer URL (required if UseExternalOIDC=true)
-- **ExternalOIDCClientID**: OIDC client ID (required if UseExternalOIDC=true)
-- **ExternalOIDCClientSecret**: OIDC client secret (required if UseExternalOIDC=true)
+The template organizes parameters into logical groups for easier configuration:
+
+### Domain Configuration
+- **Domain Name**: Your base domain name (e.g., example.org)
+- **Use Random Subdomain**: Whether to add a random subdomain prefix (true/false)
+
+### Authentication Configuration
+- **Use External OIDC Provider**: Use external OIDC provider instead of Cognito (true/false)
+  - If `false`: AWS Cognito User Pool will be created with a default admin user
+  - If `true`: The following external OIDC parameters are required:
+    - **External OIDC Issuer URL**: OIDC issuer URL (e.g., https://auth.example.com)
+    - **External OIDC Client ID**: OIDC client ID from your provider
+    - **External OIDC Client Secret**: OIDC client secret from your provider
 
 ## Deployment
 
@@ -96,7 +103,7 @@ While this CloudFormation template aims to replicate the Terraform configuration
 1. **Random ID Generation**: Uses a Lambda function for random ID generation
 2. **Certificate Validation**: ACM certificate validation may require manual DNS record creation
 3. **Module Structure**: Bootstrap module is integrated directly into the main template
-4. **Route53 Zone**: Assumes the hosted zone exists and uses SSM parameter for zone ID
+4. **Route53 Zone**: Assumes the hosted zone exists and automatically discovers the hosted zone ID via a Lambda-backed custom resource (no SSM parameter needed)
 
 ## Troubleshooting
 
