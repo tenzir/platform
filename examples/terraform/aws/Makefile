@@ -4,9 +4,12 @@ TENZIR_UI_UPSTREAM_CONTAINER = ghcr.io/tenzir/app:$(IMAGE_TAG)
 TENZIR_PLATFORM_API_UPSTREAM_CONTAINER = ghcr.io/tenzir/platform-lambda:$(IMAGE_TAG)
 TENZIR_PLATFORM_GATEWAY_UPSTREAM_CONTAINER = ghcr.io/tenzir/platform:$(IMAGE_TAG)
 
-ECR_REPOSITORY_UI = $(shell terraform output -json | jq -r '.ui_repository_url.value')
-ECR_REPOSITORY_API = $(shell terraform output -json | jq -r '.platform_api_repository_url.value')
-ECR_REPOSITORY_GATEWAY = $(shell terraform output -json | jq -r '.gateway_repository_url.value')
+# ECR_REPOSITORY_UI = $(shell terraform output -json | jq -r '.ui_repository_url.value')
+# ECR_REPOSITORY_API = $(shell terraform output -json | jq -r '.platform_api_repository_url.value')
+# ECR_REPOSITORY_GATEWAY = $(shell terraform output -json | jq -r '.gateway_repository_url.value')
+ECR_REPOSITORY_UI = 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-ui
+ECR_REPOSITORY_API = 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-api
+ECR_REPOSITORY_GATEWAY = 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway
 
 .PHONY: build-ui build-api build-gateway build push-ui push-api push-gateway push login pull echo update
 
@@ -28,7 +31,8 @@ echo:
 	@echo "  Gateway: $(ECR_REPOSITORY_GATEWAY)"
 
 login:
-	aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 612642570909.dkr.ecr.eu-west-1.amazonaws.com
+	#aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 612642570909.dkr.ecr.eu-west-1.amazonaws.com
+	aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 612642570909.dkr.ecr.us-east-1.amazonaws.com
 
 build-api:
 	cd ../../../components/tenant-manager/platform/tenant_manager && docker build -t $(TENZIR_PLATFORM_API_UPSTREAM_CONTAINER) -f Dockerfile.lambda .
