@@ -16,8 +16,8 @@ on:
         default: false
 
 env:
-  GEMINI_LOCATION: europe-west3
-  GEMINI_MODEL: gemini-1.5-pro
+  GEMINI_LOCATION: europe-west1
+  GEMINI_MODEL: gemini-2.5-flash
 
 jobs:
   update_submodules:
