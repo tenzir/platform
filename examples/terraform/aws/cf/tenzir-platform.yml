@@ -214,7 +214,7 @@ Resources:
                 - echo "Logging in to source ECR..."
                 - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 709825985650.dkr.ecr.us-east-1.amazonaws.com
                 - echo "Logging in to target ECR..."
-                - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $TARGET_REGISTRY
+                - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $TARGET_REGISTRY
             build:
               commands:
                 - echo "Copying tenzir-platform-ui:$VERSION"
@@ -283,9 +283,10 @@ Resources:
                   version = event['ResourceProperties']['Version']
                   project_name = event['ResourceProperties']['ProjectName']
                   target_account = context.invoked_function_arn.split(':')[4]
-                  target_registry = f'{target_account}.dkr.ecr.us-east-1.amazonaws.com'
+                  target_region = context.invoked_function_arn.split(':')[3]
+                  target_registry = f'{target_account}.dkr.ecr.{target_region}.amazonaws.com'
 
-                  codebuild = boto3.client('codebuild')
+                  codebuild = boto3.client('codebuild', region_name=target_region)
 
                   # Start the build
                   print(f'Starting CodeBuild project {project_name}')
@@ -294,6 +295,7 @@ Resources:
                       environmentVariablesOverride=[
                           {'name': 'VERSION', 'value': version, 'type': 'PLAINTEXT'},
                           {'name': 'TARGET_REGISTRY', 'value': target_registry, 'type': 'PLAINTEXT'},
+                          {'name': 'AWS_REGION', 'value': target_region, 'type': 'PLAINTEXT'},
                       ]
                   )
 
