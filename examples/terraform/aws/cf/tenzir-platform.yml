@@ -74,7 +74,7 @@ Conditions:
 
 Resources:
   # Random IDs and Naming
-  SubdomainRandom:
+  DeploymentRandomSuffix:
     Type: AWS::CloudFormation::CustomResource
     Properties:
       ServiceToken: !GetAtt RandomGeneratorFunction.Arn
@@ -644,7 +644,7 @@ Resources:
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
-      DBSubnetGroupName: tenzir-db-subnet-group
+      DBSubnetGroupName: !Sub 'tenzir-db-subnet-group-${DeploymentRandomSuffix.Value}'
       DBSubnetGroupDescription: Subnet group for Tenzir RDS instance
       SubnetIds:
         - !Ref SubnetPostgres1
@@ -656,10 +656,7 @@ Resources:
   DBPasswordSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !If
-        - UseRandomSubdomain
-        - !Sub 'tenzir-postgres-password-v2-${SubdomainRandom.Value}'
-        - tenzir-postgres-password-v2
+      Name: !Sub 'tenzir-postgres-password-${DeploymentRandomSuffix.Value}'
       Description: Password for Tenzir PostgreSQL database
       GenerateSecretString:
         SecretStringTemplate: '{"username": "tenzir_admin"}'
@@ -670,10 +667,7 @@ Resources:
   PostgresURISecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !If
-        - UseRandomSubdomain
-        - !Sub 'tenzir-postgres-uri-${SubdomainRandom.Value}'
-        - tenzir-postgres-uri
+      Name: !Sub 'tenzir-postgres-uri-${DeploymentRandomSuffix.Value}'
       Description: PostgreSQL URI for Tenzir database connection
       SecretString: !Sub |
         postgresql://${DBInstance.MasterUsername}:{{resolve:secretsmanager:${DBPasswordSecret}:SecretString:password}}@${DBInstance.Endpoint.Address}:${DBInstance.Endpoint.Port}/tenzir?sslmode=require
@@ -681,10 +675,7 @@ Resources:
   TenantTokenEncryptionKeySecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !If
-        - UseRandomSubdomain
-        - !Sub 'tenzir-tenant-token-encryption-key-${SubdomainRandom.Value}'
-        - tenzir-tenant-token-encryption-key
+      Name: !Sub 'tenzir-tenant-token-encryption-key-${DeploymentRandomSuffix.Value}'
       Description: Tenant token encryption key secret
       GenerateSecretString:
         PasswordLength: 32
@@ -694,10 +685,7 @@ Resources:
   TenantManagerAppAPIKeySecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !If
-        - UseRandomSubdomain
-        - !Sub 'tenzir-tenant-manager-app-api-key-${SubdomainRandom.Value}'
-        - tenzir-tenant-manager-app-api-key
+      Name: !Sub 'tenzir-tenant-manager-app-api-key-${DeploymentRandomSuffix.Value}'
       Description: API key secret for tenant manager app
       GenerateSecretString:
         PasswordLength: 64
@@ -707,10 +695,7 @@ Resources:
   WorkspaceSecretsMasterSeedSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !If
-        - UseRandomSubdomain
-        - !Sub 'tenzir-workspace-secrets-master-seed-${SubdomainRandom.Value}'
-        - tenzir-workspace-secrets-master-seed
+      Name: !Sub 'tenzir-workspace-secrets-master-seed-${DeploymentRandomSuffix.Value}'
       Description: Master seed secret for workspace secrets
       GenerateSecretString:
         PasswordLength: 128
@@ -720,10 +705,7 @@ Resources:
   AuthSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !If
-        - UseRandomSubdomain
-        - !Sub 'tenzir-auth-secret-${SubdomainRandom.Value}'
-        - tenzir-auth-secret
+      Name: !Sub 'tenzir-auth-secret-${DeploymentRandomSuffix.Value}'
       Description: Auth secret for UI Lambda
       GenerateSecretString:
         PasswordLength: 64
@@ -733,7 +715,7 @@ Resources:
   DBInstance:
     Type: AWS::RDS::DBInstance
     Properties:
-      DBInstanceIdentifier: tenzir-postgres
+      DBInstanceIdentifier: !Sub 'tenzir-postgres-${DeploymentRandomSuffix.Value}'
       Engine: postgres
       EngineVersion: '17.5'
       DBInstanceClass: db.t3.micro
@@ -761,7 +743,7 @@ Resources:
     Type: AWS::Cognito::UserPool
     Condition: UseCognito
     Properties:
-      UserPoolName: tenzir-user-pool
+      UserPoolName: !Sub 'tenzir-user-pool-${DeploymentRandomSuffix.Value}'
       UsernameAttributes:
         - email
       AutoVerifiedAttributes:
@@ -826,20 +808,14 @@ Resources:
     Type: AWS::Cognito::UserPoolDomain
     Condition: UseCognito
     Properties:
-      Domain: !If
-        - UseRandomSubdomain
-        - !Sub 'tenzir-auth-${SubdomainRandom.Value}'
-        - tenzir-auth
+      Domain: !Sub 'tenzir-auth-${DeploymentRandomSuffix.Value}'
       UserPoolId: !Ref CognitoUserPool
 
   AdminPasswordSecret:
     Type: AWS::SecretsManager::Secret
     Condition: UseCognito
     Properties:
-      Name: !If
-        - UseRandomSubdomain
-        - !Sub 'tenzir/cognito/admin-password-${SubdomainRandom.Value}'
-        - tenzir/cognito/admin-password
+      Name: !Sub 'tenzir/cognito/admin-password-${DeploymentRandomSuffix.Value}'
       Description: Admin user password for Tenzir Cognito user pool
       GenerateSecretString:
         PasswordLength: 24
@@ -862,7 +838,7 @@ Resources:
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
-      ClusterName: tenzir-platform-aws-edition
+      ClusterName: !Sub 'tenzir-platform-aws-edition-${DeploymentRandomSuffix.Value}'
       ClusterSettings:
         - Name: containerInsights
           Value: enabled
@@ -1230,7 +1206,7 @@ Resources:
   APILambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: tenzir-api-function
+      FunctionName: !Sub 'tenzir-api-function-${DeploymentRandomSuffix.Value}'
       Role: !GetAtt APILambdaExecutionRole.Arn
       PackageType: Image
       Code:
@@ -1409,10 +1385,7 @@ Resources:
   ClientSecretSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !If
-        - UseRandomSubdomain
-        - !Sub 'tenzir/apprunner/ui/client-secret-${SubdomainRandom.Value}'
-        - tenzir/apprunner/ui/client-secret
+      Name: !Sub 'tenzir/apprunner/ui/client-secret-${DeploymentRandomSuffix.Value}'
       Description: OIDC Client Secret for App Runner UI
       SecretString: !If
         - UseExternalOIDCProvider
@@ -1422,27 +1395,21 @@ Resources:
   UserEndpointSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !If
-        - UseRandomSubdomain
-        - !Sub 'tenzir/apprunner/ui/user-endpoint-${SubdomainRandom.Value}'
-        - tenzir/apprunner/ui/user-endpoint
+      Name: !Sub 'tenzir/apprunner/ui/user-endpoint-${DeploymentRandomSuffix.Value}'
       Description: User Endpoint for App Runner UI
       SecretString: !Sub '${APILambdaFunctionUrl.FunctionUrl}user'
 
   WebappEndpointSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !If
-        - UseRandomSubdomain
-        - !Sub 'tenzir/apprunner/ui/webapp-endpoint-${SubdomainRandom.Value}'
-        - tenzir/apprunner/ui/webapp-endpoint
+      Name: !Sub 'tenzir/apprunner/ui/webapp-endpoint-${DeploymentRandomSuffix.Value}'
       Description: Webapp Endpoint for App Runner UI
       SecretString: !Sub '${APILambdaFunctionUrl.FunctionUrl}webapp'
 
   AppRunnerService:
     Type: AWS::AppRunner::Service
     Properties:
-      ServiceName: tenzir-ui-service
+      ServiceName: !Sub 'tenzir-ui-service-${DeploymentRandomSuffix.Value}'
       SourceConfiguration:
         AuthenticationConfiguration:
           AccessRoleArn: !GetAtt AppRunnerAccessRole.Arn
@@ -1560,7 +1527,7 @@ Outputs:
     Description: The base domain (with random subdomain if enabled)
     Value: !If
       - UseRandomSubdomain
-      - !Sub 'tenant-${SubdomainRandom.Value}.${DomainName}'
+      - !Sub 'tenant-${DeploymentRandomSuffix.Value}.${DomainName}'
       - !Ref DomainName
 
   APIDomain:
