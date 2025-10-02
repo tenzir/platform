@@ -34,7 +34,12 @@ Parameters:
   DomainName:
     Type: String
     Description: The base domain name (e.g., example.org)
-  
+
+  Version:
+    Type: String
+    Default: 'v0.1.0'
+    Description: Version tag for Tenzir Platform container images
+
   RandomSubdomain:
     Type: String
     Default: 'false'
@@ -904,7 +909,7 @@ Resources:
       TaskRoleArn: !GetAtt GatewayTaskRole.Arn
       ContainerDefinitions:
         - Name: gateway
-          Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway:latest
+          Image: !Sub '709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway:${Version}'
           Command:
             - tenant_manager/ws/server/aws.py
           PortMappings:
@@ -1210,7 +1215,7 @@ Resources:
       Role: !GetAtt APILambdaExecutionRole.Arn
       PackageType: Image
       Code:
-        ImageUri: 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-api:latest
+        ImageUri: !Sub '709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-api:${Version}'
       Timeout: 30
       MemorySize: 512
       Environment:
@@ -1236,7 +1241,7 @@ Resources:
             - '[]'
           BASE_PATH: ''
           TENANT_MANAGER_SIDEPATH_BUCKET_NAME: !Ref S3BucketSidepath
-          TENZIR_DEMO_NODE_IMAGE: 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-node:latest
+          TENZIR_DEMO_NODE_IMAGE: !Sub '709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-node:${Version}'
           GATEWAY_WS_ENDPOINT: !Ref GatewayWSEndpointParameter
           GATEWAY_HTTP_ENDPOINT: !Ref GatewayHTTPEndpointParameter
       VpcConfig:
@@ -1459,7 +1464,7 @@ Resources:
                 Value: !Ref AuthSecret
               - Name: PRIVATE_DRIZZLE_DATABASE_URL
                 Value: !Ref PostgresURISecret
-          ImageIdentifier: 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-ui:latest
+          ImageIdentifier: !Sub '709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-ui:${Version}'
           ImageRepositoryType: ECR
         AutoDeploymentsEnabled: false
       InstanceConfiguration:
