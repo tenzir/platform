@@ -11,6 +11,13 @@ Metadata:
           - RandomSubdomain
           - Version
       - Label:
+          default: "ECR Repository Configuration"
+        Parameters:
+          - ECRRepositoryUIUri
+          - ECRRepositoryAPIUri
+          - ECRRepositoryGatewayUri
+          - ECRRepositoryNodeUri
+      - Label:
           default: "Authentication Configuration"
         Parameters:
           - UseExternalOIDC
@@ -24,6 +31,14 @@ Metadata:
         default: "Use Random Subdomain"
       Version:
         default: "Platform Version"
+      ECRRepositoryUIUri:
+        default: "ECR Repository URI for UI"
+      ECRRepositoryAPIUri:
+        default: "ECR Repository URI for API"
+      ECRRepositoryGatewayUri:
+        default: "ECR Repository URI for Gateway"
+      ECRRepositoryNodeUri:
+        default: "ECR Repository URI for Node"
       UseExternalOIDC:
         default: "Use External OIDC Provider"
       ExternalOIDCIssuerURL:
@@ -42,6 +57,22 @@ Parameters:
     Type: String
     Default: 'v0.1.0'
     Description: Version tag for Tenzir Platform container images
+
+  ECRRepositoryUIUri:
+    Type: String
+    Description: ECR repository URI for the UI container image (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-ui)
+
+  ECRRepositoryAPIUri:
+    Type: String
+    Description: ECR repository URI for the API container image (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-api)
+
+  ECRRepositoryGatewayUri:
+    Type: String
+    Description: ECR repository URI for the Gateway container image (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway)
+
+  ECRRepositoryNodeUri:
+    Type: String
+    Description: ECR repository URI for the Node container image (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-node)
 
   RandomSubdomain:
     Type: String
@@ -136,218 +167,6 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-
-  # Image copier (copies marketplace images to local ECR using CodeBuild)
-  ImageCopierCodeBuildRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: codebuild.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: ecr-image-copy-policy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - ecr:GetAuthorizationToken
-                Resource: '*'
-              - Effect: Allow
-                Action:
-                  - ecr:BatchCheckLayerAvailability
-                  - ecr:GetDownloadUrlForLayer
-                  - ecr:BatchGetImage
-                Resource:
-                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/tenzir-platform-ui'
-                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/tenzir-platform-api'
-                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/tenzir-platform-gateway'
-                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/tenzir-platform-node'
-              - Effect: Allow
-                Action:
-                  - ecr:PutImage
-                  - ecr:InitiateLayerUpload
-                  - ecr:UploadLayerPart
-                  - ecr:CompleteLayerUpload
-                  - ecr:BatchCheckLayerAvailability
-                Resource:
-                  - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/tenzir/tenzir-platform-ui'
-                  - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/tenzir/tenzir-platform-api'
-                  - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/tenzir/tenzir-platform-gateway'
-                  - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/tenzir/tenzir-platform-node'
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/tenzir-image-copier*'
-
-  ImageCopierProject:
-    Type: AWS::CodeBuild::Project
-    DependsOn:
-      - ECRRepositoryUI
-      - ECRRepositoryAPI
-      - ECRRepositoryGateway
-      - ECRRepositoryNode
-      - ImageCopierCodeBuildRole
-    Properties:
-      Name: !Sub 'tenzir-image-copier-${AWS::StackName}'
-      ServiceRole: !GetAtt ImageCopierCodeBuildRole.Arn
-      Artifacts:
-        Type: NO_ARTIFACTS
-      Environment:
-        Type: LINUX_CONTAINER
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:7.0
-        PrivilegedMode: true
-      Source:
-        Type: NO_SOURCE
-        BuildSpec: |
-          version: 0.2
-          phases:
-            pre_build:
-              commands:
-                - echo "Logging in to source ECR..."
-                - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 709825985650.dkr.ecr.us-east-1.amazonaws.com
-                - echo "Logging in to target ECR..."
-                - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $TARGET_REGISTRY
-            build:
-              commands:
-                - echo "Copying tenzir-platform-ui:$VERSION"
-                - docker pull 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-ui:$VERSION
-                - docker tag 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-ui:$VERSION $TARGET_REGISTRY/tenzir/tenzir-platform-ui:$VERSION
-                - docker push $TARGET_REGISTRY/tenzir/tenzir-platform-ui:$VERSION
-                - echo "Copying tenzir-platform-api:$VERSION"
-                - docker pull 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-api:$VERSION
-                - docker tag 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-api:$VERSION $TARGET_REGISTRY/tenzir/tenzir-platform-api:$VERSION
-                - docker push $TARGET_REGISTRY/tenzir/tenzir-platform-api:$VERSION
-                - echo "Copying tenzir-platform-gateway:$VERSION"
-                - docker pull 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway:$VERSION
-                - docker tag 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway:$VERSION $TARGET_REGISTRY/tenzir/tenzir-platform-gateway:$VERSION
-                - docker push $TARGET_REGISTRY/tenzir/tenzir-platform-gateway:$VERSION
-                - echo "Copying tenzir-platform-node:$VERSION"
-                - docker pull 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-node:$VERSION
-                - docker tag 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-node:$VERSION $TARGET_REGISTRY/tenzir/tenzir-platform-node:$VERSION
-                - docker push $TARGET_REGISTRY/tenzir/tenzir-platform-node:$VERSION
-      TimeoutInMinutes: 60
-
-  ImageCopierLambdaRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: codebuild-start-policy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - codebuild:StartBuild
-                  - codebuild:BatchGetBuilds
-                Resource: !GetAtt ImageCopierProject.Arn
-
-  ImageCopierFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Sub 'tenzir-image-copier-${AWS::StackName}'
-      Runtime: python3.11
-      Handler: index.handler
-      Timeout: 900
-      Code:
-        ZipFile: |
-          import json
-          import boto3
-          import cfnresponse
-          import time
-
-          def handler(event, context):
-              print(f"Event: {json.dumps(event)}")
-
-              try:
-                  if event['RequestType'] == 'Delete':
-                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
-                      return
-
-                  version = event['ResourceProperties']['Version']
-                  project_name = event['ResourceProperties']['ProjectName']
-                  target_account = context.invoked_function_arn.split(':')[4]
-                  target_region = context.invoked_function_arn.split(':')[3]
-                  target_registry = f'{target_account}.dkr.ecr.{target_region}.amazonaws.com'
-
-                  codebuild = boto3.client('codebuild', region_name=target_region)
-
-                  # Start the build
-                  print(f'Starting CodeBuild project {project_name}')
-                  response = codebuild.start_build(
-                      projectName=project_name,
-                      environmentVariablesOverride=[
-                          {'name': 'VERSION', 'value': version, 'type': 'PLAINTEXT'},
-                          {'name': 'TARGET_REGISTRY', 'value': target_registry, 'type': 'PLAINTEXT'},
-                          {'name': 'AWS_REGION', 'value': target_region, 'type': 'PLAINTEXT'},
-                      ]
-                  )
-
-                  build_id = response['build']['id']
-                  print(f'Build started: {build_id}')
-
-                  # Wait for build to complete
-                  while True:
-                      time.sleep(15)
-                      build_status = codebuild.batch_get_builds(ids=[build_id])
-                      status = build_status['builds'][0]['buildStatus']
-                      print(f'Build status: {status}')
-
-                      if status == 'SUCCEEDED':
-                          print('Build completed successfully')
-                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {'BuildId': build_id})
-                          return
-                      elif status in ['FAILED', 'FAULT', 'TIMED_OUT', 'STOPPED']:
-                          build_info = build_status['builds'][0]
-                          error_msg = f"Build failed with status: {status}"
-                          if 'phases' in build_info:
-                              for phase in build_info['phases']:
-                                  if phase.get('phaseStatus') in ['FAILED', 'FAULT', 'TIMED_OUT', 'STOPPED']:
-                                      error_msg += f"\nFailed phase: {phase['phaseType']}"
-                                      if 'contexts' in phase:
-                                          for ctx in phase['contexts']:
-                                              error_msg += f"\n  {ctx.get('message', '')}"
-                          logs_url = f"https://console.aws.amazon.com/codesuite/codebuild/projects/{project_name}/build/{build_id.split('/')[-1]}/log"
-                          error_msg += f"\nCodeBuild logs: {logs_url}"
-                          raise Exception(error_msg)
-
-                      # Check if we're running out of time
-                      if context.get_remaining_time_in_millis() < 30000:
-                          raise Exception('Lambda timeout approaching, build still in progress')
-
-              except Exception as e:
-                  print(f'Error: {str(e)}')
-                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, str(e))
-      Role: !GetAtt ImageCopierLambdaRole.Arn
-
-  ImageCopy:
-    Type: AWS::CloudFormation::CustomResource
-    Properties:
-      ServiceToken: !GetAtt ImageCopierFunction.Arn
-      Version: !Ref Version
-      ProjectName: !Ref ImageCopierProject
-    DependsOn:
-      - ImageCopierProject
-      - ECRRepositoryUI
-      - ECRRepositoryAPI
-      - ECRRepositoryGateway
-      - ECRRepositoryNode
 
   # Hosted zone lookup (mirrors Terraform data source)
   HostedZoneLookupFunction:
@@ -832,91 +651,6 @@ Resources:
         - !Ref SecurityGroupVPCEndpoint
       PrivateDnsEnabled: true
 
-  # ECR Repositories
-  ECRRepositoryUI:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: tenzir/tenzir-platform-ui
-      ImageScanningConfiguration:
-        ScanOnPush: false
-      LifecyclePolicy:
-        LifecyclePolicyText: |
-          {
-            "rules": [{
-              "rulePriority": 1,
-              "description": "Keep last 5 images",
-              "selection": {
-                "tagStatus": "any",
-                "countType": "imageCountMoreThan",
-                "countNumber": 5
-              },
-              "action": { "type": "expire" }
-            }]
-          }
-
-  ECRRepositoryAPI:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: tenzir/tenzir-platform-api
-      ImageScanningConfiguration:
-        ScanOnPush: false
-      LifecyclePolicy:
-        LifecyclePolicyText: |
-          {
-            "rules": [{
-              "rulePriority": 1,
-              "description": "Keep last 5 images",
-              "selection": {
-                "tagStatus": "any",
-                "countType": "imageCountMoreThan",
-                "countNumber": 5
-              },
-              "action": { "type": "expire" }
-            }]
-          }
-
-  ECRRepositoryGateway:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: tenzir/tenzir-platform-gateway
-      ImageScanningConfiguration:
-        ScanOnPush: false
-      LifecyclePolicy:
-        LifecyclePolicyText: |
-          {
-            "rules": [{
-              "rulePriority": 1,
-              "description": "Keep last 5 images",
-              "selection": {
-                "tagStatus": "any",
-                "countType": "imageCountMoreThan",
-                "countNumber": 5
-              },
-              "action": { "type": "expire" }
-            }]
-          }
-
-  ECRRepositoryNode:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: tenzir/tenzir-platform-node
-      ImageScanningConfiguration:
-        ScanOnPush: false
-      LifecyclePolicy:
-        LifecyclePolicyText: |
-          {
-            "rules": [{
-              "rulePriority": 1,
-              "description": "Keep last 5 images",
-              "selection": {
-                "tagStatus": "any",
-                "countType": "imageCountMoreThan",
-                "countNumber": 5
-              },
-              "action": { "type": "expire" }
-            }]
-          }
-
   # S3 Buckets
   S3BucketBlobs:
     Type: AWS::S3::Bucket
@@ -1209,7 +943,6 @@ Resources:
 
   GatewayTaskDefinition:
     Type: AWS::ECS::TaskDefinition
-    DependsOn: ImageCopy
     Properties:
       Family: tenzir-gateway
       NetworkMode: awsvpc
@@ -1221,7 +954,7 @@ Resources:
       TaskRoleArn: !GetAtt GatewayTaskRole.Arn
       ContainerDefinitions:
         - Name: gateway
-          Image: !Sub '${ECRRepositoryGateway.RepositoryUri}:${Version}'
+          Image: !Sub '${ECRRepositoryGatewayUri}:${Version}'
           Command:
             - tenant_manager/ws/server/aws.py
           PortMappings:
@@ -1536,13 +1269,12 @@ Resources:
 
   APILambdaFunction:
     Type: AWS::Lambda::Function
-    DependsOn: ImageCopy
     Properties:
       FunctionName: !Sub 'tenzir-api-function-${DeploymentRandomSuffix.Value}'
       Role: !GetAtt APILambdaExecutionRole.Arn
       PackageType: Image
       Code:
-        ImageUri: !Sub '${ECRRepositoryAPI.RepositoryUri}:${Version}'
+        ImageUri: !Sub '${ECRRepositoryAPIUri}:${Version}'
       Timeout: 30
       MemorySize: 512
       Environment:
@@ -1568,7 +1300,7 @@ Resources:
             - '[]'
           BASE_PATH: ''
           TENANT_MANAGER_SIDEPATH_BUCKET_NAME: !Ref S3BucketSidepath
-          TENZIR_DEMO_NODE_IMAGE: !Sub '${ECRRepositoryNode.RepositoryUri}:${Version}'
+          TENZIR_DEMO_NODE_IMAGE: !Sub '${ECRRepositoryNodeUri}:${Version}'
           GATEWAY_WS_ENDPOINT: !Ref GatewayWSEndpointParameter
           GATEWAY_HTTP_ENDPOINT: !Ref GatewayHTTPEndpointParameter
       VpcConfig:
@@ -1809,7 +1541,7 @@ Resources:
                 Value: !Ref AuthSecret
               - Name: PRIVATE_DRIZZLE_DATABASE_URL
                 Value: !Ref PostgresURISecret
-          ImageIdentifier: !Sub '${ECRRepositoryUI.RepositoryUri}:${Version}'
+          ImageIdentifier: !Sub '${ECRRepositoryUIUri}:${Version}'
           ImageRepositoryType: ECR
         AutoDeploymentsEnabled: false
       InstanceConfiguration:
@@ -1829,15 +1561,15 @@ Resources:
 Outputs:
   UIRepositoryURL:
     Description: URL of the UI repository
-    Value: !GetAtt ECRRepositoryUI.RepositoryUri
+    Value: !Ref ECRRepositoryUIUri
 
   PlatformAPIRepositoryURL:
     Description: URL of the platform API repository
-    Value: !GetAtt ECRRepositoryAPI.RepositoryUri
+    Value: !Ref ECRRepositoryAPIUri
 
   GatewayRepositoryURL:
     Description: URL of the gateway repository
-    Value: !GetAtt ECRRepositoryGateway.RepositoryUri
+    Value: !Ref ECRRepositoryGatewayUri
 
   UIServiceURL:
     Description: URL of the App Runner UI service
