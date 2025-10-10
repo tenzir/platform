@@ -16,7 +16,6 @@ Metadata:
           - ECRRepositoryUIUri
           - ECRRepositoryAPIUri
           - ECRRepositoryGatewayUri
-          - ECRRepositoryNodeUri
       - Label:
           default: "Authentication Configuration"
         Parameters:
@@ -37,8 +36,6 @@ Metadata:
         default: "ECR Repository URI for API"
       ECRRepositoryGatewayUri:
         default: "ECR Repository URI for Gateway"
-      ECRRepositoryNodeUri:
-        default: "ECR Repository URI for Node"
       UseExternalOIDC:
         default: "Use External OIDC Provider"
       ExternalOIDCIssuerURL:
@@ -69,10 +66,6 @@ Parameters:
   ECRRepositoryGatewayUri:
     Type: String
     Description: ECR repository URI for the Gateway container image (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway)
-
-  ECRRepositoryNodeUri:
-    Type: String
-    Description: ECR repository URI for the Node container image (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-node)
 
   RandomSubdomain:
     Type: String
@@ -1300,7 +1293,7 @@ Resources:
             - '[]'
           BASE_PATH: ''
           TENANT_MANAGER_SIDEPATH_BUCKET_NAME: !Ref S3BucketSidepath
-          TENZIR_DEMO_NODE_IMAGE: !Sub '${ECRRepositoryNodeUri}:${Version}'
+          TENZIR_DEMO_NODE_IMAGE: !Sub 'ghcr.io/tenzir/tenzir-demo:${Version}'
           GATEWAY_WS_ENDPOINT: !Ref GatewayWSEndpointParameter
           GATEWAY_HTTP_ENDPOINT: !Ref GatewayHTTPEndpointParameter
       VpcConfig:
