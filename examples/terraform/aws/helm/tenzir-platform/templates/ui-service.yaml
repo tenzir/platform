@@ -1,0 +1,17 @@
+{{- if .Values.ui.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "tenzir-platform.fullname" . }}-ui
+  labels:
+    {{- include "tenzir-platform.ui.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.ui.service.type }}
+  ports:
+    - port: {{ .Values.ui.service.port }}
+      targetPort: {{ .Values.ui.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "tenzir-platform.ui.selectorLabels" . | nindent 4 }}
+{{- end }}
