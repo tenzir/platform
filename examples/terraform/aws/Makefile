@@ -31,8 +31,7 @@ echo:
 	@echo "  Gateway: $(ECR_REPOSITORY_GATEWAY)"
 
 login:
-	#aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 612642570909.dkr.ecr.eu-west-1.amazonaws.com
-	aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 612642570909.dkr.ecr.us-east-1.amazonaws.com
+	aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 709825985650.dkr.ecr.us-east-1.amazonaws.com
 
 build-api:
 	cd ../../../components/tenant-manager/platform/tenant_manager && docker build -t $(TENZIR_PLATFORM_API_UPSTREAM_CONTAINER) -f Dockerfile.lambda .
