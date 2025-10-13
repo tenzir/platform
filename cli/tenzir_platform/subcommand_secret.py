@@ -5,7 +5,7 @@
   tenzir-platform secret add <name> [--file=<file>] [--value=<value>] [--env]
   tenzir-platform secret update <secret> [--file=<file>] [--value=<value>] [--env]
   tenzir-platform secret delete <secret>
-  tenzir-platform secret list [--json]
+  tenzir-platform secret list [--json] [--store-id=<store_id>]
   tenzir-platform secret store add aws --region=<region> --assumed-role-arn=<assumed_role_arn> [--name=<name>] [--access-key-id=<key_id>] [--secret-access-key=<key>]
   tenzir-platform secret store set-default <store_id>
   tenzir-platform secret store delete <store_id>
@@ -25,13 +25,13 @@ Description:
     The `--file` option can be used to read the secret value from a file instead.
     The `--value` option can be used to pass the secret value as a command-line argument instead.
     The `--env` option can be used to read the secret value from the environment variable with the same name.
-    Only one of these options can be specified.
+    Only one of --file, --value, or --env can be specified.
 
   tenzir-platform secret delete <secret>
     Delete the specified secret.
 
-  tenzir-platform secret list [--json]
-    List all configured secrets.
+  tenzir-platform secret list [--json] [--store-id <store_id>]
+    List all configured secrets. The `--store-id` option can be used to list secrets from a specific store.
 """
 
 # TODO: We probably also want to add the equivalent of these options (from `gh secret`)
@@ -64,21 +64,22 @@ class ListSecretsResponse(BaseModel):
     secrets: list[Secret]
 
 
-def _list_secrets(client: AppClient, workspace_id: str) -> ListSecretsResponse:
+def _list_secrets(client: AppClient, workspace_id: str, store_id: Optional[str] = None) -> ListSecretsResponse:
+    payload = {"tenant_id": workspace_id}
+    if store_id is not None:
+        payload["store_id"] = store_id
     resp = client.post(
         "secrets/list",
-        json={
-            "tenant_id": workspace_id,
-        },
+        json=payload,
     )
     resp.raise_for_status()
     return ListSecretsResponse.model_validate(resp.json())
 
 
 def _resolve_secret_name_or_id(
-    client: AppClient, workspace_id: str, name_or_id: str
+    client: AppClient, workspace_id: str, name_or_id: str, store_id: Optional[str] = None
 ) -> Secret:
-    secrets = _list_secrets(client, workspace_id).secrets
+    secrets = _list_secrets(client, workspace_id, store_id).secrets
     matching_by_id = [secret for secret in secrets if secret.id == name_or_id]
     if matching_by_id:
         return matching_by_id[0]
@@ -187,8 +188,9 @@ def list(
     client: AppClient,
     workspace_id: str,
     json_format: bool,
+    store_id: Optional[str] = None,
 ):
-    secrets_list = _list_secrets(client, workspace_id)
+    secrets_list = _list_secrets(client, workspace_id, store_id)
     if json_format:
         print(secrets_list.model_dump_json(indent=4))
         return
@@ -241,7 +243,7 @@ def delete_store(client: AppClient, workspace_id: str, store_id: str):
 
 def set_default_store(client, workspace_id, store_id):
     resp = client.post(
-        "secrets/set-default-store",
+        "secrets/select-store",
         json={
             "tenant_id": workspace_id,
             "store_id": store_id,
@@ -330,4 +332,5 @@ def secret_subcommand(platform: PlatformEnvironment, argv):
         delete(client, workspace_id, name_or_id)
     elif args["list"]:
         json_format = args["--json"]
-        list(client, workspace_id, json_format)
+        store_id = args["--store-id"]
+        list(client, workspace_id, json_format, store_id)
