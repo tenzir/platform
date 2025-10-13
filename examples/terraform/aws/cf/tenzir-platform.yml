@@ -16,6 +16,7 @@ Metadata:
           - ECRRepositoryUIUri
           - ECRRepositoryAPIUri
           - ECRRepositoryGatewayUri
+          - ECRRepositoryNodeUri
       - Label:
           default: "Authentication Configuration"
         Parameters:
@@ -36,6 +37,8 @@ Metadata:
         default: "ECR Repository URI for API"
       ECRRepositoryGatewayUri:
         default: "ECR Repository URI for Gateway"
+      ECRRepositoryNodeUri:
+        default: "ECR Repository URI for Demo Node"
       UseExternalOIDC:
         default: "Use External OIDC Provider"
       ExternalOIDCIssuerURL:
@@ -66,6 +69,11 @@ Parameters:
   ECRRepositoryGatewayUri:
     Type: String
     Description: ECR repository URI for the Gateway container image (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway)
+
+  ECRRepositoryNodeUri:
+    Type: String
+    Default: 'ghcr.io/tenzir/tenzir-demo'
+    Description: ECR repository URI for the Demo Node container image. Defaults to public GitHub Container Registry image.
 
   RandomSubdomain:
     Type: String
