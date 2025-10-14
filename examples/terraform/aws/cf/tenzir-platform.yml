@@ -9,14 +9,13 @@ Metadata:
         Parameters:
           - DomainName
           - RandomSubdomain
-          - Version
       - Label:
-          default: "ECR Repository Configuration"
+          default: "Container Images"
         Parameters:
-          - ECRRepositoryUIUri
-          - ECRRepositoryAPIUri
-          - ECRRepositoryGatewayUri
-          - ECRRepositoryNodeUri
+          - ContainerImageUI
+          - ContainerImageAPI
+          - ContainerImageGateway
+          - ContainerImageNode
       - Label:
           default: "Authentication Configuration"
         Parameters:
@@ -29,16 +28,14 @@ Metadata:
         default: "Domain Name"
       RandomSubdomain:
         default: "Use Random Subdomain"
-      Version:
-        default: "Platform Version"
-      ECRRepositoryUIUri:
-        default: "ECR Repository URI for UI"
-      ECRRepositoryAPIUri:
-        default: "ECR Repository URI for API"
-      ECRRepositoryGatewayUri:
-        default: "ECR Repository URI for Gateway"
-      ECRRepositoryNodeUri:
-        default: "ECR Repository URI for Demo Node"
+      ContainerImageUI:
+        default: "UI Container Image"
+      ContainerImageAPI:
+        default: "API Container Image"
+      ContainerImageGateway:
+        default: "Gateway Container Image"
+      ContainerImageNode:
+        default: "Demo Node Container Image"
       UseExternalOIDC:
         default: "Use External OIDC Provider"
       ExternalOIDCIssuerURL:
@@ -53,27 +50,22 @@ Parameters:
     Type: String
     Description: The base domain name (e.g., example.org)
 
-  Version:
+  ContainerImageUI:
     Type: String
-    Default: 'v0.1.0'
-    Description: Version tag for Tenzir Platform container images
+    Description: Full container image URI for the UI (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-ui:v0.1.0)
 
-  ECRRepositoryUIUri:
+  ContainerImageAPI:
     Type: String
-    Description: ECR repository URI for the UI container image (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-ui)
+    Description: Full container image URI for the API (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-api:v0.1.0)
 
-  ECRRepositoryAPIUri:
+  ContainerImageGateway:
     Type: String
-    Description: ECR repository URI for the API container image (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-api)
+    Description: Full container image URI for the Gateway (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway:v0.1.0)
 
-  ECRRepositoryGatewayUri:
+  ContainerImageNode:
     Type: String
-    Description: ECR repository URI for the Gateway container image (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway)
-
-  ECRRepositoryNodeUri:
-    Type: String
-    Default: 'ghcr.io/tenzir/tenzir-demo'
-    Description: ECR repository URI for the Demo Node container image. Defaults to public GitHub Container Registry image.
+    Default: 'ghcr.io/tenzir/tenzir-demo:latest'
+    Description: (Optional) Full container image URI for the Demo Node. Defaults to public GitHub Container Registry image.
 
   RandomSubdomain:
     Type: String
@@ -955,7 +947,7 @@ Resources:
       TaskRoleArn: !GetAtt GatewayTaskRole.Arn
       ContainerDefinitions:
         - Name: gateway
-          Image: !Sub '${ECRRepositoryGatewayUri}:${Version}'
+          Image: !Ref ContainerImageGateway
           Command:
             - tenant_manager/ws/server/aws.py
           PortMappings:
@@ -1275,7 +1267,7 @@ Resources:
       Role: !GetAtt APILambdaExecutionRole.Arn
       PackageType: Image
       Code:
-        ImageUri: !Sub '${ECRRepositoryAPIUri}:${Version}'
+        ImageUri: !Ref ContainerImageAPI
       Timeout: 30
       MemorySize: 512
       Environment:
@@ -1301,7 +1293,7 @@ Resources:
             - '[]'
           BASE_PATH: ''
           TENANT_MANAGER_SIDEPATH_BUCKET_NAME: !Ref S3BucketSidepath
-          TENZIR_DEMO_NODE_IMAGE: !Sub 'ghcr.io/tenzir/tenzir-demo:${Version}'
+          TENZIR_DEMO_NODE_IMAGE: !Ref ContainerImageNode
           GATEWAY_WS_ENDPOINT: !Ref GatewayWSEndpointParameter
           GATEWAY_HTTP_ENDPOINT: !Ref GatewayHTTPEndpointParameter
       VpcConfig:
@@ -1377,7 +1369,7 @@ Resources:
       FunctionName: !Ref APILambdaFunction
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub '${APIGateway}/*/*'
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${APIGateway}/*/*'
 
   APIGatewayDomainName:
     Type: AWS::ApiGatewayV2::DomainName
@@ -1420,7 +1412,9 @@ Resources:
                   - !Ref PostgresURISecret
                   - !Ref TenantManagerAppAPIKeySecret
                   - !Ref AuthSecret
-
+                  - !Ref UserEndpointSecret
+                  - !Ref WebappEndpointSecret
+                  - !Ref ClientSecretSecret
   AppRunnerAccessRole:
     Type: AWS::IAM::Role
     Properties:
@@ -1542,7 +1536,7 @@ Resources:
                 Value: !Ref AuthSecret
               - Name: PRIVATE_DRIZZLE_DATABASE_URL
                 Value: !Ref PostgresURISecret
-          ImageIdentifier: !Sub '${ECRRepositoryUIUri}:${Version}'
+          ImageIdentifier: !Ref ContainerImageUI
           ImageRepositoryType: ECR
         AutoDeploymentsEnabled: false
       InstanceConfiguration:
@@ -1560,17 +1554,21 @@ Resources:
           Value: tenzir-ui-apprunner
 
 Outputs:
-  UIRepositoryURL:
-    Description: URL of the UI repository
-    Value: !Ref ECRRepositoryUIUri
+  ContainerImageUI:
+    Description: UI container image
+    Value: !Ref ContainerImageUI
 
-  PlatformAPIRepositoryURL:
-    Description: URL of the platform API repository
-    Value: !Ref ECRRepositoryAPIUri
+  ContainerImageAPI:
+    Description: API container image
+    Value: !Ref ContainerImageAPI
 
-  GatewayRepositoryURL:
-    Description: URL of the gateway repository
-    Value: !Ref ECRRepositoryGatewayUri
+  ContainerImageGateway:
+    Description: Gateway container image
+    Value: !Ref ContainerImageGateway
+
+  ContainerImageNode:
+    Description: Demo Node container image
+    Value: !Ref ContainerImageNode
 
   UIServiceURL:
     Description: URL of the App Runner UI service
