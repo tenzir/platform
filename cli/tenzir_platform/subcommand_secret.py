@@ -5,15 +5,16 @@
   tenzir-platform secret add <name> [--file=<file>] [--value=<value>] [--env]
   tenzir-platform secret update <secret> [--file=<file>] [--value=<value>] [--env]
   tenzir-platform secret delete <secret>
-  tenzir-platform secret list [--json] [--store-id=<store_id>]
+  tenzir-platform secret list [--json] [--store=<store>]
   tenzir-platform secret store add aws --region=<region> --assumed-role-arn=<assumed_role_arn> [--name=<name>] [--access-key-id=<key_id>] [--secret-access-key=<key>]
-  tenzir-platform secret store set-default <store_id>
-  tenzir-platform secret store delete <store_id>
+  tenzir-platform secret store set-default <store>
+  tenzir-platform secret store delete <store>
   tenzir-platform secret store list [--json]
 
 Options:
   <name>   The name of the secret.
   <secret> The name or secret id of a the secret.
+  <store>  The name or store id of a secret store.
   <value>  The plain value of the secret.
   <file>   The path to a file containing the secret value.
 
@@ -30,8 +31,8 @@ Description:
   tenzir-platform secret delete <secret>
     Delete the specified secret.
 
-  tenzir-platform secret list [--json] [--store-id <store_id>]
-    List all configured secrets. The `--store-id` option can be used to list secrets from a specific store.
+  tenzir-platform secret list [--json] [--store <store>]
+    List all configured secrets. The `--store` option can be used to list secrets from a specific store by name or ID.
 """
 
 # TODO: We probably also want to add the equivalent of these options (from `gh secret`)
@@ -91,6 +92,41 @@ def _resolve_secret_name_or_id(
     raise PlatformCliError("secret not found").add_context(
         f"while trying to resolve id or name '{name_or_id}'"
     )
+
+
+def _resolve_secret_store(
+    client: AppClient, workspace_id: str, name_or_id: str
+) -> str:
+    """Resolve a store name or ID to a store ID."""
+    # If it looks like a store ID or is 'default', assume it's an ID
+    if name_or_id.startswith("st-") or name_or_id == "default":
+        return name_or_id
+
+    resp = client.post(
+        "secrets/list-stores",
+        json={
+            "tenant_id": workspace_id,
+        },
+    )
+    resp.raise_for_status()
+    stores = resp.json()["stores"]
+
+    # Check for exact ID match (in case someone named their store something like "st-xyz")
+    matching_by_id = [store for store in stores if store["id"] == name_or_id]
+    if matching_by_id:
+        return matching_by_id[0]["id"]
+
+    # Check for name match
+    matching_by_name = [store for store in stores if store["name"] == name_or_id]
+    if len(matching_by_name) > 1:
+        matching_ids = [store["id"] for store in matching_by_name]
+        raise PlatformCliError(
+            f"ambiguous name '{name_or_id}' is shared by stores {matching_ids}"
+        )
+    if matching_by_name:
+        return matching_by_name[0]["id"]
+
+    raise PlatformCliError(f"unknown secret store '{name_or_id}'")
 
 
 def add(
@@ -188,8 +224,11 @@ def list(
     client: AppClient,
     workspace_id: str,
     json_format: bool,
-    store_id: Optional[str] = None,
+    store: Optional[str] = None,
 ):
+    store_id = None
+    if store is not None:
+        store_id = _resolve_secret_store(client, workspace_id, store)
     secrets_list = _list_secrets(client, workspace_id, store_id)
     if json_format:
         print(secrets_list.model_dump_json(indent=4))
@@ -223,7 +262,8 @@ def list_stores(client: AppClient, workspace_id: str, json_format: bool):
         )
 
 
-def delete_store(client: AppClient, workspace_id: str, store_id: str):
+def delete_store(client: AppClient, workspace_id: str, name_or_id: str):
+    store_id = _resolve_secret_store(client, workspace_id, name_or_id)
     resp = client.post(
         "secrets/delete-external-store",
         json={
@@ -234,14 +274,15 @@ def delete_store(client: AppClient, workspace_id: str, store_id: str):
     if resp.status_code == 400:
         # User tried to delete the default store, or the built-in store.
         raise PlatformCliError(f"failed to delete secret store").add_context(
-            "while trying to delete store {store_id}"
+            f"while trying to delete store {store_id}"
         )
 
     resp.raise_for_status()
     print(f"deleted store {store_id}")
 
 
-def set_default_store(client, workspace_id, store_id):
+def set_default_store(client, workspace_id, name_or_id):
+    store_id = _resolve_secret_store(client, workspace_id, name_or_id)
     resp = client.post(
         "secrets/select-store",
         json={
@@ -307,11 +348,11 @@ def secret_subcommand(platform: PlatformEnvironment, argv):
             else:
                 raise PlatformCliError("unknown store type")
         elif args["delete"]:
-            store_id = args["<store_id>"]
-            delete_store(client, workspace_id, store_id)
+            store = args["<store>"]
+            delete_store(client, workspace_id, store)
         elif args["set-default"]:
-            store_id = args["<store_id>"]
-            set_default_store(client, workspace_id, store_id)
+            store = args["<store>"]
+            set_default_store(client, workspace_id, store)
         elif args["list"]:
             json_format = args["--json"]
             list_stores(client, workspace_id, json_format)
@@ -332,5 +373,5 @@ def secret_subcommand(platform: PlatformEnvironment, argv):
         delete(client, workspace_id, name_or_id)
     elif args["list"]:
         json_format = args["--json"]
-        store_id = args["--store-id"]
-        list(client, workspace_id, json_format, store_id)
+        store = args["--store"]
+        list(client, workspace_id, json_format, store)
