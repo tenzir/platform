@@ -234,7 +234,7 @@ def delete_store(client: AppClient, workspace_id: str, store_id: str):
     if resp.status_code == 400:
         # User tried to delete the default store, or the built-in store.
         raise PlatformCliError(f"failed to delete secret store").add_context(
-            "while trying to delete store {store_id}"
+            f"while trying to delete store {store_id}"
         )
 
     resp.raise_for_status()
