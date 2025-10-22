@@ -48,7 +48,7 @@ Metadata:
 Parameters:
   DomainName:
     Type: String
-    Description: The base domain name (e.g., example.org)
+    Description: The base domain name without trailing slash (e.g., example.org)
 
   ContainerImageUI:
     Type: String
@@ -130,17 +130,17 @@ Resources:
           import random
           import string
           import cfnresponse
-          
+
           def handler(event, context):
               try:
                   if event['RequestType'] == 'Delete':
                       cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
                       return
-                  
+
                   length = int(event['ResourceProperties'].get('Length', 16))
                   chars = string.ascii_lowercase + string.digits
                   random_string = ''.join(random.choice(chars) for _ in range(length))
-                  
+
                   response_data = {'Value': random_string}
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
               except Exception as e:
@@ -149,6 +149,60 @@ Resources:
       Timeout: 60
 
   RandomGeneratorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  # Compute base domain with optional random subdomain
+  BaseDomainName:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt BaseDomainGeneratorFunction.Arn
+      DomainName: !Ref DomainName
+      RandomSuffix: !GetAtt DeploymentRandomSuffix.Value
+      UseRandomSubdomain: !Ref RandomSubdomain
+
+  BaseDomainGeneratorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'tenzir-basedomain-generator-${AWS::StackName}'
+      Runtime: python3.9
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          import cfnresponse
+
+          def handler(event, context):
+              try:
+                  if event['RequestType'] == 'Delete':
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                      return
+
+                  domain = event['ResourceProperties'].get('DomainName', '')
+                  random_suffix = event['ResourceProperties'].get('RandomSuffix', '')
+                  use_random = event['ResourceProperties'].get('UseRandomSubdomain', 'false')
+
+                  if use_random == 'true':
+                      base_domain = f'tenant-{random_suffix}.{domain}'
+                  else:
+                      base_domain = domain
+
+                  response_data = {'Value': base_domain}
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
+              except Exception as e:
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, str(e))
+      Role: !GetAtt BaseDomainGeneratorRole.Arn
+      Timeout: 60
+
+  BaseDomainGeneratorRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -722,10 +776,54 @@ Resources:
     Properties:
       Name: !Sub 'tenzir-workspace-secrets-master-seed-${DeploymentRandomSuffix.Value}'
       Description: Master seed secret for workspace secrets
-      GenerateSecretString:
-        PasswordLength: 128
-        ExcludeCharacters: ''
-        RequireEachIncludedType: false
+      SecretString: !GetAtt WorkspaceSecretsMasterSeedGenerator.Value
+
+  WorkspaceSecretsMasterSeedGenerator:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt HexGeneratorFunction.Arn
+      Length: 128
+
+  HexGeneratorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'tenzir-hex-generator-${AWS::StackName}'
+      Runtime: python3.9
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          import random
+          import cfnresponse
+
+          def handler(event, context):
+              try:
+                  if event['RequestType'] == 'Delete':
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                      return
+
+                  length = int(event['ResourceProperties'].get('Length', 128))
+                  # Generate hex string (0-9, a-f)
+                  hex_string = ''.join(random.choice('0123456789abcdef') for _ in range(length))
+
+                  response_data = {'Value': hex_string}
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
+              except Exception as e:
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, str(e))
+      Role: !GetAtt HexGeneratorRole.Arn
+      Timeout: 60
+
+  HexGeneratorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
   AuthSecret:
     Type: AWS::SecretsManager::Secret
@@ -815,7 +913,7 @@ Resources:
       SupportedIdentityProviders:
         - COGNITO
       CallbackURLs:
-        - !Sub 'https://ui.${DomainName}/login/oauth/callback'
+        - !Sub 'https://ui.${BaseDomainName.Value}/login/oauth/callback'
       PreventUserExistenceErrors: ENABLED
       EnableTokenRevocation: true
       ExplicitAuthFlows:
@@ -851,10 +949,10 @@ Resources:
     Condition: UseCognito
     Properties:
       UserPoolId: !Ref CognitoUserPool
-      Username: !Sub 'admin@${DomainName}'
+      Username: !Sub 'admin@${BaseDomainName.Value}'
       UserAttributes:
         - Name: email
-          Value: !Sub 'admin@${DomainName}'
+          Value: !Sub 'admin@${BaseDomainName.Value}'
         - Name: email_verified
           Value: 'true'
       MessageAction: SUPPRESS
@@ -1018,10 +1116,10 @@ Resources:
   APICertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: !Sub 'api.${DomainName}'
+      DomainName: !Sub 'api.${BaseDomainName.Value}'
       ValidationMethod: DNS
       DomainValidationOptions:
-        - DomainName: !Sub 'api.${DomainName}'
+        - DomainName: !Sub 'api.${BaseDomainName.Value}'
           HostedZoneId: !GetAtt HostedZoneLookup.ZoneId
       Tags:
         - Key: Name
@@ -1030,10 +1128,10 @@ Resources:
   UICertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: !Sub 'ui.${DomainName}'
+      DomainName: !Sub 'ui.${BaseDomainName.Value}'
       ValidationMethod: DNS
       DomainValidationOptions:
-        - DomainName: !Sub 'ui.${DomainName}'
+        - DomainName: !Sub 'ui.${BaseDomainName.Value}'
           HostedZoneId: !GetAtt HostedZoneLookup.ZoneId
       Tags:
         - Key: Name
@@ -1042,10 +1140,10 @@ Resources:
   NodesCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: !Sub 'nodes.${DomainName}'
+      DomainName: !Sub 'nodes.${BaseDomainName.Value}'
       ValidationMethod: DNS
       DomainValidationOptions:
-        - DomainName: !Sub 'nodes.${DomainName}'
+        - DomainName: !Sub 'nodes.${BaseDomainName.Value}'
           HostedZoneId: !GetAtt HostedZoneLookup.ZoneId
       Tags:
         - Key: Name
@@ -1251,14 +1349,14 @@ Resources:
     Properties:
       Name: !Sub '/tenzir/platform/gateway-ws-endpoint-${DeploymentRandomSuffix.Value}'
       Type: String
-      Value: !Sub 'wss://nodes.${DomainName}'
+      Value: !Sub 'wss://nodes.${BaseDomainName.Value}'
 
   GatewayHTTPEndpointParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Name: !Sub '/tenzir/platform/gateway-http-endpoint-${DeploymentRandomSuffix.Value}'
       Type: String
-      Value: !Sub 'https://nodes.${DomainName}'
+      Value: !Sub 'https://nodes.${BaseDomainName.Value}'
 
   APILambdaFunction:
     Type: AWS::Lambda::Function
@@ -1374,7 +1472,7 @@ Resources:
   APIGatewayDomainName:
     Type: AWS::ApiGatewayV2::DomainName
     Properties:
-      DomainName: !Sub 'api.${DomainName}'
+      DomainName: !Sub 'api.${BaseDomainName.Value}'
       DomainNameConfigurations:
         - CertificateArn: !Ref APICertificate
           EndpointType: REGIONAL
@@ -1499,7 +1597,7 @@ Resources:
               - Name: PUBLIC_ENABLE_HIGHLIGHT
                 Value: 'false'
               - Name: ORIGIN
-                Value: !Sub 'https://ui.${DomainName}'
+                Value: !Sub 'https://ui.${BaseDomainName.Value}'
               - Name: PRIVATE_OIDC_PROVIDER_NAME
                 Value: tenzir
               - Name: PRIVATE_OIDC_PROVIDER_CLIENT_ID
@@ -1606,23 +1704,20 @@ Outputs:
 
   BaseDomain:
     Description: The base domain (with random subdomain if enabled)
-    Value: !If
-      - UseRandomSubdomain
-      - !Sub 'tenant-${DeploymentRandomSuffix.Value}.${DomainName}'
-      - !Ref DomainName
+    Value: !GetAtt BaseDomainName.Value
 
   APIDomain:
     Description: The API domain name
-    Value: !Sub 'api.${DomainName}'
+    Value: !Sub 'api.${BaseDomainName.Value}'
 
   UIDomain:
     Description: The UI domain name
-    Value: !Sub 'ui.${DomainName}'
+    Value: !Sub 'ui.${BaseDomainName.Value}'
 
   AdminUsername:
     Condition: UseCognito
     Description: Default admin username for Cognito (only available when using Cognito)
-    Value: !Sub 'admin@${DomainName}'
+    Value: !Sub 'admin@${BaseDomainName.Value}'
 
   AdminInitialPassword:
     Condition: UseCognito
