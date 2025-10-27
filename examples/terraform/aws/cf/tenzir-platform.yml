@@ -741,15 +741,14 @@ Resources:
         SecretStringTemplate: '{"username": "tenzir_admin"}'
         GenerateStringKey: password
         PasswordLength: 16
-        ExcludeCharacters: '"@/\'
+        ExcludePunctuation: true
 
   PostgresURISecret:
     Type: AWS::SecretsManager::Secret
     Properties:
       Name: !Sub 'tenzir-postgres-uri-${DeploymentRandomSuffix.Value}'
       Description: PostgreSQL URI for Tenzir database connection
-      SecretString: !Sub |
-        postgresql://${DBInstance.MasterUsername}:{{resolve:secretsmanager:${DBPasswordSecret}:SecretString:password}}@${DBInstance.Endpoint.Address}:${DBInstance.Endpoint.Port}/tenzir?sslmode=require
+      SecretString: !Sub postgresql://${DBInstance.MasterUsername}:{{resolve:secretsmanager:${DBPasswordSecret}:SecretString:password}}@${DBInstance.Endpoint.Address}:${DBInstance.Endpoint.Port}/tenzir?sslmode=require
 
   TenantTokenEncryptionKeySecret:
     Type: AWS::SecretsManager::Secret
