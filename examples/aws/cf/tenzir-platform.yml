@@ -988,7 +988,7 @@ Resources:
     Properties:
       UserPoolId: !Ref CognitoUserPool
       Username: !Sub 'admin@${BaseDomainName.Value}'
-      TemporaryPassword: !Sub '{{resolve:secretsmanager:${AdminPasswordSecret}:SecretString:password}}'
+      TemporaryPassword: !Sub '{{resolve:secretsmanager:${AdminPasswordSecret}}}'
       UserAttributes:
         - Name: email
           Value: !Sub 'admin@${BaseDomainName.Value}'
@@ -1893,7 +1893,7 @@ Outputs:
   AdminInitialPassword:
     Condition: UseCognito
     Description: Initial admin password for Cognito (only available when using Cognito, change after first login)
-    Value: !Sub '{{resolve:secretsmanager:${AdminPasswordSecret}:SecretString:password}}'
+    Value: !Sub '{{resolve:secretsmanager:${AdminPasswordSecret}}}'
 
   OIDCProviderType:
     Description: The type of OIDC provider being used
