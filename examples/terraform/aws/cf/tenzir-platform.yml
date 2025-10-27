@@ -750,15 +750,18 @@ Resources:
       Description: PostgreSQL URI for Tenzir database connection
       SecretString: !Sub postgresql://${DBInstance.MasterUsername}:{{resolve:secretsmanager:${DBPasswordSecret}:SecretString:password}}@${DBInstance.Endpoint.Address}:${DBInstance.Endpoint.Port}/tenzir?sslmode=require
 
+  TenantTokenEncryptionKeyGenerator:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt Base64BinaryGeneratorFunction.Arn
+      NumBytes: 32
+
   TenantTokenEncryptionKeySecret:
     Type: AWS::SecretsManager::Secret
     Properties:
       Name: !Sub 'tenzir-tenant-token-encryption-key-${DeploymentRandomSuffix.Value}'
-      Description: Tenant token encryption key secret
-      GenerateSecretString:
-        PasswordLength: 32
-        ExcludeCharacters: ''
-        RequireEachIncludedType: false
+      Description: Tenant token encryption key secret (base64-encoded binary random bytes)
+      SecretString: !GetAtt TenantTokenEncryptionKeyGenerator.Value
 
   TenantManagerAppAPIKeySecret:
     Type: AWS::SecretsManager::Secret
@@ -812,6 +815,53 @@ Resources:
       Timeout: 60
 
   HexGeneratorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  Base64BinaryGeneratorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'tenzir-base64binary-generator-${AWS::StackName}'
+      Runtime: python3.9
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          import base64
+          import secrets
+          import cfnresponse
+
+          def handler(event, context):
+              try:
+                  if event['RequestType'] == 'Delete':
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                      return
+
+                  # Number of random bytes to generate (default 32)
+                  num_bytes = int(event['ResourceProperties'].get('NumBytes', 32))
+
+                  # Generate cryptographically secure random bytes
+                  random_bytes = secrets.token_bytes(num_bytes)
+
+                  # Encode as base64
+                  base64_encoded = base64.b64encode(random_bytes).decode('utf-8')
+
+                  response_data = {'Value': base64_encoded}
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
+              except Exception as e:
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, str(e))
+      Role: !GetAtt Base64BinaryGeneratorRole.Arn
+      Timeout: 60
+
+  Base64BinaryGeneratorRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
