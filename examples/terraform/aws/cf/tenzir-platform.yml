@@ -105,7 +105,6 @@ Conditions:
   UseCognito: !Not [!Condition UseExternalOIDCProvider]
 
 Resources:
-  # Random IDs and Naming
   DeploymentRandomSuffix:
     Type: AWS::CloudFormation::CustomResource
     Properties:
@@ -161,7 +160,6 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
-  # Compute base domain with optional random subdomain
   BaseDomainName:
     Type: AWS::CloudFormation::CustomResource
     Properties:
@@ -215,7 +213,6 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
-  # Hosted zone lookup (mirrors Terraform data source)
   HostedZoneLookupFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -283,7 +280,6 @@ Resources:
       ServiceToken: !GetAtt HostedZoneLookupFunction.Arn
       DomainName: !Ref DomainName
 
-  # VPC and Networking
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -445,7 +441,6 @@ Resources:
       SubnetId: !Ref SubnetNodes
       RouteTableId: !Ref RouteTablePlatform
 
-  # Security Groups
   SecurityGroupVPCEndpoint:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -558,7 +553,6 @@ Resources:
         - Key: Name
           Value: tenzir-alb-sg
 
-  # Security Group Rules
   SGRuleVPCEndpointFromLambda:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -631,7 +625,6 @@ Resources:
       ToPort: 5000
       SourceSecurityGroupId: !Ref SecurityGroupALB
 
-  # VPC Endpoints
   VPCEndpointSecretsManager:
     Type: AWS::EC2::VPCEndpoint
     Properties:
@@ -698,7 +691,6 @@ Resources:
         - !Ref SecurityGroupVPCEndpoint
       PrivateDnsEnabled: true
 
-  # S3 Buckets
   S3BucketBlobs:
     Type: AWS::S3::Bucket
     Properties:
@@ -719,7 +711,6 @@ Resources:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
 
-  # RDS Database
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
@@ -909,8 +900,6 @@ Resources:
         - Key: Name
           Value: tenzir-postgres
 
-
-  # Cognito User Pool (conditional)
   CognitoUserPool:
     Type: AWS::Cognito::UserPool
     Condition: UseCognito
@@ -1006,7 +995,6 @@ Resources:
           Value: 'true'
       MessageAction: SUPPRESS
 
-  # ECS Cluster
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
@@ -1123,7 +1111,6 @@ Resources:
               awslogs-stream-prefix: ecs
           Essential: true
 
-  # Application Load Balancer
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -1161,7 +1148,6 @@ Resources:
         - Key: Name
           Value: tenzir-gateway-tg
 
-  # ACM Certificates
   APICertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
@@ -1246,7 +1232,6 @@ Resources:
           ContainerName: gateway
           ContainerPort: 5000
 
-  # Lambda Function
   APILambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -1357,7 +1342,6 @@ Resources:
                   - ecr:BatchGetImage
                 Resource: 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/*'
 
-  # SSM Parameters
   DemoNodeLogsGroupNameParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -1468,7 +1452,6 @@ Resources:
           - keep-alive
         MaxAge: 86400
 
-  # API Gateway
   APIGateway:
     Type: AWS::ApiGatewayV2::Api
     Properties:
@@ -1534,7 +1517,6 @@ Resources:
       DomainName: !Ref APIGatewayDomainName
       Stage: !Ref APIGatewayStage
 
-  # App Runner
   AppRunnerInstanceRole:
     Type: AWS::IAM::Role
     Properties:
