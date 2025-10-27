@@ -988,6 +988,7 @@ Resources:
     Properties:
       UserPoolId: !Ref CognitoUserPool
       Username: !Sub 'admin@${BaseDomainName.Value}'
+      TemporaryPassword: !Sub '{{resolve:secretsmanager:${AdminPasswordSecret}:SecretString:password}}'
       UserAttributes:
         - Name: email
           Value: !Sub 'admin@${BaseDomainName.Value}'
@@ -1681,6 +1682,145 @@ Resources:
       Tags:
         - Key: Name
           Value: tenzir-ui-apprunner
+
+  UICustomDomainAssociation:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt UICustomDomainFunction.Arn
+      ServiceArn: !GetAtt AppRunnerService.ServiceArn
+      DomainName: !Sub 'ui.${BaseDomainName.Value}'
+      HostedZoneId: !GetAtt HostedZoneLookup.ZoneId
+
+  UICustomDomainFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'tenzir-ui-custom-domain-${AWS::StackName}'
+      Runtime: python3.9
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import time
+
+          def handler(event, context):
+              apprunner = boto3.client('apprunner')
+              route53 = boto3.client('route53')
+
+              try:
+                  service_arn = event['ResourceProperties'].get('ServiceArn')
+                  domain_name = event['ResourceProperties'].get('DomainName')
+                  hosted_zone_id = event['ResourceProperties'].get('HostedZoneId')
+
+                  if event['RequestType'] == 'Delete':
+                      try:
+                          apprunner.disassociate_custom_domain(
+                              ServiceArn=service_arn,
+                              DomainName=domain_name
+                          )
+                      except Exception as e:
+                          print(f'Error disassociating domain: {e}')
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                      return
+
+                  # Associate custom domain
+                  apprunner.associate_custom_domain(
+                      ServiceArn=service_arn,
+                      DomainName=domain_name,
+                      EnableWWWSubdomain=False
+                  )
+
+                  # Wait for validation records to be available
+                  max_attempts = 60
+                  dns_target = None
+
+                  for attempt in range(max_attempts):
+                      response = apprunner.describe_custom_domains(ServiceArn=service_arn)
+
+                      for domain in response.get('CustomDomains', []):
+                          if domain.get('DomainName') == domain_name:
+                              status = domain.get('Status')
+                              cert_validation = domain.get('CertificateValidationRecords', [])
+
+                              # Get DNS target for CNAME record
+                              if not dns_target:
+                                  dns_target = domain.get('DNSTarget')
+
+                              if status in ['pending_certificate_dns_validation', 'active'] and cert_validation:
+                                  # Create Route53 validation records
+                                  changes = []
+                                  for record in cert_validation:
+                                      changes.append({
+                                          'Action': 'UPSERT',
+                                          'ResourceRecordSet': {
+                                              'Name': record['Name'],
+                                              'Type': record['Type'],
+                                              'TTL': 300,
+                                              'ResourceRecords': [{'Value': record['Value']}]
+                                          }
+                                      })
+
+                                  # Add CNAME record for the domain
+                                  if dns_target:
+                                      changes.append({
+                                          'Action': 'UPSERT',
+                                          'ResourceRecordSet': {
+                                              'Name': domain_name,
+                                              'Type': 'CNAME',
+                                              'TTL': 300,
+                                              'ResourceRecords': [{'Value': dns_target}]
+                                          }
+                                      })
+
+                                  if changes:
+                                      route53.change_resource_record_sets(
+                                          HostedZoneId=hosted_zone_id,
+                                          ChangeBatch={'Changes': changes}
+                                      )
+
+                                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {
+                                      'DNSTarget': dns_target or '',
+                                      'ValidationRecordsCreated': str(len(changes))
+                                  })
+                                  return
+
+                      time.sleep(5)
+
+                  raise Exception('Timeout waiting for validation records')
+
+              except Exception as e:
+                  print(f'Error: {e}')
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, str(e))
+      Role: !GetAtt UICustomDomainRole.Arn
+      Timeout: 300
+
+  UICustomDomainRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: AppRunnerAndRoute53Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - apprunner:DescribeCustomDomains
+                  - apprunner:AssociateCustomDomain
+                  - apprunner:DisassociateCustomDomain
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - route53:ChangeResourceRecordSets
+                Resource: !Sub 'arn:aws:route53:::hostedzone/${HostedZoneLookup.ZoneId}'
 
 Outputs:
   ContainerImageUI:
