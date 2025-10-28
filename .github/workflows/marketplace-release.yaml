@@ -2,13 +2,12 @@ name: AWS Marketplace Release
 
 permissions:
   id-token: write
+  packages: write
 
 on:
-  # Trigger after the platform release workflow completes for releases
-  workflow_run:
-    workflows: ["Create Sovereign Edition containers and also push a new production Cloud Deployment"]
-    types: [completed]
-    branches: [main]
+  # Trigger on release published
+  release:
+    types: [published]
 
   # Manual dispatch for testing
   workflow_dispatch:
@@ -18,16 +17,16 @@ on:
         required: true
         type: string
       api_image:
-        description: 'Name of an existing Platform API Docker image to use (required)'
-        required: true
+        description: 'Name of an existing Platform API Docker image to use (leave empty to build fresh containers)'
+        required: false
         type: string
       gateway_image:
-        description: 'Name of an existing Platform Gateway Docker image to use (required)'
-        required: true
+        description: 'Name of an existing Platform Gateway Docker image to use (leave empty to build fresh containers)'
+        required: false
         type: string
       ui_image:
-        description: 'Name of an existing Platform UI Docker image to use (required)'
-        required: true
+        description: 'Name of an existing Platform UI Docker image to use (leave empty to build fresh containers)'
+        required: false
         type: string
 
 
@@ -35,16 +34,12 @@ jobs:
   marketplace-release:
     name: Build and Push AWS Marketplace Images
     runs-on: ubuntu-latest
-    # Only run for successful release builds or manual dispatch
-    if: |
-      (github.event_name == 'workflow_dispatch') ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'release')
     permissions:
       contents: read
       id-token: write
+      packages: write
     steps:
-      - name: Get release information
+      - name: Get release information and validate inputs
         id: get_release
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -53,9 +48,32 @@ jobs:
             API_IMAGE="${{ github.event.inputs.api_image }}"
             GATEWAY_IMAGE="${{ github.event.inputs.gateway_image }}"
             UI_IMAGE="${{ github.event.inputs.ui_image }}"
+
+            # Validate that either all or none of the image tags are specified
+            IMAGE_COUNT=0
+            [ -n "$API_IMAGE" ] && IMAGE_COUNT=$((IMAGE_COUNT + 1))
+            [ -n "$GATEWAY_IMAGE" ] && IMAGE_COUNT=$((IMAGE_COUNT + 1))
+            [ -n "$UI_IMAGE" ] && IMAGE_COUNT=$((IMAGE_COUNT + 1))
+
+            if [ $IMAGE_COUNT -ne 0 ] && [ $IMAGE_COUNT -ne 3 ]; then
+              echo "Error: Either all or none of the image tags must be specified"
+              echo "Provided: api_image='$API_IMAGE', gateway_image='$GATEWAY_IMAGE', ui_image='$UI_IMAGE'"
+              exit 1
+            fi
+
+            # Determine if we need to build containers
+            if [ $IMAGE_COUNT -eq 0 ]; then
+              echo "build_containers=true" >> $GITHUB_OUTPUT
+              API_IMAGE="ghcr.io/tenzir/platform-api-aws:${RELEASE_TAG}"
+              GATEWAY_IMAGE="ghcr.io/tenzir/platform-gateway-aws:${RELEASE_TAG}"
+              UI_IMAGE="ghcr.io/tenzir/app:${RELEASE_TAG}"
+            else
+              echo "build_containers=false" >> $GITHUB_OUTPUT
+            fi
           else
-            # workflow_run trigger - extract from head_branch
-            RELEASE_TAG="${{ github.event.workflow_run.head_branch }}"
+            # Release trigger - build fresh containers
+            RELEASE_TAG="${{ github.event.release.tag_name }}"
+            echo "build_containers=true" >> $GITHUB_OUTPUT
             API_IMAGE="ghcr.io/tenzir/platform-api-aws:${RELEASE_TAG}"
             GATEWAY_IMAGE="ghcr.io/tenzir/platform-gateway-aws:${RELEASE_TAG}"
             UI_IMAGE="ghcr.io/tenzir/app:${RELEASE_TAG}"
@@ -65,8 +83,70 @@ jobs:
           echo "gateway_image=${GATEWAY_IMAGE}" >> $GITHUB_OUTPUT
           echo "ui_image=${UI_IMAGE}" >> $GITHUB_OUTPUT
 
-      # Login to ghcr to pull the existing images
+      - name: Checkout repository
+        if: steps.get_release.outputs.build_containers == 'true'
+        uses: actions/checkout@v4
+
+      - name: Configure ssh-agent for app submodule
+        if: steps.get_release.outputs.build_containers == 'true'
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.TENZIR_APP_DEPLOY_KEY }}
+
+      - name: Update app submodule
+        if: steps.get_release.outputs.build_containers == 'true'
+        run: |
+          git submodule update --init components/app
+          app_commit=$(git -C components/app rev-parse HEAD)
+          echo "app_commit=$app_commit" >> $GITHUB_ENV
+
+      - name: Configure ssh-agent for tenant-manager submodule
+        if: steps.get_release.outputs.build_containers == 'true'
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.TENZIR_EVENT_HORIZON_DEPLOY_KEY }}
+
+      - name: Update tenant-manager submodule
+        if: steps.get_release.outputs.build_containers == 'true'
+        run: |
+          git submodule update --init components/tenant-manager
+
+      - name: Build Platform API AWS Docker image
+        if: steps.get_release.outputs.build_containers == 'true'
+        env:
+          IMAGE: ${{ steps.get_release.outputs.api_image }}
+        run: |
+          docker build \
+            --target platform-api \
+            -t "${IMAGE}" \
+            -f components/tenant-manager/platform/tenant_manager/Dockerfile.aws-lambda \
+            components/tenant-manager/platform/tenant_manager
+
+      - name: Build Platform Gateway AWS Docker image
+        if: steps.get_release.outputs.build_containers == 'true'
+        env:
+          IMAGE: ${{ steps.get_release.outputs.gateway_image }}
+        run: |
+          docker build \
+            --target platform-gateway \
+            -t "${IMAGE}" \
+            -f components/tenant-manager/platform/tenant_manager/Dockerfile \
+            components/tenant-manager/platform/tenant_manager
+
+      - name: Build Platform UI Docker image
+        if: steps.get_release.outputs.build_containers == 'true'
+        env:
+          IMAGE: ${{ steps.get_release.outputs.ui_image }}
+        run: |
+          docker build \
+            --build-arg GIT_COMMIT_HASH=${{ env.app_commit }} \
+            -t "${IMAGE}" \
+            -f components/app/Dockerfile \
+            components/app
+
+      # Login to ghcr to pull the existing images (only when not building)
       - name: Login to GitHub Container Registry
+        if: steps.get_release.outputs.build_containers == 'false'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -99,12 +179,32 @@ jobs:
         with:
           registries: 709825985650
 
+      - name: Pull and Tag Platform API Image
+        if: steps.get_release.outputs.build_containers == 'false'
+        env:
+          IMAGE: ${{ steps.get_release.outputs.api_image }}
+        run: |
+          docker pull "${IMAGE}"
+
+      - name: Pull and Tag Platform Gateway Image
+        if: steps.get_release.outputs.build_containers == 'false'
+        env:
+          IMAGE: ${{ steps.get_release.outputs.gateway_image }}
+        run: |
+          docker pull "${IMAGE}"
+
+      - name: Pull and Tag Platform UI Image
+        if: steps.get_release.outputs.build_containers == 'false'
+        env:
+          IMAGE: ${{ steps.get_release.outputs.ui_image }}
+        run: |
+          docker pull "${IMAGE}"
+
       - name: Tag and Push Platform API Image to Marketplace ECR
         env:
           IMAGE: ${{ steps.get_release.outputs.api_image }}
           RELEASE_TAG: ${{ steps.get_release.outputs.release_tag }}
         run: |
-          docker pull "${IMAGE}"
           docker tag "${IMAGE}" 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-api:${RELEASE_TAG}
           docker push 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-api:${RELEASE_TAG}
 
@@ -113,7 +213,6 @@ jobs:
           IMAGE: ${{ steps.get_release.outputs.gateway_image }}
           RELEASE_TAG: ${{ steps.get_release.outputs.release_tag }}
         run: |
-          docker pull "${IMAGE}"
           docker tag "${IMAGE}" 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway:${RELEASE_TAG}
           docker push 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway:${RELEASE_TAG}
 
@@ -122,7 +221,6 @@ jobs:
           IMAGE: ${{ steps.get_release.outputs.ui_image }}
           RELEASE_TAG: ${{ steps.get_release.outputs.release_tag }}
         run: |
-          docker pull "${IMAGE}"
           docker tag "${IMAGE}" 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-ui:${RELEASE_TAG}
           docker push 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-ui:${RELEASE_TAG}
 
