@@ -865,15 +865,18 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
+  AuthSecretGenerator:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt HexGeneratorFunction.Arn
+      Length: 64
+
   AuthSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
       Name: !Sub 'tenzir-auth-secret-${DeploymentRandomSuffix.Value}'
-      Description: Auth secret for UI Lambda
-      GenerateSecretString:
-        PasswordLength: 64
-        ExcludeCharacters: ''
-        RequireEachIncludedType: false
+      Description: Auth secret for UI Lambda (hex-encoded 32 bytes for encryption)
+      SecretString: !GetAtt AuthSecretGenerator.Value
 
   DBInstance:
     Type: AWS::RDS::DBInstance
