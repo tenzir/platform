@@ -444,7 +444,7 @@ Resources:
   SecurityGroupVPCEndpoint:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: tenzir-vpc-endpoint-sg
+      GroupName: !Sub 'tenzir-vpc-endpoint-sg-${DeploymentRandomSuffix.Value}'
       GroupDescription: Security group for VPC endpoints
       VpcId: !Ref VPC
       Tags:
@@ -454,7 +454,7 @@ Resources:
   SecurityGroupLambda:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: tenzir-lambda-sg
+      GroupName: !Sub 'tenzir-lambda-sg-${DeploymentRandomSuffix.Value}'
       GroupDescription: Security group for Tenzir Lambda function
       VpcId: !Ref VPC
       SecurityGroupEgress:
@@ -471,7 +471,7 @@ Resources:
   SecurityGroupAppRunner:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: tenzir-apprunner-ui-sg
+      GroupName: !Sub 'tenzir-apprunner-ui-sg-${DeploymentRandomSuffix.Value}'
       GroupDescription: Security group for Tenzir App Runner UI service
       VpcId: !Ref VPC
       SecurityGroupEgress:
@@ -489,7 +489,7 @@ Resources:
   SecurityGroupRDS:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: tenzir-rds-sg
+      GroupName: !Sub 'tenzir-rds-sg-${DeploymentRandomSuffix.Value}'
       GroupDescription: Security group for Tenzir RDS instance
       VpcId: !Ref VPC
       Tags:
@@ -499,7 +499,7 @@ Resources:
   SecurityGroupECS:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: tenzir-ecs-service-sg
+      GroupName: !Sub 'tenzir-ecs-service-sg-${DeploymentRandomSuffix.Value}'
       GroupDescription: Security group for Tenzir ECS service
       VpcId: !Ref VPC
       SecurityGroupEgress:
@@ -521,7 +521,7 @@ Resources:
   SecurityGroupECSDemoNode:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: tenzir-ecs-demo-node-sg
+      GroupName: !Sub 'tenzir-ecs-demo-node-sg-${DeploymentRandomSuffix.Value}'
       GroupDescription: Security group for Tenzir ECS demo node service
       VpcId: !Ref VPC
       SecurityGroupEgress:
@@ -534,7 +534,7 @@ Resources:
   SecurityGroupALB:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: tenzir-alb-sg
+      GroupName: !Sub 'tenzir-alb-sg-${DeploymentRandomSuffix.Value}'
       GroupDescription: Security group for Tenzir Application Load Balancer
       VpcId: !Ref VPC
       SecurityGroupEgress:
@@ -941,7 +941,7 @@ Resources:
     Type: AWS::Cognito::UserPoolClient
     Condition: UseCognito
     Properties:
-      ClientName: tenzir-app
+      ClientName: !Sub 'tenzir-app-${DeploymentRandomSuffix.Value}'
       UserPoolId: !Ref CognitoUserPool
       GenerateSecret: true
       AllowedOAuthFlowsUserPoolClient: true
@@ -1125,7 +1125,7 @@ Resources:
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
-      ClusterName: !Sub 'tenzir-platform-aws-edition-${DeploymentRandomSuffix.Value}'
+      ClusterName: !Sub 'tenzir-gateway-ecs-${DeploymentRandomSuffix.Value}'
       ClusterSettings:
         - Name: containerInsights
           Value: enabled
@@ -1241,7 +1241,7 @@ Resources:
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: tenzir-gateway-alb
+      Name: !Sub 'tenzir-gateway-alb-${DeploymentRandomSuffix.Value}'
       Type: application
       Scheme: internet-facing
       SecurityGroups:
@@ -1342,7 +1342,7 @@ Resources:
     DependsOn:
       - ALBListenerHTTPS
     Properties:
-      ServiceName: gateway
+      ServiceName: !Sub 'gateway-${DeploymentRandomSuffix.Value}'
       Cluster: !Ref ECSCluster
       TaskDefinition: !Ref GatewayTaskDefinition
       DesiredCount: 1
@@ -1590,7 +1590,7 @@ Resources:
   APIGateway:
     Type: AWS::ApiGatewayV2::Api
     Properties:
-      Name: tenzir-api-api
+      Name: !Sub 'tenzir-api-gw-${DeploymentRandomSuffix.Value}'
       ProtocolType: HTTP
       Description: API Gateway for Tenzir API Lambda
       CorsConfiguration:
@@ -1714,7 +1714,7 @@ Resources:
   AppRunnerVPCConnector:
     Type: AWS::AppRunner::VpcConnector
     Properties:
-      VpcConnectorName: tenzir-ui-vpc-connector
+      VpcConnectorName: !Sub 'tenzir-ui-vpc-connector-${DeploymentRandomSuffix.Value}'
       Subnets:
         - !Ref SubnetPlatform
       SecurityGroups:
