@@ -1978,9 +1978,9 @@ Outputs:
       - !Ref ExternalOIDCClientID
       - !Ref CognitoUserPoolClient
 
-  OAuthClientSecretArn:
-    Description: The ARN of the secret containing OAuth client secret (Cognito or external OIDC)
-    Value: !Ref ClientSecretSecret
+#  OAuthClientSecretArn:
+#    Description: The ARN of the secret containing OAuth client secret (Cognito or external OIDC)
+#    Value: !Ref ClientSecretSecret
 
   OIDCIssuerURL:
     Description: The OIDC issuer URL (Cognito or external OIDC)
