@@ -1531,16 +1531,16 @@ Resources:
       Environment:
         Variables:
           DB_SECRET_ARN: !Ref DBPasswordSecret
-          ECS_CLUSTER_ARN: !Ref ECSClusterArnParameter
-          ECS_TASK_EXECUTION_ROLE_ARN: !Ref ECSTaskExecutionRoleArnParameter
-          TENZIR_DEMO_NODE_SECURITY_GROUP_ID: !Ref DemoNodeSecurityGroupIdParameter
-          TENZIR_DEMO_SUBNET_ID: !Ref DemoSubnetIdParameter
+          ECS_CLUSTER_ARN: !Sub '{{resolve:ssm:${ECSClusterArnParameter}}}'
+          ECS_TASK_EXECUTION_ROLE_ARN: !Sub '{{resolve:ssm:${ECSTaskExecutionRoleArnParameter}}}'
+          TENZIR_DEMO_NODE_SECURITY_GROUP_ID: !Sub '{{resolve:ssm:${DemoNodeSecurityGroupIdParameter}}}'
+          TENZIR_DEMO_SUBNET_ID: !Sub '{{resolve:ssm:${DemoSubnetIdParameter}}}'
           STORE__TYPE: postgres
           STORE__POSTGRES_URI_SECRET_ARN: !Ref PostgresURISecret
           TENANT_MANAGER_APP_API_KEY_SECRET_ARN: !Ref TenantManagerAppAPIKeySecret
           TENANT_MANAGER_TENANT_TOKEN_ENCRYPTION_KEY_SECRET_ARN: !Ref TenantTokenEncryptionKeySecret
           WORKSPACE_SECRETS_MASTER_SEED_ARN: !Ref WorkspaceSecretsMasterSeedSecret
-          TENZIR_DEMO_NODE_LOGS_GROUP_NAME: !Ref DemoNodeLogsGroupNameParameter
+          TENZIR_DEMO_NODE_LOGS_GROUP_NAME: !Sub '{{resolve:ssm:${DemoNodeLogsGroupNameParameter}}}'
           TENANT_MANAGER_AUTH__TRUSTED_AUDIENCES: !If
             - UseExternalOIDCProvider
             - !Sub '{"issuer": "${ExternalOIDCIssuerURL}", "audiences": ["${ExternalOIDCClientID}"]}'
@@ -1552,8 +1552,8 @@ Resources:
           BASE_PATH: ''
           TENANT_MANAGER_SIDEPATH_BUCKET_NAME: !Ref S3BucketSidepath
           TENZIR_DEMO_NODE_IMAGE: !Ref ContainerImageNode
-          GATEWAY_WS_ENDPOINT: !Ref GatewayWSEndpointParameter
-          GATEWAY_HTTP_ENDPOINT: !Ref GatewayHTTPEndpointParameter
+          GATEWAY_WS_ENDPOINT: !Sub '{{resolve:ssm:${GatewayWSEndpointParameter}}}'
+          GATEWAY_HTTP_ENDPOINT: !Sub '{{resolve:ssm:${GatewayHTTPEndpointParameter}}}'
       VpcConfig:
         SubnetIds:
           - !Ref SubnetPlatform
@@ -1784,7 +1784,7 @@ Resources:
               - Name: PUBLIC_OIDC_SCOPES
                 Value: openid profile email
               - Name: PUBLIC_WEBSOCKET_GATEWAY_ENDPOINT
-                Value: !Ref GatewayWSEndpointParameter
+                Value: !Sub '{{resolve:ssm:${GatewayWSEndpointParameter}}}'
               - Name: PUBLIC_DISABLE_DEMO_NODE_AND_TOUR
                 Value: 'false'
             RuntimeEnvironmentSecrets:
@@ -1956,6 +1956,17 @@ Resources:
                 Action:
                   - route53:ChangeResourceRecordSets
                 Resource: !Sub 'arn:aws:route53:::hostedzone/${HostedZoneLookup.ZoneId}'
+
+  NodesALBDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !GetAtt HostedZoneLookup.ZoneId
+      Name: !Sub 'nodes.${BaseDomainName.Value}'
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ApplicationLoadBalancer.DNSName
+        HostedZoneId: !GetAtt ApplicationLoadBalancer.CanonicalHostedZoneID
+        EvaluateTargetHealth: true
 
 Outputs:
   ContainerImageUI:
