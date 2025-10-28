@@ -1521,7 +1521,7 @@ Resources:
   APILambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub 'tenzir-api-function-${DeploymentRandomSuffix.Value}'
+      FunctionName: !Sub 'tenzir-platform-${DeploymentRandomSuffix.Value}-api-function'
       Role: !GetAtt APILambdaExecutionRole.Arn
       PackageType: Image
       Code:
@@ -1578,6 +1578,14 @@ Resources:
           - date
           - keep-alive
         MaxAge: 86400
+
+  APILambdaFunctionUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref APILambdaFunction
+      Action: lambda:InvokeFunctionUrl
+      Principal: '*'
+      FunctionUrlAuthType: NONE
 
   APIGateway:
     Type: AWS::ApiGatewayV2::Api
