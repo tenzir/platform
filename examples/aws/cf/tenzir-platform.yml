@@ -1855,21 +1855,23 @@ Resources:
 
                   # Wait for validation records to be available
                   max_attempts = 60
-                  dns_target = None
 
                   for attempt in range(max_attempts):
                       response = apprunner.describe_custom_domains(ServiceArn=service_arn)
+
+                      # DNSTarget is at the top level of the response, not inside CustomDomains
+                      dns_target = response.get('DNSTarget')
 
                       for domain in response.get('CustomDomains', []):
                           if domain.get('DomainName') == domain_name:
                               status = domain.get('Status')
                               cert_validation = domain.get('CertificateValidationRecords', [])
 
-                              # Get DNS target for CNAME record
-                              if not dns_target:
-                                  dns_target = domain.get('DNSTarget')
-
                               if status in ['pending_certificate_dns_validation', 'active'] and cert_validation:
+                                  # Fail if DNSTarget is not available
+                                  if not dns_target:
+                                      raise Exception(f'DNSTarget is empty for domain {domain_name}. App Runner may not have generated it yet.')
+
                                   # Create Route53 validation records
                                   changes = []
                                   for record in cert_validation:
@@ -1884,16 +1886,15 @@ Resources:
                                       })
 
                                   # Add CNAME record for the domain
-                                  if dns_target:
-                                      changes.append({
-                                          'Action': 'UPSERT',
-                                          'ResourceRecordSet': {
-                                              'Name': domain_name,
-                                              'Type': 'CNAME',
-                                              'TTL': 300,
-                                              'ResourceRecords': [{'Value': dns_target}]
-                                          }
-                                      })
+                                  changes.append({
+                                      'Action': 'UPSERT',
+                                      'ResourceRecordSet': {
+                                          'Name': domain_name,
+                                          'Type': 'CNAME',
+                                          'TTL': 300,
+                                          'ResourceRecords': [{'Value': dns_target}]
+                                      }
+                                  })
 
                                   if changes:
                                       route53.change_resource_record_sets(
@@ -1902,14 +1903,14 @@ Resources:
                                       )
 
                                   cfnresponse.send(event, context, cfnresponse.SUCCESS, {
-                                      'DNSTarget': dns_target or '',
+                                      'DNSTarget': dns_target,
                                       'ValidationRecordsCreated': str(len(changes))
                                   })
                                   return
 
                       time.sleep(5)
 
-                  raise Exception('Timeout waiting for validation records')
+                  raise Exception(f'Timeout waiting for validation records for domain {domain_name}')
 
               except Exception as e:
                   print(f'Error: {e}')
