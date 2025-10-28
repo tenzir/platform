@@ -1241,7 +1241,7 @@ Resources:
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: !Sub 'tenzir-platform-gateway-alb-${DeploymentRandomSuffix.Value}'
+      Name: !Sub 'tenzir-platform-gw-alb-${DeploymentRandomSuffix.Value}'
       Type: application
       Scheme: internet-facing
       SecurityGroups:
@@ -1256,7 +1256,7 @@ Resources:
   ALBTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: !Sub 'tenzir-platform-gateway-tg-${DeploymentRandomSuffix.Value}'
+      Name: !Sub 'tenzir-platform-gw-tg-${DeploymentRandomSuffix.Value}'
       Port: 80
       Protocol: HTTP
       VpcId: !Ref VPC
