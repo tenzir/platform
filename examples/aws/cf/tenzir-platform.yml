@@ -23,6 +23,10 @@ Metadata:
           - ExternalOIDCIssuerURL
           - ExternalOIDCClientID
           - ExternalOIDCClientSecret
+      - Label:
+          default: "Library Configuration"
+        Parameters:
+          - GithubToken
     ParameterLabels:
       DomainName:
         default: "Domain Name"
@@ -44,6 +48,8 @@ Metadata:
         default: "External OIDC Client ID"
       ExternalOIDCClientSecret:
         default: "External OIDC Client Secret"
+      GithubToken:
+        default: "Github Token"
 
 Parameters:
   DomainName:
@@ -99,10 +105,17 @@ Parameters:
     NoEcho: true
     Description: The client secret from your external OIDC provider. Only required when 'Use External OIDC Provider' is true.
 
+  GithubToken:
+    Type: String
+    Default: ''
+    NoEcho: true
+    Description: Optional GitHub API token for fetching library content from the https://github.com/tenzir/library repository. If not set, library content will be severely rate-limited.
+
 Conditions:
   UseRandomSubdomain: !Equals [!Ref RandomSubdomain, 'true']
   UseExternalOIDCProvider: !Equals [!Ref UseExternalOIDC, 'true']
   UseCognito: !Not [!Condition UseExternalOIDCProvider]
+  HasGithubToken: !Not [!Equals [!Ref GithubToken, '']]
 
 Resources:
   DeploymentRandomSuffix:
@@ -1787,6 +1800,11 @@ Resources:
                 Value: !Sub '{{resolve:ssm:${GatewayWSEndpointParameter}}}'
               - Name: PUBLIC_DISABLE_DEMO_NODE_AND_TOUR
                 Value: 'false'
+              - Name: GITHUB_TOKEN
+                Value: !If
+                  - HasGithubToken
+                  - !Ref GithubToken
+                  - !Ref AWS::NoValue
             RuntimeEnvironmentSecrets:
               - Name: PRIVATE_OIDC_PROVIDER_CLIENT_SECRET
                 Value: !Ref ClientSecretSecret
