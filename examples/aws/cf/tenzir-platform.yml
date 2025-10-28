@@ -1641,310 +1641,310 @@ Resources:
       DomainName: !Ref APIGatewayDomainName
       Stage: !Ref APIGatewayStage
 
-  AppRunnerInstanceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub 'tenzir-apprunner-instance-role-${DeploymentRandomSuffix.Value}'
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: tasks.apprunner.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: tenzir-apprunner-secrets-policy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - secretsmanager:GetSecretValue
-                Resource:
-                  - !Ref DBPasswordSecret
-                  - !Ref PostgresURISecret
-                  - !Ref TenantManagerAppAPIKeySecret
-                  - !Ref AuthSecret
-                  - !Ref UserEndpointSecret
-                  - !Ref WebappEndpointSecret
-                  - !Ref ClientSecretSecret
-  AppRunnerAccessRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub 'tenzir-apprunner-access-role-${DeploymentRandomSuffix.Value}'
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: build.apprunner.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
-      Policies:
-        - PolicyName: tenzir-apprunner-cross-account-ecr-access
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - ecr:BatchCheckLayerAvailability
-                  - ecr:GetDownloadUrlForLayer
-                  - ecr:BatchGetImage
-                Resource:
-                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/tenzir-platform-ui'
-                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/tenzir-platform-api'
-                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/tenzir-platform-gateway'
-              - Effect: Allow
-                Action:
-                  - ecr:GetAuthorizationToken
-                Resource: '*'
+#  AppRunnerInstanceRole:
+#    Type: AWS::IAM::Role
+#    Properties:
+#      RoleName: !Sub 'tenzir-apprunner-instance-role-${DeploymentRandomSuffix.Value}'
+#      AssumeRolePolicyDocument:
+#        Version: '2012-10-17'
+#        Statement:
+#          - Effect: Allow
+#            Principal:
+#              Service: tasks.apprunner.amazonaws.com
+#            Action: sts:AssumeRole
+#      Policies:
+#        - PolicyName: tenzir-apprunner-secrets-policy
+#          PolicyDocument:
+#            Version: '2012-10-17'
+#            Statement:
+#              - Effect: Allow
+#                Action:
+#                  - secretsmanager:GetSecretValue
+#                Resource:
+#                  - !Ref DBPasswordSecret
+#                  - !Ref PostgresURISecret
+#                  - !Ref TenantManagerAppAPIKeySecret
+#                  - !Ref AuthSecret
+#                  - !Ref UserEndpointSecret
+#                  - !Ref WebappEndpointSecret
+#                  - !Ref ClientSecretSecret
+#  AppRunnerAccessRole:
+#    Type: AWS::IAM::Role
+#    Properties:
+#      RoleName: !Sub 'tenzir-apprunner-access-role-${DeploymentRandomSuffix.Value}'
+#      AssumeRolePolicyDocument:
+#        Version: '2012-10-17'
+#        Statement:
+#          - Effect: Allow
+#            Principal:
+#              Service: build.apprunner.amazonaws.com
+#            Action: sts:AssumeRole
+#      ManagedPolicyArns:
+#        - arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
+#      Policies:
+#        - PolicyName: tenzir-apprunner-cross-account-ecr-access
+#          PolicyDocument:
+#            Version: '2012-10-17'
+#            Statement:
+#              - Effect: Allow
+#                Action:
+#                  - ecr:BatchCheckLayerAvailability
+#                  - ecr:GetDownloadUrlForLayer
+#                  - ecr:BatchGetImage
+#                Resource:
+#                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/tenzir-platform-ui'
+#                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/tenzir-platform-api'
+#                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/tenzir-platform-gateway'
+#              - Effect: Allow
+#                Action:
+#                  - ecr:GetAuthorizationToken
+#                Resource: '*'
 
-  AppRunnerVPCConnector:
-    Type: AWS::AppRunner::VpcConnector
-    Properties:
-      VpcConnectorName: tenzir-ui-vpc-connector
-      Subnets:
-        - !Ref SubnetPlatform
-      SecurityGroups:
-        - !Ref SecurityGroupAppRunner
-      Tags:
-        - Key: Name
-          Value: tenzir-ui-vpc-connector
+#  AppRunnerVPCConnector:
+#    Type: AWS::AppRunner::VpcConnector
+#    Properties:
+#      VpcConnectorName: tenzir-ui-vpc-connector
+#      Subnets:
+#        - !Ref SubnetPlatform
+#      SecurityGroups:
+#        - !Ref SecurityGroupAppRunner
+#      Tags:
+#        - Key: Name
+#          Value: tenzir-ui-vpc-connector
 
-  ClientSecretSecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub 'tenzir/apprunner/ui/client-secret-${DeploymentRandomSuffix.Value}'
-      Description: OIDC Client Secret for App Runner UI
-      SecretString: !If
-        - UseExternalOIDCProvider
-        - !Ref ExternalOIDCClientSecret
-        - !GetAtt CognitoUserPoolClient.ClientSecret
+#  ClientSecretSecret:
+#    Type: AWS::SecretsManager::Secret
+#    Properties:
+#      Name: !Sub 'tenzir/apprunner/ui/client-secret-${DeploymentRandomSuffix.Value}'
+#      Description: OIDC Client Secret for App Runner UI
+#      SecretString: !If
+#        - UseExternalOIDCProvider
+#        - !Ref ExternalOIDCClientSecret
+#        - !GetAtt CognitoUserPoolClient.ClientSecret
 
-  UserEndpointSecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub 'tenzir/apprunner/ui/user-endpoint-${DeploymentRandomSuffix.Value}'
-      Description: User Endpoint for App Runner UI
-      SecretString: !Sub '${APILambdaFunctionUrl.FunctionUrl}user'
+#  UserEndpointSecret:
+#    Type: AWS::SecretsManager::Secret
+#    Properties:
+#      Name: !Sub 'tenzir/apprunner/ui/user-endpoint-${DeploymentRandomSuffix.Value}'
+#      Description: User Endpoint for App Runner UI
+#      SecretString: !Sub '${APILambdaFunctionUrl.FunctionUrl}user'
 
-  WebappEndpointSecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub 'tenzir/apprunner/ui/webapp-endpoint-${DeploymentRandomSuffix.Value}'
-      Description: Webapp Endpoint for App Runner UI
-      SecretString: !Sub '${APILambdaFunctionUrl.FunctionUrl}webapp'
+#  WebappEndpointSecret:
+#    Type: AWS::SecretsManager::Secret
+#    Properties:
+#      Name: !Sub 'tenzir/apprunner/ui/webapp-endpoint-${DeploymentRandomSuffix.Value}'
+#      Description: Webapp Endpoint for App Runner UI
+#      SecretString: !Sub '${APILambdaFunctionUrl.FunctionUrl}webapp'
 
-  AppRunnerService:
-    Type: AWS::AppRunner::Service
-    Properties:
-      ServiceName: !Sub 'tenzir-ui-service-v2-${DeploymentRandomSuffix.Value}'
-      SourceConfiguration:
-        AuthenticationConfiguration:
-          AccessRoleArn: !GetAtt AppRunnerAccessRole.Arn
-        ImageRepository:
-          ImageConfiguration:
-            Port: '3000'
-            RuntimeEnvironmentVariables:
-              - Name: AUTH_TRUST_HOST
-                Value: 'true'
-              - Name: PUBLIC_ENABLE_HIGHLIGHT
-                Value: 'false'
-              - Name: ORIGIN
-                Value: !Sub 'https://ui.${BaseDomainName.Value}'
-              - Name: PRIVATE_OIDC_PROVIDER_NAME
-                Value: tenzir
-              - Name: PRIVATE_OIDC_PROVIDER_CLIENT_ID
-                Value: !If
-                  - UseExternalOIDCProvider
-                  - !Ref ExternalOIDCClientID
-                  - !Ref CognitoUserPoolClient
-              - Name: PRIVATE_OIDC_PROVIDER_ISSUER_URL
-                Value: !If
-                  - UseExternalOIDCProvider
-                  - !Ref ExternalOIDCIssuerURL
-                  - !Sub 'https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}'
-              - Name: PUBLIC_OIDC_PROVIDER_ID
-                Value: !If
-                  - UseExternalOIDCProvider
-                  - external
-                  - cognito
-              - Name: PUBLIC_OIDC_SCOPES
-                Value: openid profile email
-              - Name: PUBLIC_WEBSOCKET_GATEWAY_ENDPOINT
-                Value: !Ref GatewayWSEndpointParameter
-              - Name: PUBLIC_DISABLE_DEMO_NODE_AND_TOUR
-                Value: 'false'
-            RuntimeEnvironmentSecrets:
-              - Name: PRIVATE_OIDC_PROVIDER_CLIENT_SECRET
-                Value: !Ref ClientSecretSecret
-              - Name: PRIVATE_USER_ENDPOINT
-                Value: !Ref UserEndpointSecret
-              - Name: PRIVATE_WEBAPP_ENDPOINT
-                Value: !Ref WebappEndpointSecret
-              - Name: PRIVATE_WEBAPP_KEY
-                Value: !Ref TenantManagerAppAPIKeySecret
-              - Name: AUTH_SECRET
-                Value: !Ref AuthSecret
-              - Name: PRIVATE_DRIZZLE_DATABASE_URL
-                Value: !Ref PostgresURISecret
-          ImageIdentifier: !Ref ContainerImageUI
-          ImageRepositoryType: ECR
-        AutoDeploymentsEnabled: false
-      InstanceConfiguration:
-        Cpu: 0.25 vCPU
-        Memory: 0.5 GB
-        InstanceRoleArn: !GetAtt AppRunnerInstanceRole.Arn
-      NetworkConfiguration:
-        IngressConfiguration:
-          IsPubliclyAccessible: true
-        EgressConfiguration:
-          EgressType: VPC
-          VpcConnectorArn: !Ref AppRunnerVPCConnector
-      Tags:
-        - Key: Name
-          Value: tenzir-ui-apprunner
+#  AppRunnerService:
+#    Type: AWS::AppRunner::Service
+#    Properties:
+#      ServiceName: !Sub 'tenzir-ui-service-v2-${DeploymentRandomSuffix.Value}'
+#      SourceConfiguration:
+#        AuthenticationConfiguration:
+#          AccessRoleArn: !GetAtt AppRunnerAccessRole.Arn
+#        ImageRepository:
+#          ImageConfiguration:
+#            Port: '3000'
+#            RuntimeEnvironmentVariables:
+#              - Name: AUTH_TRUST_HOST
+#                Value: 'true'
+#              - Name: PUBLIC_ENABLE_HIGHLIGHT
+#                Value: 'false'
+#              - Name: ORIGIN
+#                Value: !Sub 'https://ui.${BaseDomainName.Value}'
+#              - Name: PRIVATE_OIDC_PROVIDER_NAME
+#                Value: tenzir
+#              - Name: PRIVATE_OIDC_PROVIDER_CLIENT_ID
+#                Value: !If
+#                  - UseExternalOIDCProvider
+#                  - !Ref ExternalOIDCClientID
+#                  - !Ref CognitoUserPoolClient
+#              - Name: PRIVATE_OIDC_PROVIDER_ISSUER_URL
+#                Value: !If
+#                  - UseExternalOIDCProvider
+#                  - !Ref ExternalOIDCIssuerURL
+#                  - !Sub 'https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}'
+#              - Name: PUBLIC_OIDC_PROVIDER_ID
+#                Value: !If
+#                  - UseExternalOIDCProvider
+#                  - external
+#                  - cognito
+#              - Name: PUBLIC_OIDC_SCOPES
+#                Value: openid profile email
+#              - Name: PUBLIC_WEBSOCKET_GATEWAY_ENDPOINT
+#                Value: !Ref GatewayWSEndpointParameter
+#              - Name: PUBLIC_DISABLE_DEMO_NODE_AND_TOUR
+#                Value: 'false'
+#            RuntimeEnvironmentSecrets:
+#              - Name: PRIVATE_OIDC_PROVIDER_CLIENT_SECRET
+#                Value: !Ref ClientSecretSecret
+#              - Name: PRIVATE_USER_ENDPOINT
+#                Value: !Ref UserEndpointSecret
+#              - Name: PRIVATE_WEBAPP_ENDPOINT
+#                Value: !Ref WebappEndpointSecret
+#              - Name: PRIVATE_WEBAPP_KEY
+#                Value: !Ref TenantManagerAppAPIKeySecret
+#              - Name: AUTH_SECRET
+#                Value: !Ref AuthSecret
+#              - Name: PRIVATE_DRIZZLE_DATABASE_URL
+#                Value: !Ref PostgresURISecret
+#          ImageIdentifier: !Ref ContainerImageUI
+#          ImageRepositoryType: ECR
+#        AutoDeploymentsEnabled: false
+#      InstanceConfiguration:
+#        Cpu: 0.25 vCPU
+#        Memory: 0.5 GB
+#        InstanceRoleArn: !GetAtt AppRunnerInstanceRole.Arn
+#      NetworkConfiguration:
+#        IngressConfiguration:
+#          IsPubliclyAccessible: true
+#        EgressConfiguration:
+#          EgressType: VPC
+#          VpcConnectorArn: !Ref AppRunnerVPCConnector
+#      Tags:
+#        - Key: Name
+#          Value: tenzir-ui-apprunner
 
-  UICustomDomainAssociation:
-    Type: AWS::CloudFormation::CustomResource
-    Properties:
-      ServiceToken: !GetAtt UICustomDomainFunction.Arn
-      ServiceArn: !GetAtt AppRunnerService.ServiceArn
-      DomainName: !Sub 'ui.${BaseDomainName.Value}'
-      HostedZoneId: !GetAtt HostedZoneLookup.ZoneId
+#  UICustomDomainAssociation:
+#    Type: AWS::CloudFormation::CustomResource
+#    Properties:
+#      ServiceToken: !GetAtt UICustomDomainFunction.Arn
+#      ServiceArn: !GetAtt AppRunnerService.ServiceArn
+#      DomainName: !Sub 'ui.${BaseDomainName.Value}'
+#      HostedZoneId: !GetAtt HostedZoneLookup.ZoneId
 
-  UICustomDomainFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Sub 'tenzir-ui-custom-domain-${AWS::StackName}'
-      Runtime: python3.9
-      Handler: index.handler
-      Code:
-        ZipFile: |
-          import boto3
-          import cfnresponse
-          import time
+#  UICustomDomainFunction:
+#    Type: AWS::Lambda::Function
+#    Properties:
+#      FunctionName: !Sub 'tenzir-ui-custom-domain-${AWS::StackName}'
+#      Runtime: python3.9
+#      Handler: index.handler
+#      Code:
+#        ZipFile: |
+#          import boto3
+#          import cfnresponse
+#          import time
 
-          def handler(event, context):
-              apprunner = boto3.client('apprunner')
-              route53 = boto3.client('route53')
+#          def handler(event, context):
+#              apprunner = boto3.client('apprunner')
+#              route53 = boto3.client('route53')
 
-              try:
-                  service_arn = event['ResourceProperties'].get('ServiceArn')
-                  domain_name = event['ResourceProperties'].get('DomainName')
-                  hosted_zone_id = event['ResourceProperties'].get('HostedZoneId')
+#              try:
+#                  service_arn = event['ResourceProperties'].get('ServiceArn')
+#                  domain_name = event['ResourceProperties'].get('DomainName')
+#                  hosted_zone_id = event['ResourceProperties'].get('HostedZoneId')
 
-                  if event['RequestType'] == 'Delete':
-                      try:
-                          apprunner.disassociate_custom_domain(
-                              ServiceArn=service_arn,
-                              DomainName=domain_name
-                          )
-                      except Exception as e:
-                          print(f'Error disassociating domain: {e}')
-                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
-                      return
+#                  if event['RequestType'] == 'Delete':
+#                      try:
+#                          apprunner.disassociate_custom_domain(
+#                              ServiceArn=service_arn,
+#                              DomainName=domain_name
+#                          )
+#                      except Exception as e:
+#                          print(f'Error disassociating domain: {e}')
+#                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+#                      return
 
-                  # Associate custom domain
-                  apprunner.associate_custom_domain(
-                      ServiceArn=service_arn,
-                      DomainName=domain_name,
-                      EnableWWWSubdomain=False
-                  )
+#                  # Associate custom domain
+#                  apprunner.associate_custom_domain(
+#                      ServiceArn=service_arn,
+#                      DomainName=domain_name,
+#                      EnableWWWSubdomain=False
+#                  )
 
-                  # Wait for validation records to be available
-                  max_attempts = 60
+#                  # Wait for validation records to be available
+#                  max_attempts = 60
 
-                  for attempt in range(max_attempts):
-                      response = apprunner.describe_custom_domains(ServiceArn=service_arn)
+#                  for attempt in range(max_attempts):
+#                      response = apprunner.describe_custom_domains(ServiceArn=service_arn)
 
-                      # DNSTarget is at the top level of the response, not inside CustomDomains
-                      dns_target = response.get('DNSTarget')
+#                      # DNSTarget is at the top level of the response, not inside CustomDomains
+#                      dns_target = response.get('DNSTarget')
 
-                      for domain in response.get('CustomDomains', []):
-                          if domain.get('DomainName') == domain_name:
-                              status = domain.get('Status')
-                              cert_validation = domain.get('CertificateValidationRecords', [])
+#                      for domain in response.get('CustomDomains', []):
+#                          if domain.get('DomainName') == domain_name:
+#                              status = domain.get('Status')
+#                              cert_validation = domain.get('CertificateValidationRecords', [])
 
-                              if status in ['pending_certificate_dns_validation', 'active'] and cert_validation:
-                                  # Fail if DNSTarget is not available
-                                  if not dns_target:
-                                      raise Exception(f'DNSTarget is empty for domain {domain_name}. App Runner may not have generated it yet.')
+#                              if status in ['pending_certificate_dns_validation', 'active'] and cert_validation:
+#                                  # Fail if DNSTarget is not available
+#                                  if not dns_target:
+#                                      raise Exception(f'DNSTarget is empty for domain {domain_name}. App Runner may not have generated it yet.')
 
-                                  # Create Route53 validation records
-                                  changes = []
-                                  for record in cert_validation:
-                                      changes.append({
-                                          'Action': 'UPSERT',
-                                          'ResourceRecordSet': {
-                                              'Name': record['Name'],
-                                              'Type': record['Type'],
-                                              'TTL': 300,
-                                              'ResourceRecords': [{'Value': record['Value']}]
-                                          }
-                                      })
+#                                  # Create Route53 validation records
+#                                  changes = []
+#                                  for record in cert_validation:
+#                                      changes.append({
+#                                          'Action': 'UPSERT',
+#                                          'ResourceRecordSet': {
+#                                              'Name': record['Name'],
+#                                              'Type': record['Type'],
+#                                              'TTL': 300,
+#                                              'ResourceRecords': [{'Value': record['Value']}]
+#                                          }
+#                                      })
 
-                                  # Add CNAME record for the domain
-                                  changes.append({
-                                      'Action': 'UPSERT',
-                                      'ResourceRecordSet': {
-                                          'Name': domain_name,
-                                          'Type': 'CNAME',
-                                          'TTL': 300,
-                                          'ResourceRecords': [{'Value': dns_target}]
-                                      }
-                                  })
+#                                  # Add CNAME record for the domain
+#                                  changes.append({
+#                                      'Action': 'UPSERT',
+#                                      'ResourceRecordSet': {
+#                                          'Name': domain_name,
+#                                          'Type': 'CNAME',
+#                                          'TTL': 300,
+#                                          'ResourceRecords': [{'Value': dns_target}]
+#                                      }
+#                                  })
 
-                                  if changes:
-                                      route53.change_resource_record_sets(
-                                          HostedZoneId=hosted_zone_id,
-                                          ChangeBatch={'Changes': changes}
-                                      )
+#                                  if changes:
+#                                      route53.change_resource_record_sets(
+#                                          HostedZoneId=hosted_zone_id,
+#                                          ChangeBatch={'Changes': changes}
+#                                      )
 
-                                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {
-                                      'DNSTarget': dns_target,
-                                      'ValidationRecordsCreated': str(len(changes))
-                                  })
-                                  return
+#                                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {
+#                                      'DNSTarget': dns_target,
+#                                      'ValidationRecordsCreated': str(len(changes))
+#                                  })
+#                                  return
 
-                      time.sleep(5)
+#                      time.sleep(5)
 
-                  raise Exception(f'Timeout waiting for validation records for domain {domain_name}')
+#                  raise Exception(f'Timeout waiting for validation records for domain {domain_name}')
 
-              except Exception as e:
-                  print(f'Error: {e}')
-                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, str(e))
-      Role: !GetAtt UICustomDomainRole.Arn
-      Timeout: 300
+#              except Exception as e:
+#                  print(f'Error: {e}')
+#                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, str(e))
+#      Role: !GetAtt UICustomDomainRole.Arn
+#      Timeout: 300
 
-  UICustomDomainRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: AppRunnerAndRoute53Access
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - apprunner:DescribeCustomDomains
-                  - apprunner:AssociateCustomDomain
-                  - apprunner:DisassociateCustomDomain
-                Resource: '*'
-              - Effect: Allow
-                Action:
-                  - route53:ChangeResourceRecordSets
-                Resource: !Sub 'arn:aws:route53:::hostedzone/${HostedZoneLookup.ZoneId}'
+#  UICustomDomainRole:
+#    Type: AWS::IAM::Role
+#    Properties:
+#      AssumeRolePolicyDocument:
+#        Version: '2012-10-17'
+#        Statement:
+#          - Effect: Allow
+#            Principal:
+#              Service: lambda.amazonaws.com
+#            Action: sts:AssumeRole
+#      ManagedPolicyArns:
+#        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+#      Policies:
+#        - PolicyName: AppRunnerAndRoute53Access
+#          PolicyDocument:
+#            Version: '2012-10-17'
+#            Statement:
+#              - Effect: Allow
+#                Action:
+#                  - apprunner:DescribeCustomDomains
+#                  - apprunner:AssociateCustomDomain
+#                  - apprunner:DisassociateCustomDomain
+#                Resource: '*'
+#              - Effect: Allow
+#                Action:
+#                  - route53:ChangeResourceRecordSets
+#                Resource: !Sub 'arn:aws:route53:::hostedzone/${HostedZoneLookup.ZoneId}'
 
 Outputs:
   ContainerImageUI:
@@ -1963,9 +1963,9 @@ Outputs:
     Description: Demo Node container image
     Value: !Ref ContainerImageNode
 
-  UIServiceURL:
-    Description: URL of the App Runner UI service
-    Value: !GetAtt AppRunnerService.ServiceUrl
+#  UIServiceURL:
+#    Description: URL of the App Runner UI service
+#    Value: !GetAtt AppRunnerService.ServiceUrl
 
   APIFunctionURL:
     Description: URL of the API Lambda function
@@ -2005,9 +2005,9 @@ Outputs:
     Description: The API domain name
     Value: !Sub 'api.${BaseDomainName.Value}'
 
-  UIDomain:
-    Description: The UI domain name
-    Value: !Sub 'ui.${BaseDomainName.Value}'
+#  UIDomain:
+#    Description: The UI domain name
+#    Value: !Sub 'ui.${BaseDomainName.Value}'
 
   AdminUsername:
     Condition: UseCognito
