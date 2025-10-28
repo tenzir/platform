@@ -990,7 +990,7 @@ Resources:
       UserPoolId: !Ref CognitoUserPool
       Username: !Sub 'admin@${BaseDomainName.Value}'
       Email: !Sub 'admin@${BaseDomainName.Value}'
-      TemporaryPassword: !Sub '{{resolve:secretsmanager:${AdminPasswordSecret}}}'
+      PasswordSecretArn: !Ref AdminPasswordSecret
 
   CognitoAdminUserFunction:
     Type: AWS::Lambda::Function
@@ -1003,15 +1003,21 @@ Resources:
         ZipFile: |
           import boto3
           import cfnresponse
+          import json
 
           def handler(event, context):
               cognito = boto3.client('cognito-idp')
+              secretsmanager = boto3.client('secretsmanager')
 
               try:
                   user_pool_id = event['ResourceProperties']['UserPoolId']
                   username = event['ResourceProperties']['Username']
                   email = event['ResourceProperties']['Email']
-                  temp_password = event['ResourceProperties']['TemporaryPassword']
+                  password_secret_arn = event['ResourceProperties']['PasswordSecretArn']
+
+                  # Retrieve password from Secrets Manager
+                  secret_response = secretsmanager.get_secret_value(SecretId=password_secret_arn)
+                  password = secret_response['SecretString']
 
                   if event['RequestType'] == 'Delete':
                       try:
@@ -1032,8 +1038,15 @@ Resources:
                               {'Name': 'email', 'Value': email},
                               {'Name': 'email_verified', 'Value': 'true'}
                           ],
-                          TemporaryPassword=temp_password,
                           MessageAction='SUPPRESS'
+                      )
+
+                      # Set permanent password
+                      cognito.admin_set_user_password(
+                          UserPoolId=user_pool_id,
+                          Username=username,
+                          Password=password,
+                          Permanent=True
                       )
 
                       # Get the user sub (unique ID) from the response
@@ -1099,7 +1112,12 @@ Resources:
                   - cognito-idp:AdminCreateUser
                   - cognito-idp:AdminDeleteUser
                   - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminSetUserPassword
                 Resource: !GetAtt CognitoUserPool.Arn
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref AdminPasswordSecret
 
   ECSCluster:
     Type: AWS::ECS::Cluster
