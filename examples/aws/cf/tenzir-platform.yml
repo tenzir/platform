@@ -120,7 +120,7 @@ Resources:
   RandomGeneratorFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub 'tenzir-random-generator-${AWS::StackName}'
+      FunctionName: !Sub 'tenzir-platform-random-generator-${AWS::StackName}'
       Runtime: python3.9
       Handler: index.handler
       Code:
@@ -171,7 +171,7 @@ Resources:
   BaseDomainGeneratorFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub 'tenzir-basedomain-generator-${AWS::StackName}'
+      FunctionName: !Sub 'tenzir-platform-basedomain-generator-${AWS::StackName}'
       Runtime: python3.9
       Handler: index.handler
       Code:
@@ -216,7 +216,7 @@ Resources:
   HostedZoneLookupFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub 'tenzir-hostedzone-lookup-${AWS::StackName}'
+      FunctionName: !Sub 'tenzir-platform-hostedzone-lookup-${AWS::StackName}'
       Runtime: python3.9
       Handler: index.handler
       Code:
@@ -288,7 +288,7 @@ Resources:
       EnableDnsSupport: true
       Tags:
         - Key: Name
-          Value: tenzir-vpc
+          Value: tenzir-platform-vpc
 
   SubnetNodes:
     Type: AWS::EC2::Subnet
@@ -299,7 +299,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: tenzir-nodes-subnet
+          Value: tenzir-platform-nodes-subnet
 
   SubnetPlatform:
     Type: AWS::EC2::Subnet
@@ -310,7 +310,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: tenzir-platform-subnet
+          Value: tenzir-platform-platform-subnet
 
   SubnetPublic:
     Type: AWS::EC2::Subnet
@@ -321,7 +321,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: tenzir-public-subnet
+          Value: tenzir-platform-public-subnet
 
   SubnetPublic2:
     Type: AWS::EC2::Subnet
@@ -332,7 +332,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: tenzir-public-subnet2
+          Value: tenzir-platform-public-subnet2
 
   SubnetPostgres1:
     Type: AWS::EC2::Subnet
@@ -343,7 +343,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: tenzir-postgres-subnet1
+          Value: tenzir-platform-postgres-subnet1
 
   SubnetPostgres2:
     Type: AWS::EC2::Subnet
@@ -354,14 +354,14 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: tenzir-postgres-subnet2
+          Value: tenzir-platform-postgres-subnet2
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: tenzir-igw
+          Value: tenzir-platform-igw
 
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -375,7 +375,7 @@ Resources:
       Domain: vpc
       Tags:
         - Key: Name
-          Value: tenzir-nat-eip
+          Value: tenzir-platform-nat-eip
 
   NATGateway:
     Type: AWS::EC2::NatGateway
@@ -384,7 +384,7 @@ Resources:
       SubnetId: !Ref SubnetPublic
       Tags:
         - Key: Name
-          Value: tenzir-nat-gateway
+          Value: tenzir-platform-nat-gateway
 
   RouteTablePublic:
     Type: AWS::EC2::RouteTable
@@ -392,7 +392,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: tenzir-public-rt
+          Value: tenzir-platform-public-rt
 
   RoutePublic:
     Type: AWS::EC2::Route
@@ -420,7 +420,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: tenzir-platform-rt
+          Value: tenzir-platform-platform-rt
 
   RoutePlatformNAT:
     Type: AWS::EC2::Route
@@ -444,17 +444,17 @@ Resources:
   SecurityGroupVPCEndpoint:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub 'tenzir-vpc-endpoint-sg-${DeploymentRandomSuffix.Value}'
+      GroupName: !Sub 'tenzir-platform-vpc-endpoint-sg-${DeploymentRandomSuffix.Value}'
       GroupDescription: Security group for VPC endpoints
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: tenzir-vpc-endpoint-sg
+          Value: tenzir-platform-vpc-endpoint-sg
 
   SecurityGroupLambda:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub 'tenzir-lambda-sg-${DeploymentRandomSuffix.Value}'
+      GroupName: !Sub 'tenzir-platform-lambda-sg-${DeploymentRandomSuffix.Value}'
       GroupDescription: Security group for Tenzir Lambda function
       VpcId: !Ref VPC
       SecurityGroupEgress:
@@ -466,12 +466,12 @@ Resources:
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: tenzir-lambda-sg
+          Value: tenzir-platform-lambda-sg
 
   SecurityGroupAppRunner:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub 'tenzir-apprunner-ui-sg-${DeploymentRandomSuffix.Value}'
+      GroupName: !Sub 'tenzir-platform-apprunner-ui-sg-${DeploymentRandomSuffix.Value}'
       GroupDescription: Security group for Tenzir App Runner UI service
       VpcId: !Ref VPC
       SecurityGroupEgress:
@@ -484,22 +484,22 @@ Resources:
           CidrIp: !GetAtt VPC.CidrBlock
       Tags:
         - Key: Name
-          Value: tenzir-apprunner-ui-sg
+          Value: tenzir-platform-apprunner-ui-sg
 
   SecurityGroupRDS:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub 'tenzir-rds-sg-${DeploymentRandomSuffix.Value}'
+      GroupName: !Sub 'tenzir-platform-rds-sg-${DeploymentRandomSuffix.Value}'
       GroupDescription: Security group for Tenzir RDS instance
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: tenzir-rds-sg
+          Value: tenzir-platform-rds-sg
 
   SecurityGroupECS:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub 'tenzir-ecs-service-sg-${DeploymentRandomSuffix.Value}'
+      GroupName: !Sub 'tenzir-platform-ecs-service-sg-${DeploymentRandomSuffix.Value}'
       GroupDescription: Security group for Tenzir ECS service
       VpcId: !Ref VPC
       SecurityGroupEgress:
@@ -516,12 +516,12 @@ Resources:
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: tenzir-ecs-service-sg
+          Value: tenzir-platform-ecs-service-sg
 
   SecurityGroupECSDemoNode:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub 'tenzir-ecs-demo-node-sg-${DeploymentRandomSuffix.Value}'
+      GroupName: !Sub 'tenzir-platform-ecs-demo-node-sg-${DeploymentRandomSuffix.Value}'
       GroupDescription: Security group for Tenzir ECS demo node service
       VpcId: !Ref VPC
       SecurityGroupEgress:
@@ -529,12 +529,12 @@ Resources:
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: tenzir-ecs-demo-node-sg
+          Value: tenzir-platform-ecs-demo-node-sg
 
   SecurityGroupALB:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub 'tenzir-alb-sg-${DeploymentRandomSuffix.Value}'
+      GroupName: !Sub 'tenzir-platform-alb-sg-${DeploymentRandomSuffix.Value}'
       GroupDescription: Security group for Tenzir Application Load Balancer
       VpcId: !Ref VPC
       SecurityGroupEgress:
@@ -551,7 +551,7 @@ Resources:
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: tenzir-alb-sg
+          Value: tenzir-platform-alb-sg
 
   SGRuleVPCEndpointFromLambda:
     Type: AWS::EC2::SecurityGroupIngress
@@ -694,7 +694,7 @@ Resources:
   S3BucketBlobs:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub 'tenzir-blobs-${BucketSuffixRandom.Value}'
+      BucketName: !Sub 'tenzir-platform-blobs-${BucketSuffixRandom.Value}'
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -704,7 +704,7 @@ Resources:
   S3BucketSidepath:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub 'tenzir-sidepath-${BucketSuffixRandom.Value}'
+      BucketName: !Sub 'tenzir-platform-sidepath-${BucketSuffixRandom.Value}'
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -714,19 +714,19 @@ Resources:
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
-      DBSubnetGroupName: !Sub 'tenzir-db-subnet-group-${DeploymentRandomSuffix.Value}'
+      DBSubnetGroupName: !Sub 'tenzir-platform-db-subnet-group-${DeploymentRandomSuffix.Value}'
       DBSubnetGroupDescription: Subnet group for Tenzir RDS instance
       SubnetIds:
         - !Ref SubnetPostgres1
         - !Ref SubnetPostgres2
       Tags:
         - Key: Name
-          Value: tenzir-db-subnet-group
+          Value: tenzir-platform-db-subnet-group
 
   DBPasswordSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub 'tenzir-postgres-password-${DeploymentRandomSuffix.Value}'
+      Name: !Sub 'tenzir-platform-${DeploymentRandomSuffix.Value}/postgres-password'
       Description: Password for Tenzir PostgreSQL database
       GenerateSecretString:
         SecretStringTemplate: '{"username": "tenzir_admin"}'
@@ -737,7 +737,7 @@ Resources:
   PostgresURISecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub 'tenzir-postgres-uri-${DeploymentRandomSuffix.Value}'
+      Name: !Sub 'tenzir-platform-${DeploymentRandomSuffix.Value}/postgres-uri'
       Description: PostgreSQL URI for Tenzir database connection
       SecretString: !Sub postgresql://${DBInstance.MasterUsername}:{{resolve:secretsmanager:${DBPasswordSecret}:SecretString:password}}@${DBInstance.Endpoint.Address}:${DBInstance.Endpoint.Port}/tenzir?sslmode=require
 
@@ -750,14 +750,14 @@ Resources:
   TenantTokenEncryptionKeySecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub 'tenzir-tenant-token-encryption-key-${DeploymentRandomSuffix.Value}'
+      Name: !Sub 'tenzir-platform-${DeploymentRandomSuffix.Value}/tenant-token-encryption-key'
       Description: Tenant token encryption key secret (base64-encoded binary random bytes)
       SecretString: !GetAtt TenantTokenEncryptionKeyGenerator.Value
 
   TenantManagerAppAPIKeySecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub 'tenzir-tenant-manager-app-api-key-${DeploymentRandomSuffix.Value}'
+      Name: !Sub 'tenzir-platform-${DeploymentRandomSuffix.Value}/tenant-manager-app-api-key'
       Description: API key secret for tenant manager app
       GenerateSecretString:
         PasswordLength: 64
@@ -767,7 +767,7 @@ Resources:
   WorkspaceSecretsMasterSeedSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub 'tenzir-workspace-secrets-master-seed-${DeploymentRandomSuffix.Value}'
+      Name: !Sub 'tenzir-platform-${DeploymentRandomSuffix.Value}/workspace-secrets-master-seed'
       Description: Master seed secret for workspace secrets
       SecretString: !GetAtt WorkspaceSecretsMasterSeedGenerator.Value
 
@@ -780,7 +780,7 @@ Resources:
   HexGeneratorFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub 'tenzir-hex-generator-${AWS::StackName}'
+      FunctionName: !Sub 'tenzir-platform-hex-generator-${AWS::StackName}'
       Runtime: python3.9
       Handler: index.handler
       Code:
@@ -821,7 +821,7 @@ Resources:
   Base64BinaryGeneratorFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub 'tenzir-base64binary-generator-${AWS::StackName}'
+      FunctionName: !Sub 'tenzir-platform-base64binary-generator-${AWS::StackName}'
       Runtime: python3.9
       Handler: index.handler
       Code:
@@ -874,14 +874,14 @@ Resources:
   AuthSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub 'tenzir-auth-secret-${DeploymentRandomSuffix.Value}'
+      Name: !Sub 'tenzir-platform-${DeploymentRandomSuffix.Value}/auth-secret'
       Description: Auth secret for UI Lambda (hex-encoded 32 bytes for encryption)
       SecretString: !GetAtt AuthSecretGenerator.Value
 
   DBInstance:
     Type: AWS::RDS::DBInstance
     Properties:
-      DBInstanceIdentifier: !Sub 'tenzir-postgres-${DeploymentRandomSuffix.Value}'
+      DBInstanceIdentifier: !Sub 'tenzir-platform-postgres-${DeploymentRandomSuffix.Value}'
       Engine: postgres
       EngineVersion: '17.5'
       DBInstanceClass: db.t3.micro
@@ -901,13 +901,13 @@ Resources:
       DeletionProtection: false
       Tags:
         - Key: Name
-          Value: tenzir-postgres
+          Value: tenzir-platform-postgres
 
   CognitoUserPool:
     Type: AWS::Cognito::UserPool
     Condition: UseCognito
     Properties:
-      UserPoolName: !Sub 'tenzir-user-pool-${DeploymentRandomSuffix.Value}'
+      UserPoolName: !Sub 'tenzir-platform-user-pool-${DeploymentRandomSuffix.Value}'
       UsernameAttributes:
         - email
       AutoVerifiedAttributes:
@@ -935,13 +935,13 @@ Resources:
             MinLength: '1'
             MaxLength: '256'
       UserPoolTags:
-        Name: tenzir-user-pool
+        Name: tenzir-platform-user-pool
 
   CognitoUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     Condition: UseCognito
     Properties:
-      ClientName: !Sub 'tenzir-app-${DeploymentRandomSuffix.Value}'
+      ClientName: !Sub 'tenzir-platform-app-${DeploymentRandomSuffix.Value}'
       UserPoolId: !Ref CognitoUserPool
       GenerateSecret: true
       AllowedOAuthFlowsUserPoolClient: true
@@ -972,14 +972,14 @@ Resources:
     Type: AWS::Cognito::UserPoolDomain
     Condition: UseCognito
     Properties:
-      Domain: !Sub 'tenzir-auth-${DeploymentRandomSuffix.Value}'
+      Domain: !Sub 'tenzir-platform-auth-${DeploymentRandomSuffix.Value}'
       UserPoolId: !Ref CognitoUserPool
 
   AdminPasswordSecret:
     Type: AWS::SecretsManager::Secret
     Condition: UseCognito
     Properties:
-      Name: !Sub 'tenzir/cognito/admin-password-${DeploymentRandomSuffix.Value}'
+      Name: !Sub 'tenzir-platform-${DeploymentRandomSuffix.Value}/cognito-admin-password'
       Description: Admin user password for Tenzir Cognito user pool
       GenerateSecretString:
         PasswordLength: 24
@@ -999,7 +999,7 @@ Resources:
     Type: AWS::Lambda::Function
     Condition: UseCognito
     Properties:
-      FunctionName: !Sub 'tenzir-cognito-admin-user-${AWS::StackName}'
+      FunctionName: !Sub 'tenzir-platform-cognito-admin-user-${AWS::StackName}'
       Runtime: python3.9
       Handler: index.handler
       Code:
@@ -1125,18 +1125,18 @@ Resources:
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
-      ClusterName: !Sub 'tenzir-gateway-ecs-${DeploymentRandomSuffix.Value}'
+      ClusterName: !Sub 'tenzir-platform-gateway-ecs-${DeploymentRandomSuffix.Value}'
       ClusterSettings:
         - Name: containerInsights
           Value: enabled
       Tags:
         - Key: Name
-          Value: tenzir-platform
+          Value: tenzir-platform-gateway-ecs
 
   ECSTaskExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub 'tenzir-ecs-task-execution-role-${DeploymentRandomSuffix.Value}'
+      RoleName: !Sub 'tenzir-platform-ecs-task-execution-role-${DeploymentRandomSuffix.Value}'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -1168,7 +1168,7 @@ Resources:
   GatewayTaskRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub 'tenzir-gateway-task-role-${DeploymentRandomSuffix.Value}'
+      RoleName: !Sub 'tenzir-platform-gateway-task-role-${DeploymentRandomSuffix.Value}'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -1193,13 +1193,13 @@ Resources:
   GatewayLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub '/ecs/tenzir-gateway-${DeploymentRandomSuffix.Value}'
+      LogGroupName: !Sub '/ecs/tenzir-platform-gateway-${DeploymentRandomSuffix.Value}'
       RetentionInDays: 7
 
   GatewayTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      Family: tenzir-gateway
+      Family: tenzir-platform-gateway
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -1233,7 +1233,7 @@ Resources:
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group: !Sub '/ecs/tenzir-gateway-${DeploymentRandomSuffix.Value}'
+              awslogs-group: !Sub '/ecs/tenzir-platform-gateway-${DeploymentRandomSuffix.Value}'
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: ecs
           Essential: true
@@ -1241,7 +1241,7 @@ Resources:
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: !Sub 'tenzir-gateway-alb-${DeploymentRandomSuffix.Value}'
+      Name: !Sub 'tenzir-platform-gateway-alb-${DeploymentRandomSuffix.Value}'
       Type: application
       Scheme: internet-facing
       SecurityGroups:
@@ -1251,12 +1251,12 @@ Resources:
         - !Ref SubnetPublic2
       Tags:
         - Key: Name
-          Value: tenzir-gateway-alb
+          Value: tenzir-platform-gateway-alb
 
   ALBTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: !Sub 'tenzir-gateway-tg-${DeploymentRandomSuffix.Value}'
+      Name: !Sub 'tenzir-platform-gateway-tg-${DeploymentRandomSuffix.Value}'
       Port: 80
       Protocol: HTTP
       VpcId: !Ref VPC
@@ -1273,7 +1273,7 @@ Resources:
         HttpCode: '200'
       Tags:
         - Key: Name
-          Value: tenzir-gateway-tg
+          Value: tenzir-platform-gateway-tg
 
   APICertificate:
     Type: AWS::CertificateManager::Certificate
@@ -1285,7 +1285,7 @@ Resources:
           HostedZoneId: !GetAtt HostedZoneLookup.ZoneId
       Tags:
         - Key: Name
-          Value: tenzir-api-cert
+          Value: tenzir-platform-api-cert
 
   UICertificate:
     Type: AWS::CertificateManager::Certificate
@@ -1297,7 +1297,7 @@ Resources:
           HostedZoneId: !GetAtt HostedZoneLookup.ZoneId
       Tags:
         - Key: Name
-          Value: tenzir-ui-cert
+          Value: tenzir-platform-ui-cert
 
   NodesCertificate:
     Type: AWS::CertificateManager::Certificate
@@ -1309,7 +1309,7 @@ Resources:
           HostedZoneId: !GetAtt HostedZoneLookup.ZoneId
       Tags:
         - Key: Name
-          Value: tenzir-nodes-cert
+          Value: tenzir-platform-nodes-cert
 
   ALBListenerHTTPS:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -1342,7 +1342,7 @@ Resources:
     DependsOn:
       - ALBListenerHTTPS
     Properties:
-      ServiceName: !Sub 'gateway-${DeploymentRandomSuffix.Value}'
+      ServiceName: !Sub 'tenzir-platform-gateway-${DeploymentRandomSuffix.Value}'
       Cluster: !Ref ECSCluster
       TaskDefinition: !Ref GatewayTaskDefinition
       DesiredCount: 1
@@ -1362,7 +1362,7 @@ Resources:
   APILambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub 'tenzir-api-lambda-execution-role-${DeploymentRandomSuffix.Value}'
+      RoleName: !Sub 'tenzir-platform-api-lambda-execution-role-${DeploymentRandomSuffix.Value}'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -1590,7 +1590,7 @@ Resources:
   APIGateway:
     Type: AWS::ApiGatewayV2::Api
     Properties:
-      Name: !Sub 'tenzir-api-gw-${DeploymentRandomSuffix.Value}'
+      Name: !Sub 'tenzir-platform-api-gw-${DeploymentRandomSuffix.Value}'
       ProtocolType: HTTP
       Description: API Gateway for Tenzir API Lambda
       CorsConfiguration:
@@ -1655,7 +1655,7 @@ Resources:
   AppRunnerInstanceRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub 'tenzir-apprunner-instance-role-${DeploymentRandomSuffix.Value}'
+      RoleName: !Sub 'tenzir-platform-apprunner-instance-role-${DeploymentRandomSuffix.Value}'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -1682,7 +1682,7 @@ Resources:
   AppRunnerAccessRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub 'tenzir-apprunner-access-role-${DeploymentRandomSuffix.Value}'
+      RoleName: !Sub 'tenzir-platform-apprunner-access-role-${DeploymentRandomSuffix.Value}'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -1714,19 +1714,19 @@ Resources:
   AppRunnerVPCConnector:
     Type: AWS::AppRunner::VpcConnector
     Properties:
-      VpcConnectorName: !Sub 'tenzir-ui-vpc-connector-${DeploymentRandomSuffix.Value}'
+      VpcConnectorName: !Sub 'tenzir-platform-ui-vpc-connector-${DeploymentRandomSuffix.Value}'
       Subnets:
         - !Ref SubnetPlatform
       SecurityGroups:
         - !Ref SecurityGroupAppRunner
       Tags:
         - Key: Name
-          Value: tenzir-ui-vpc-connector
+          Value: tenzir-platform-ui-vpc-connector
 
   ClientSecretSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub 'tenzir/apprunner/ui/client-secret-${DeploymentRandomSuffix.Value}'
+      Name: !Sub 'tenzir-platform-${DeploymentRandomSuffix.Value}/ui-client-secret'
       Description: OIDC Client Secret for App Runner UI
       SecretString: !If
         - UseExternalOIDCProvider
@@ -1736,21 +1736,21 @@ Resources:
   UserEndpointSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub 'tenzir/apprunner/ui/user-endpoint-${DeploymentRandomSuffix.Value}'
+      Name: !Sub 'tenzir-platform-${DeploymentRandomSuffix.Value}/ui-user-endpoint'
       Description: User Endpoint for App Runner UI
       SecretString: !Sub '${APILambdaFunctionUrl.FunctionUrl}user'
 
   WebappEndpointSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub 'tenzir/apprunner/ui/webapp-endpoint-${DeploymentRandomSuffix.Value}'
+      Name: !Sub 'tenzir-platform-${DeploymentRandomSuffix.Value}/ui-webapp-endpoint'
       Description: Webapp Endpoint for App Runner UI
       SecretString: !Sub '${APILambdaFunctionUrl.FunctionUrl}webapp'
 
   AppRunnerService:
     Type: AWS::AppRunner::Service
     Properties:
-      ServiceName: !Sub 'tenzir-ui-service-${DeploymentRandomSuffix.Value}'
+      ServiceName: !Sub 'tenzir-platform-ui-service-${DeploymentRandomSuffix.Value}'
       SourceConfiguration:
         AuthenticationConfiguration:
           AccessRoleArn: !GetAtt AppRunnerAccessRole.Arn
@@ -1815,7 +1815,7 @@ Resources:
           VpcConnectorArn: !Ref AppRunnerVPCConnector
       Tags:
         - Key: Name
-          Value: tenzir-ui-apprunner
+          Value: tenzir-platform-ui-apprunner
 
   UICustomDomainAssociation:
     Type: AWS::CloudFormation::CustomResource
@@ -1828,7 +1828,7 @@ Resources:
   UICustomDomainFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub 'tenzir-ui-custom-domain-${AWS::StackName}'
+      FunctionName: !Sub 'tenzir-platform-ui-custom-domain-${AWS::StackName}'
       Runtime: python3.9
       Handler: index.handler
       Code:
