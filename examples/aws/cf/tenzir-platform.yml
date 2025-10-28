@@ -1256,7 +1256,7 @@ Resources:
   ALBTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: tenzir-gateway-tg
+      Name: !Sub 'tenzir-gateway-tg-${DeploymentRandomSuffix.Value}'
       Port: 80
       Protocol: HTTP
       VpcId: !Ref VPC
