@@ -983,18 +983,123 @@ Resources:
         ExcludeCharacters: ''
 
   CognitoAdminUser:
-    Type: AWS::Cognito::UserPoolUser
+    Type: AWS::CloudFormation::CustomResource
     Condition: UseCognito
     Properties:
+      ServiceToken: !GetAtt CognitoAdminUserFunction.Arn
       UserPoolId: !Ref CognitoUserPool
       Username: !Sub 'admin@${BaseDomainName.Value}'
+      Email: !Sub 'admin@${BaseDomainName.Value}'
       TemporaryPassword: !Sub '{{resolve:secretsmanager:${AdminPasswordSecret}}}'
-      UserAttributes:
-        - Name: email
-          Value: !Sub 'admin@${BaseDomainName.Value}'
-        - Name: email_verified
-          Value: 'true'
-      MessageAction: SUPPRESS
+
+  CognitoAdminUserFunction:
+    Type: AWS::Lambda::Function
+    Condition: UseCognito
+    Properties:
+      FunctionName: !Sub 'tenzir-cognito-admin-user-${AWS::StackName}'
+      Runtime: python3.9
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+
+          def handler(event, context):
+              cognito = boto3.client('cognito-idp')
+
+              try:
+                  user_pool_id = event['ResourceProperties']['UserPoolId']
+                  username = event['ResourceProperties']['Username']
+                  email = event['ResourceProperties']['Email']
+                  temp_password = event['ResourceProperties']['TemporaryPassword']
+
+                  if event['RequestType'] == 'Delete':
+                      try:
+                          cognito.admin_delete_user(
+                              UserPoolId=user_pool_id,
+                              Username=username
+                          )
+                      except Exception as e:
+                          print(f'Error deleting user: {e}')
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                      return
+
+                  if event['RequestType'] == 'Create':
+                      response = cognito.admin_create_user(
+                          UserPoolId=user_pool_id,
+                          Username=username,
+                          UserAttributes=[
+                              {'Name': 'email', 'Value': email},
+                              {'Name': 'email_verified', 'Value': 'true'}
+                          ],
+                          TemporaryPassword=temp_password,
+                          MessageAction='SUPPRESS'
+                      )
+
+                      # Get the user sub (unique ID) from the response
+                      user_sub = None
+                      for attr in response['User']['Attributes']:
+                          if attr['Name'] == 'sub':
+                              user_sub = attr['Value']
+                              break
+
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {
+                          'Username': username,
+                          'UserSub': user_sub or username
+                      })
+                  else:
+                      # Update - just return success, don't modify user
+                      # Try to get the user's sub
+                      try:
+                          response = cognito.admin_get_user(
+                              UserPoolId=user_pool_id,
+                              Username=username
+                          )
+                          user_sub = None
+                          for attr in response['UserAttributes']:
+                              if attr['Name'] == 'sub':
+                                  user_sub = attr['Value']
+                                  break
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {
+                              'Username': username,
+                              'UserSub': user_sub or username
+                          })
+                      except Exception:
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {
+                              'Username': username,
+                              'UserSub': username
+                          })
+
+              except Exception as e:
+                  print(f'Error: {e}')
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, str(e))
+      Role: !GetAtt CognitoAdminUserRole.Arn
+      Timeout: 60
+
+  CognitoAdminUserRole:
+    Type: AWS::IAM::Role
+    Condition: UseCognito
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CognitoAdminAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminCreateUser
+                  - cognito-idp:AdminDeleteUser
+                  - cognito-idp:AdminGetUser
+                Resource: !GetAtt CognitoUserPool.Arn
 
   ECSCluster:
     Type: AWS::ECS::Cluster
@@ -1421,7 +1526,7 @@ Resources:
             - !Sub '{"issuer": "https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}", "audiences": ["${CognitoUserPoolClient}"]}'
           TENANT_MANAGER_AUTH__ADMIN_FUNCTIONS: !If
             - UseCognito
-            - !Sub '[{"auth_fn": "auth_user", "user_id": "${CognitoAdminUser}"}]'
+            - !Sub '[{"auth_fn": "auth_user", "user_id": "${CognitoAdminUser.UserSub}"}]'
             - '[]'
           BASE_PATH: ''
           TENANT_MANAGER_SIDEPATH_BUCKET_NAME: !Ref S3BucketSidepath
