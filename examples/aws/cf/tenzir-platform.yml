@@ -1739,7 +1739,7 @@ Resources:
   AppRunnerService:
     Type: AWS::AppRunner::Service
     Properties:
-      ServiceName: !Sub 'tenzir-ui-service-${DeploymentRandomSuffix.Value}'
+      ServiceName: !Sub 'tenzir-ui-service-v2-${DeploymentRandomSuffix.Value}'
       SourceConfiguration:
         AuthenticationConfiguration:
           AccessRoleArn: !GetAtt AppRunnerAccessRole.Arn
