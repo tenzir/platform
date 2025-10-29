@@ -139,6 +139,7 @@ jobs:
           IMAGE: ${{ steps.get_release.outputs.ui_image }}
         run: |
           docker build \
+            --target runtime-aws \
             --build-arg GIT_COMMIT_HASH=${{ env.app_commit }} \
             -t "${IMAGE}" \
             -f components/app/Dockerfile \
