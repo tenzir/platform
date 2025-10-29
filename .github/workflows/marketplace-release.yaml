@@ -128,7 +128,7 @@ jobs:
           IMAGE: ${{ steps.get_release.outputs.gateway_image }}
         run: |
           docker build \
-            --target platform-gateway \
+            --target gateway-aws \
             -t "${IMAGE}" \
             -f components/tenant-manager/platform/tenant_manager/Dockerfile \
             components/tenant-manager/platform/tenant_manager
