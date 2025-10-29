@@ -127,6 +127,25 @@ services:
 
   # Note the ~25 seconds startup delay before the seaweed server
   # becomes ready.
+  #
+  # CORS Configuration:
+  # SeaweedFS requires per-bucket CORS configuration for S3 API operations.
+  # After first startup, configure CORS for your bucket using AWS CLI:
+  #
+  #   export AWS_ACCESS_KEY_ID=${TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID}
+  #   export AWS_SECRET_ACCESS_KEY=${TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY}
+  #   export AWS_ENDPOINT_URL=http://localhost:8333
+  #   aws s3api put-bucket-cors --bucket ${TENZIR_PLATFORM_INTERNAL_BUCKET_NAME} \
+  #     --cors-configuration '{
+  #       "CORSRules": [{
+  #         "AllowedOrigins": ["${TENZIR_PLATFORM_UI_ENDPOINT}"],
+  #         "AllowedMethods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+  #         "AllowedHeaders": ["*"],
+  #         "ExposeHeaders": ["*"]
+  #       }]
+  #     }'
+  #
+  # The CORS configuration persists in seaweedfs storage across restarts.
   seaweed:
     image: ghcr.io/tenzir/tenzir-seaweed:${TENZIR_PLATFORM_VERSION:-latest}
     restart: unless-stopped
