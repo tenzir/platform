@@ -23,4 +23,12 @@ cat <<EOF > /config.json
 }
 EOF
 
+# Configure CORS if CORS_ORIGIN is set
+if [ -n "$CORS_ORIGIN" ]; then
+  cat <<EOF > /security.toml
+[cors.allowed_origins]
+values = "$CORS_ORIGIN"
+EOF
+fi
+
 exec /entrypoint.sh "$@"
