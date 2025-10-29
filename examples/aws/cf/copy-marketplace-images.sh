@@ -15,7 +15,6 @@ IMAGES=(
   "tenzir/tenzir-platform-ui"
   "tenzir/tenzir-platform-api"
   "tenzir/tenzir-platform-gateway"
-  "tenzir/tenzir-platform-node"
 )
 
 echo "Copying Tenzir Platform images version $VERSION to $LOCAL_REGISTRY"
