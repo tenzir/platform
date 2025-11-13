@@ -40,8 +40,8 @@ jobs:
 
       - name: Deploy tenant-manager
         if: |
-          (github.event_name == 'workflow_dispatch' && inputs.deploy-tenant-manager) || 
-          (github.event_name == 'push' && contains(steps.files.outputs.files-changed, 'components/tenant-manager'))
+          (github.event_name == 'workflow_dispatch' && inputs.deploy-tenant-manager) ||
+          (github.event_name == 'push' && (contains(steps.files.outputs.files-changed, 'components/tenant-manager') || contains(steps.files.outputs.files-changed, 'components/app')))
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
