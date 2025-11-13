@@ -38,6 +38,16 @@ jobs:
           private-key: ${{ secrets.TENZIR_AUTOBUMPER_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
+      - name: Update app platform-staging branch
+        if: |
+          (github.event_name == 'push' && contains(steps.files.outputs.files-changed, 'components/app'))
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          git submodule set-url components/app https://x-access-token:$GH_TOKEN@github.com/tenzir/app.git/
+          git submodule update --init components/app
+          git -C components/app push -f origin ${{ steps.files.outputs.app-commit }}:refs/heads/platform-staging
+
       - name: Deploy tenant-manager
         if: |
           (github.event_name == 'workflow_dispatch' && inputs.deploy-tenant-manager) ||
