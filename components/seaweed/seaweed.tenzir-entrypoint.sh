@@ -12,7 +12,7 @@ if [ -d /var/lib/seaweedfs ]; then
   fi
 fi
 
-cat <<EOF > /opt/seaweed/config.json
+cat <<EOF > /opt/tenzir-seaweed/config.json
 {
   "identities": [
     {
