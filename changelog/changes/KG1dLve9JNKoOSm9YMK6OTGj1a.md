@@ -9,7 +9,7 @@ To conform with best practices, we updated the `tenzir-seaweed` image to use a n
 **NOTE**: This is a breaking change due to the updated permissions of the seaweed data volume.
 If you have an existing docker compose stack, either manually specify the root user in your `docker-compose.yaml`:
 
-```(yaml)
+```yaml
 services:
   seaweed:
     user: root
@@ -17,7 +17,7 @@ services:
 
 Or run a one-time command after upgrading to change the permissions of the seaweed data volume:
 
-```
+```sh
 docker compose run --user root --entrypoint /bin/sh seaweed
 $ chown -R seaweed:seaweed /var/lib/seaweedfs
 ```
