@@ -7,7 +7,7 @@ if [ -d /var/lib/seaweedfs ]; then
 
   if [ "$dir_owner" = "0" ] && [ "$current_user" != "0" ]; then
     echo "Error: /var/lib/seaweedfs is owned by root, but the current user is non-root." >&2
-    echo "The default user has changed. Please see https://docs.tenzir.com/changelog/platform/v1-22-0/ for details." >&2
+    echo "The default user has changed. Please see https://docs.tenzir.com/changelog/platform/v1-23-0/ for details." >&2
     exit 1
   fi
 fi
