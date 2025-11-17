@@ -145,7 +145,7 @@ services:
       - TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID
       - TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY
       - TENZIR_PLATFORM_INTERNAL_BUCKET_NAME
-    command: ["server", "-dir=/var/lib/seaweedfs", "-s3", "-s3.config=/config.json", "-s3.port.https=8333", "-s3.cert.file=/ssl/blobs-cert.pem", "-s3.key.file=/ssl/blobs-cert.pem"]
+    command: ["server", "-dir=/var/lib/seaweedfs", "-s3", "-s3.config=/config.json", "-s3.allowedOrigins=${TENZIR_PLATFORM_UI_ENDPOINT}", "-s3.port.https=8333", "-s3.cert.file=/ssl/blobs-cert.pem", "-s3.key.file=/ssl/blobs-cert.pem"]
     volumes:
       - seaweed_data:/var/lib/seaweedfs
       - ./ssl:/ssl
