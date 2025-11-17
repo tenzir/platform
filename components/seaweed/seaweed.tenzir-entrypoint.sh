@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cat <<EOF > /config.json
+cat <<EOF > /opt/seaweed/config.json
 {
   "identities": [
     {
