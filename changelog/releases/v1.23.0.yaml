@@ -1,0 +1,9 @@
+title: CORS fixes and Frontend Updates
+description: "The seaweedfs service in our example setups now runs as non-root user and automatically adds the correct CORS headers. Be sure to read the \"Changes\" section below if you're using it in a self-hosted environment. As always, a slew of frontend improvements are included in this release as well."
+changes:
+  - Bsez713sSTqnT1DOfPFLlxWt1Z
+  - H4WTPAylKLPOdK5AnKyT1Eh71B
+  - KG1dLve9JNKoOSm9YMK6OTGj1a
+  - L4qTgez45jTtJUuqGuKxC35pVR
+  - uPk3bqJzEFZrb2SBAodmyACTiV
+  - yVbeQqBVUvg2XukkLRZQvrLojG
