@@ -206,24 +206,24 @@ jobs:
           IMAGE: ${{ steps.get_release.outputs.api_image }}
           RELEASE_TAG: ${{ steps.get_release.outputs.release_tag }}
         run: |
-          docker tag "${IMAGE}" 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-api:${RELEASE_TAG}
-          docker push 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-api:${RELEASE_TAG}
+          docker tag "${IMAGE}" 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/se-platform-api:${RELEASE_TAG}
+          docker push 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/se-platform-api:${RELEASE_TAG}
 
       - name: Tag and Push Platform Gateway Image to Marketplace ECR
         env:
           IMAGE: ${{ steps.get_release.outputs.gateway_image }}
           RELEASE_TAG: ${{ steps.get_release.outputs.release_tag }}
         run: |
-          docker tag "${IMAGE}" 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway:${RELEASE_TAG}
-          docker push 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway:${RELEASE_TAG}
+          docker tag "${IMAGE}" 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/se-platform-gateway:${RELEASE_TAG}
+          docker push 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/se-platform-gateway:${RELEASE_TAG}
 
       - name: Tag and Push Platform UI Image to Marketplace ECR
         env:
           IMAGE: ${{ steps.get_release.outputs.ui_image }}
           RELEASE_TAG: ${{ steps.get_release.outputs.release_tag }}
         run: |
-          docker tag "${IMAGE}" 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-ui:${RELEASE_TAG}
-          docker push 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-ui:${RELEASE_TAG}
+          docker tag "${IMAGE}" 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/se-platform-ui:${RELEASE_TAG}
+          docker push 709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/se-platform-ui:${RELEASE_TAG}
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -243,7 +243,7 @@ jobs:
       - name: Add new version to AWS Marketplace
         env:
           AWS_REGION: us-east-1
-          PRODUCT_ID: prod-qbbuiaxj3izce
+          PRODUCT_ID: prod-nps474evrpl3m
           RELEASE_TAG: ${{ steps.get_release.outputs.release_tag }}
         # This is following the process described here:
         # https://docs.aws.amazon.com/marketplace/latest/APIReference/work-with-container-products.html#working-with-container-products
@@ -269,9 +269,9 @@ jobs:
                       "Details": {
                         "EcrDeliveryOptionDetails": {
                           "ContainerImages": [
-                            "709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-api:$RELEASE_TAG",
-                            "709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-gateway:$RELEASE_TAG",
-                            "709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/tenzir-platform-ui:$RELEASE_TAG"
+                            "709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/se-platform-api:$RELEASE_TAG",
+                            "709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/se-platform-gateway:$RELEASE_TAG",
+                            "709825985650.dkr.ecr.us-east-1.amazonaws.com/tenzir/se-platform-ui:$RELEASE_TAG"
                           ],
                           "CompatibleServices": ["ECS"],
                           "Description": "Deploy the Tenzir Platform API, Gateway, and UI containers to manage your Tenzir security data pipelines within your AWS environment. The Platform API provides REST endpoints for tenant management, the Platform Gateway handles real-time WebSocket connections, and the Platform UI provides the web interface for managing your deployments.",

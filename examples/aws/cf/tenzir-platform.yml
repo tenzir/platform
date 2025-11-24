@@ -1170,9 +1170,9 @@ Resources:
                   - ecr:GetDownloadUrlForLayer
                   - ecr:BatchGetImage
                 Resource:
-                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/tenzir-platform-ui'
-                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/tenzir-platform-api'
-                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/tenzir-platform-gateway'
+                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/se-platform-ui'
+                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/se-platform-api'
+                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/se-platform-gateway'
               - Effect: Allow
                 Action:
                   - ecr:GetAuthorizationToken
@@ -1716,9 +1716,9 @@ Resources:
                   - ecr:GetDownloadUrlForLayer
                   - ecr:BatchGetImage
                 Resource:
-                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/tenzir-platform-ui'
-                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/tenzir-platform-api'
-                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/tenzir-platform-gateway'
+                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/se-platform-ui'
+                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/se-platform-api'
+                  - 'arn:aws:ecr:us-east-1:709825985650:repository/tenzir/se-platform-gateway'
               - Effect: Allow
                 Action:
                   - ecr:GetAuthorizationToken
