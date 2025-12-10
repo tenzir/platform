@@ -44,4 +44,6 @@ edition.
 ## Authentication
 
 By default, this terraform setup will create an instance of AWS Cognito
-including 
+including an `admin` user and randomly generated password. You can
+swap this out for your custom user pool, or use a completely external
+identity provider.

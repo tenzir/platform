@@ -65,7 +65,9 @@ class ListSecretsResponse(BaseModel):
     secrets: list[Secret]
 
 
-def _list_secrets(client: AppClient, workspace_id: str, store_id: Optional[str] = None) -> ListSecretsResponse:
+def _list_secrets(
+    client: AppClient, workspace_id: str, store_id: Optional[str] = None
+) -> ListSecretsResponse:
     payload = {"tenant_id": workspace_id}
     if store_id is not None:
         payload["store_id"] = store_id
@@ -78,7 +80,10 @@ def _list_secrets(client: AppClient, workspace_id: str, store_id: Optional[str] 
 
 
 def _resolve_secret_name_or_id(
-    client: AppClient, workspace_id: str, name_or_id: str, store_id: Optional[str] = None
+    client: AppClient,
+    workspace_id: str,
+    name_or_id: str,
+    store_id: Optional[str] = None,
 ) -> Secret:
     secrets = _list_secrets(client, workspace_id, store_id).secrets
     matching_by_id = [secret for secret in secrets if secret.id == name_or_id]
@@ -94,9 +99,7 @@ def _resolve_secret_name_or_id(
     )
 
 
-def _resolve_secret_store(
-    client: AppClient, workspace_id: str, name_or_id: str
-) -> str:
+def _resolve_secret_store(client: AppClient, workspace_id: str, name_or_id: str) -> str:
     """Resolve a store name or ID to a store ID."""
     # If it looks like a store ID or is 'default', assume it's an ID
     if name_or_id.startswith("st-") or name_or_id == "default":

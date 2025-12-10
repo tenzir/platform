@@ -31,7 +31,7 @@ login:
 	aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 709825985650.dkr.ecr.us-east-1.amazonaws.com
 
 build-api:
-	cd ../../../components/tenant-manager/platform/tenant_manager && docker build -t $(TENZIR_PLATFORM_API_UPSTREAM_CONTAINER) -f Dockerfile.lambda .
+	cd ../../../../backend/platform/tenant_manager && docker build -t $(TENZIR_PLATFORM_API_UPSTREAM_CONTAINER) -f Dockerfile.lambda .
 
 build-gateway:
 	cd ../../../components/tenant-manager/platform/tenant_manager && docker build -t $(TENZIR_PLATFORM_GATEWAY_UPSTREAM_CONTAINER) .

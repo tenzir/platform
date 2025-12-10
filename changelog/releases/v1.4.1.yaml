@@ -1,9 +1,0 @@
-title: Tenzir Platform v1.4.1
-description: |
-  This patch release contains the following changes, bug fixes and improvements
-  over [Tenzir Platform
-  v1.4](https://github.com/tenzir/platform/releases/tag/v1.4.0):
-
-  - This release fixes a bug where the app shows an infinite loader when
-    creating a new account after logging out of an existing account.
-changes: []

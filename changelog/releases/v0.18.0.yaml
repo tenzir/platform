@@ -1,7 +1,0 @@
-title: Tenzir Platform v0.18
-description: |
-  This release introduces diagnostics on the overview page on
-  [app.tenzir.com](https://app.tenzir.com/), making it easier to spot mistakes
-  in pipelines. The overview page becomes more responsive when viewing a node
-  with many running pipelines.
-changes: []

@@ -45,7 +45,9 @@ def write_certificate(server_names: list[str], filename: str) -> None:
 # be routed through the external network.
 write_certificate([app_endpoint, "app", "localhost"], filename="ssl/app-cert.pem")
 write_certificate([platform_endpoint, "platform"], filename="ssl/platform-cert.pem")
-write_certificate([control_endpoint, "websocket-gateway"], filename="ssl/gateway-cert.pem")
+write_certificate(
+    [control_endpoint, "websocket-gateway"], filename="ssl/gateway-cert.pem"
+)
 write_certificate([blobs_endpoint, "seaweed"], filename="ssl/blobs-cert.pem")
 write_certificate([login_endpoint, "keycloak"], filename="ssl/login-cert.pem")
 write_certificate(["postgres"], filename="ssl/db-cert.pem")

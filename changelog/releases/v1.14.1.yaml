@@ -1,4 +1,0 @@
-title: Fix Pipelines Table
-description: We resolved an issue where some rows in the pipelines table were being cut off. The table now scrolls properly when there are many entries.
-changes:
-  - Nid5Sn0npWu12ZnplBsr95U4ME

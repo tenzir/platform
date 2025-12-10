@@ -1,4 +1,0 @@
-title: Fixed blank dashboard cells
-description: We fixed an issue where dashboard cells without a fixed node ID sometimes failed to render. These cells now render correctly using sensible fallbacks.
-changes:
-  - HRtpw5zFpc3JloTFFO7S9t614f

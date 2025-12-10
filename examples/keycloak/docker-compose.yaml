@@ -99,12 +99,12 @@ services:
   keycloak:
     image: keycloak/keycloak
     environment:
-     - KC_BOOTSTRAP_ADMIN_USERNAME=admin
-     - KC_BOOTSTRAP_ADMIN_PASSWORD=changeme
-     - KC_DB=postgres
-     - KC_DB_URL=jdbc:postgresql://${TENZIR_PLATFORM_POSTGRES_HOSTNAME}/${TENZIR_PLATFORM_POSTGRES_DB}
-     - KC_DB_USERNAME=${TENZIR_PLATFORM_POSTGRES_USER}
-     - KC_DB_PASSWORD=${TENZIR_PLATFORM_POSTGRES_PASSWORD}
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=changeme
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://${TENZIR_PLATFORM_POSTGRES_HOSTNAME}/${TENZIR_PLATFORM_POSTGRES_DB}
+      - KC_DB_USERNAME=${TENZIR_PLATFORM_POSTGRES_USER}
+      - KC_DB_PASSWORD=${TENZIR_PLATFORM_POSTGRES_PASSWORD}
     # For a production setup, use an invocation like
     #     start --https-certificate-file=/path/to/certfile.pem --https-certificate-key-file=/path/to/keyfile.pem --hostname https://my.keycloak.org
     # or, when running behind a reverse proxy
@@ -116,7 +116,7 @@ services:
     volumes:
       - keycloak_data:/opt/keycloak/data
     ports:
-     - '3004:8080'
+      - '3004:8080'
 
   app:
     image: ghcr.io/tenzir/app:${TENZIR_PLATFORM_VERSION:-latest}

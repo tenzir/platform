@@ -1,9 +1,0 @@
-title: Tenzir Platform v1.0
-description: |
-  Tenzir Platform becomes generally available.
-
-  Since going live with app.tenzir.com last year, this release makes quite a few
-  changes. This release announces an all-new open source library for packages,
-  early availability of TQL2 (the next-generation language for pipelines), and a
-  complete redesign of app.tenzir.com, which now has a sleek, modern look.
-changes: []

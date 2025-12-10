@@ -1,8 +1,0 @@
-title: CLI Verbose Fix
-description: |
-  This patch release includes the following bug fixes over [Tenzir Platform
-  v1.9.1](https://github.com/tenzir/platform/releases/tag/v1.9.1):
-
-  - This release fixes the CLI to not ignore the `TENZIR_PLATFORM_CLI_VERBOSE`
-    setting
-changes: []

@@ -12,9 +12,9 @@ Options:
   --version                   Show version.
 
 Commands:
-   auth       Authenticate the current user
-   workspace  Select the currently used workspace
-   node       Interact with nodes
+   auth       Authenticate the current user.
+   workspace  Select the currently used workspace.
+   node       Interact with nodes.
    alert      Configure alerts for disconnected nodes.
    admin      Administer local on-prem platform infrastructure.
    tools      Utility commands for configuring the platform.
@@ -49,7 +49,7 @@ def _pretty_print_cli_error(e: PlatformCliError, verbose: bool):
     for hint in e.hints:
         print(f"(hint) {hint}", file=sys.stderr)
     if verbose:
-       traceback.print_exc(file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
 
 
 def main():

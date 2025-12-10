@@ -1,7 +1,0 @@
-title: Tenzir Platform v0.18.2
-description: |
-  This bugfix release:
-  * Improves the fix for the memory leak on the overview page
-  * Fixes an argument parsing bug in the `tenzir-platform admin
-    delete-auth-rule` CLI command
-changes: []

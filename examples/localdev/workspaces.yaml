@@ -29,7 +29,6 @@ workspaces:
           - name: Dashboard 1
             definition: |
               partitions
-              where not internal
               summarize events=sum(events), schema
               sort -events
             type: table

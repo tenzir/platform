@@ -1,9 +1,0 @@
-title: Tenzir Platform v1.0.7
-description: |
-  This patch release contains the following changes, bug fixes and improvements
-  over [Tenzir Platform
-  v1.0.6](https://github.com/tenzir/platform/releases/tag/v1.0.6):
-
-  - This release fixes a regression that causes the pipelines page not to
-    display any pipelines for nodes with older versions than Tenzir Node v4.20.
-changes: []
