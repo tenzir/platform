@@ -9,8 +9,7 @@
 
 services:
   platform:
-    image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION}
-    command: ["tenant_manager/rest/server/local.py"]
+    image: ghcr.io/tenzir/platform-api:${TENZIR_PLATFORM_VERSION}
     environment:
       - BASE_PATH=
       - GATEWAY_WS_ENDPOINT=${TENZIR_PLATFORM_NODES_ENDPOINT}
@@ -47,7 +46,7 @@ services:
         condition: service_started
 
   websocket-gateway:
-    image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION:-latest}
+    image: ghcr.io/tenzir/platform-gateway:${TENZIR_PLATFORM_VERSION:-latest}
     environment:
       - BASE_PATH=
       - TENZIR_PROXY_TIMEOUT=60
@@ -62,7 +61,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: ["tenant_manager/ws/server/local.py"]
     ports:
       - 3002:5000
 

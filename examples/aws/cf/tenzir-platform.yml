@@ -1224,7 +1224,7 @@ Resources:
         - Name: gateway
           Image: !Ref ContainerImageGateway
           Command:
-            - tenant_manager/ws/server/aws.py
+            - platform_api/ws/server/aws.py
           PortMappings:
             - ContainerPort: 5000
               Protocol: tcp

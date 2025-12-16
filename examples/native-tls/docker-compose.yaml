@@ -43,9 +43,8 @@ services:
       - "3000:3000"
 
   platform:
-    image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION}
-    build: ../../../backend/platform/tenant_manager
-    command: ["tenant_manager/rest/server/local.py"]
+    image: ghcr.io/tenzir/platform-api:${TENZIR_PLATFORM_VERSION}
+    build: ../../../backend
     environment:
       - BASE_PATH=
       - GATEWAY_WS_ENDPOINT=${TENZIR_PLATFORM_CONTROL_ENDPOINT}
@@ -83,7 +82,8 @@ services:
         condition: service_started
 
   websocket-gateway:
-    image: ghcr.io/tenzir/platform:${TENZIR_PLATFORM_VERSION:-latest}
+    image: ghcr.io/tenzir/platform-gateway:${TENZIR_PLATFORM_VERSION:-latest}
+    build: ../../../backend
     environment:
       - BASE_PATH=
       - TENZIR_PROXY_TIMEOUT=60
@@ -100,7 +100,6 @@ services:
         condition: service_healthy
     volumes:
       - ./ssl:/ssl
-    command: ["tenant_manager/ws/server/local.py"]
     ports:
       - 3002:5000
 
