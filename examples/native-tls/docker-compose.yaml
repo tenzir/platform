@@ -20,8 +20,8 @@ services:
       - PRIVATE_OIDC_PROVIDER_ISSUER_URL=${TENZIR_PLATFORM_OIDC_PROVIDER_ISSUER_URL}
       - PRIVATE_OIDC_PROVIDER_NAME=${TENZIR_PLATFORM_OIDC_PROVIDER_NAME}
       - PUBLIC_OIDC_PROVIDER_ID=${TENZIR_PLATFORM_OIDC_PROVIDER_NAME}
-      - PUBLIC_OIDC_SCOPES=profile email oidc
-      - PUBLIC_WEBSOCKET_GATEWAY_ENDPOINT=${TENZIR_PLATFORM_CONTROL_ENDPOINT}
+      - PUBLIC_OIDC_SCOPES=openid profile
+      - PUBLIC_WEBSOCKET_GATEWAY_ENDPOINT=${TENZIR_PLATFORM_GATEWAY_ENDPOINT}
       - PRIVATE_USER_ENDPOINT=${TENZIR_PLATFORM_API_ENDPOINT}/user
       - PRIVATE_WEBAPP_ENDPOINT=${TENZIR_PLATFORM_API_ENDPOINT}/webapp
       - PRIVATE_WEBAPP_KEY=${TENZIR_PLATFORM_INTERNAL_APP_API_KEY}
@@ -44,11 +44,13 @@ services:
 
   platform:
     image: ghcr.io/tenzir/platform-api:${TENZIR_PLATFORM_VERSION}
-    build: ../../../backend
+    build:
+      context: ../../../backend
+      target: api
     environment:
       - BASE_PATH=
-      - GATEWAY_WS_ENDPOINT=${TENZIR_PLATFORM_CONTROL_ENDPOINT}
-      - GATEWAY_HTTP_ENDPOINT=http://websocket-gateway:5000
+      - GATEWAY_WS_ENDPOINT=${TENZIR_PLATFORM_NODES_ENDPOINT}
+      - GATEWAY_HTTP_ENDPOINT=${TENZIR_PLATFORM_GATEWAY_ENDPOINT}
       - TENANT_MANAGER_DISABLE_LOCAL_DEMO_NODES=${TENZIR_PLATFORM_DISABLE_LOCAL_DEMO_NODES}
       - TENZIR_DEMO_NODE_IMAGE=${TENZIR_PLATFORM_DEMO_NODE_IMAGE:-tenzir/tenzir-demo:latest}
       - TENANT_MANAGER_APP_API_KEY=${TENZIR_PLATFORM_INTERNAL_APP_API_KEY}
@@ -63,8 +65,8 @@ services:
       - STORE__TYPE=${TENZIR_PLATFORM_STORE_TYPE}
       - STORE__POSTGRES_URI=postgresql://${TENZIR_PLATFORM_POSTGRES_USER}:${TENZIR_PLATFORM_POSTGRES_PASSWORD}@${TENZIR_PLATFORM_POSTGRES_HOSTNAME}/${TENZIR_PLATFORM_POSTGRES_DB}
       - TENANT_MANAGER_SIDEPATH_BUCKET_NAME=${TENZIR_PLATFORM_INTERNAL_BUCKET_NAME}
-      - BLOB_STORAGE__ENDPOINT_URL=http://seaweed:8333
-      - BLOB_STORAGE__PUBLIC_ENDPOINT_URL=${TENZIR_PLATFORM_BLOBS_ENDPOINT}
+      - BLOB_STORAGE__ENDPOINT_URL=${TENZIR_PLATFORM_DOWNLOADS_ENDPOINT}
+      - BLOB_STORAGE__PUBLIC_ENDPOINT_URL=${TENZIR_PLATFORM_DOWNLOADS_ENDPOINT}
       - BLOB_STORAGE__ACCESS_KEY_ID=${TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID}
       - BLOB_STORAGE__SECRET_ACCESS_KEY=${TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY}
       - WORKSPACE_SECRETS_MASTER_SEED=${TENZIR_PLATFORM_INTERNAL_MASTER_SEED}
@@ -83,7 +85,9 @@ services:
 
   websocket-gateway:
     image: ghcr.io/tenzir/platform-gateway:${TENZIR_PLATFORM_VERSION:-latest}
-    build: ../../../backend
+    build:
+      context: ../../../backend
+      target: gateway
     environment:
       - BASE_PATH=
       - TENZIR_PROXY_TIMEOUT=60
@@ -140,11 +144,12 @@ services:
   # Note that this service takes ~25 seconds to start completely.
   seaweed:
     image: ghcr.io/tenzir/tenzir-seaweed:${TENZIR_PLATFORM_VERSION:-latest}
+    build: ../../components/seaweed
     environment:
       - TENZIR_PLATFORM_INTERNAL_ACCESS_KEY_ID
       - TENZIR_PLATFORM_INTERNAL_SECRET_ACCESS_KEY
       - TENZIR_PLATFORM_INTERNAL_BUCKET_NAME
-    command: ["server", "-dir=/var/lib/seaweedfs", "-s3", "-s3.config=/config.json", "-s3.allowedOrigins=${TENZIR_PLATFORM_UI_ENDPOINT}", "-s3.port.https=8333", "-s3.cert.file=/ssl/blobs-cert.pem", "-s3.key.file=/ssl/blobs-cert.pem"]
+    command: ["server", "-dir=/var/lib/seaweedfs", "-s3", "-s3.config=/opt/tenzir-seaweed/config.json", "-s3.allowedOrigins=${TENZIR_PLATFORM_DOMAIN}", "-s3.port=8332", "-s3.port.https=8333", "-s3.cert.file=/ssl/blobs-cert.pem", "-s3.key.file=/ssl/blobs-cert.pem"]
     volumes:
       - seaweed_data:/var/lib/seaweedfs
       - ./ssl:/ssl
@@ -176,6 +181,7 @@ services:
       - ./ssl:/ssl
     ports:
       - '3004:8443'
+
 
 volumes:
   postgres_data:

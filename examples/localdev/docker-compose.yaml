@@ -36,7 +36,9 @@ services:
 
   platform:
     image: ghcr.io/tenzir/platform-api:${TENZIR_PLATFORM_VERSION}
-    build: ../../../backend/
+    build:
+      context: ../../../backend
+      target: api
     environment:
       - BASE_PATH=
       - GATEWAY_WS_ENDPOINT=${TENZIR_PLATFORM_NODES_ENDPOINT}
@@ -76,7 +78,9 @@ services:
 
   websocket-gateway:
     image: ghcr.io/tenzir/platform-gateway:${TENZIR_PLATFORM_VERSION:-latest}
-    build: ../../../backend/
+    build:
+      context: ../../../backend
+      target: gateway
     environment:
       - BASE_PATH=
       - TENZIR_PROXY_TIMEOUT=60

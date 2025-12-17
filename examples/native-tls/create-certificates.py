@@ -16,14 +16,23 @@ ca.cert_pem.write_to_path("ssl/ca.pem")
 
 # Check that the user didn't forget to create the .env file and all
 # required environment variables are set.
-for endpoint in ("UI", "API", "NODES", "DOWNLOADS", "LOGIN"):
+for endpoint in ("API", "NODES", "DOWNLOADS", "LOGIN"):
     full_url = f"TENZIR_PLATFORM_{endpoint}_ENDPOINT"
     if not os.getenv(full_url):
         print(f"error: missing environment variable {full_url}")
         exit(1)
 
+# For the UI endpoint, accept either TENZIR_PLATFORM_UI_ENDPOINT or TENZIR_PLATFORM_DOMAIN
+ui_endpoint = os.getenv("TENZIR_PLATFORM_UI_ENDPOINT")
+domain = os.getenv("TENZIR_PLATFORM_DOMAIN")
+if ui_endpoint and domain:
+    print("warning: both TENZIR_PLATFORM_UI_ENDPOINT and TENZIR_PLATFORM_DOMAIN are set, preferring TENZIR_PLATFORM_UI_ENDPOINT")
+elif not ui_endpoint and not domain:
+    print("error: missing environment variable TENZIR_PLATFORM_UI_ENDPOINT or TENZIR_PLATFORM_DOMAIN")
+    exit(1)
+
 # Get the DNS names for the certificates.
-app_endpoint = urlparse(os.getenv("TENZIR_PLATFORM_UI_ENDPOINT")).hostname
+app_endpoint = urlparse(ui_endpoint or domain).hostname
 platform_endpoint = urlparse(os.getenv("TENZIR_PLATFORM_API_ENDPOINT")).hostname
 control_endpoint = urlparse(os.getenv("TENZIR_PLATFORM_NODES_ENDPOINT")).hostname
 blobs_endpoint = urlparse(os.getenv("TENZIR_PLATFORM_DOWNLOADS_ENDPOINT")).hostname
