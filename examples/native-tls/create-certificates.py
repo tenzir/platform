@@ -26,9 +26,13 @@ for endpoint in ("API", "NODES", "DOWNLOADS", "LOGIN"):
 ui_endpoint = os.getenv("TENZIR_PLATFORM_UI_ENDPOINT")
 domain = os.getenv("TENZIR_PLATFORM_DOMAIN")
 if ui_endpoint and domain:
-    print("warning: both TENZIR_PLATFORM_UI_ENDPOINT and TENZIR_PLATFORM_DOMAIN are set, preferring TENZIR_PLATFORM_UI_ENDPOINT")
+    print(
+        "warning: both TENZIR_PLATFORM_UI_ENDPOINT and TENZIR_PLATFORM_DOMAIN are set, preferring TENZIR_PLATFORM_UI_ENDPOINT"
+    )
 elif not ui_endpoint and not domain:
-    print("error: missing environment variable TENZIR_PLATFORM_UI_ENDPOINT or TENZIR_PLATFORM_DOMAIN")
+    print(
+        "error: missing environment variable TENZIR_PLATFORM_UI_ENDPOINT or TENZIR_PLATFORM_DOMAIN"
+    )
     exit(1)
 
 # Get the DNS names for the certificates.
