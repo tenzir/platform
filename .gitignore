@@ -6,3 +6,4 @@ examples/native-tls/ssl/*.pem
 .terraform.lock.hcl
 *.tfstate
 *.tfstate.backup
+*.swp

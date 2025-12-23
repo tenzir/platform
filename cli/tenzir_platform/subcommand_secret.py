@@ -7,6 +7,7 @@
   tenzir-platform secret delete <secret>
   tenzir-platform secret list [--json] [--store=<store>]
   tenzir-platform secret store add aws --region=<region> --assumed-role-arn=<assumed_role_arn> [--name=<name>] [--access-key-id=<key_id>] [--secret-access-key=<key>]
+  tenzir-platform secret store add vault --address=<address> --mount=<mount> (--token=<token> | --role-id=<role_id> --secret-id=<secret_id>) [--name=<name>] [--namespace=<namespace>]
   tenzir-platform secret store set-default <store>
   tenzir-platform secret store delete <store>
   tenzir-platform secret store list [--json]
@@ -33,6 +34,12 @@ Description:
 
   tenzir-platform secret list [--json] [--store <store>]
     List all configured secrets. The `--store` option can be used to list secrets from a specific store by name or ID.
+
+  tenzir-platform secret store add vault --address=<address> --mount=<mount> ...
+    Add a HashiCorp Vault secret store (read-only). Authentication can be done via:
+    - Token auth: --token=<token>
+    - AppRole auth: --role-id=<role_id> --secret-id=<secret_id>
+    Secrets can be accessed with a :<key> suffix to return only a specific key's value.
 """
 
 # TODO: We probably also want to add the equivalent of these options (from `gh secret`)
@@ -56,7 +63,7 @@ import os
 
 class Secret(BaseModel):
     last_updated: datetime
-    last_accessed: datetime
+    last_accessed: Optional[datetime]
     id: str
     name: str
 
@@ -322,6 +329,61 @@ def add_store_aws(
     print(f"Added store {store_id}")
 
 
+def add_store_vault(
+    client: AppClient,
+    workspace_id: str,
+    name: Optional[str],
+    address: str,
+    mount: str,
+    namespace: Optional[str],
+    token: Optional[str],
+    role_id: Optional[str],
+    secret_id: Optional[str],
+):
+    # Determine auth method based on provided credentials
+    if token:
+        auth_method = "token"
+    elif role_id and secret_id:
+        auth_method = "approle"
+    else:
+        raise PlatformCliError(
+            "must provide either --token or both --role-id and --secret-id"
+        )
+
+    options = {
+        "address": address,
+        "mount": mount,
+        "auth_method": auth_method,
+    }
+
+    if namespace:
+        options["namespace"] = namespace
+
+    if auth_method == "token":
+        options["token"] = token
+    else:
+        options["role_id"] = role_id
+        options["secret_id"] = secret_id
+
+    resp = client.post(
+        "secrets/add-external-store",
+        json={
+            "tenant_id": workspace_id,
+            "type": "vault",
+            "name": name,
+            "is_writable": False,
+            "options": options,
+        },
+    )
+    if resp.status_code == 400:
+        raise PlatformCliError("failed to add vault store").add_hint(
+            f"received upstream error: {resp.json().get('detail', 'unknown error')}"
+        )
+    resp.raise_for_status()
+    store_id = resp.json()["store_id"]
+    print(f"Added store {store_id}")
+
+
 def secret_subcommand(platform: PlatformEnvironment, argv):
     args = docopt(__doc__, argv=argv)
     try:
@@ -336,17 +398,29 @@ def secret_subcommand(platform: PlatformEnvironment, argv):
     # TODO: Move the store commands to a different subcommand.
     if args["store"]:
         if args["add"]:
-            store_type = "aws"  # We only support one type at the moment
-            region = args["--region"]
-            assumed_role_arn = args["--assumed-role-arn"]
             name = args["--name"]
-            if store_type == "aws":
+            # Determine store type based on provided arguments
+            if args["--address"]:
+                # Vault store
+                add_store_vault(
+                    client,
+                    workspace_id,
+                    name=name,
+                    address=args["--address"],
+                    mount=args["--mount"],
+                    namespace=args["--namespace"],
+                    token=args["--token"],
+                    role_id=args["--role-id"],
+                    secret_id=args["--secret-id"],
+                )
+            elif args["--region"]:
+                # AWS store
                 add_store_aws(
                     client,
                     workspace_id,
                     name=name,
-                    region=region,
-                    assumed_role_arn=assumed_role_arn,
+                    region=args["--region"],
+                    assumed_role_arn=args["--assumed-role-arn"],
                 )
             else:
                 raise PlatformCliError("unknown store type")
