@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tenzir-platform"
-version = "1.25.1"
+version = "1.26.0"
 description = "Tenzir CLI"
 license = "BSD-3-Clause"
 authors = ["Tenzir <engineering@tenzir.com>"]
