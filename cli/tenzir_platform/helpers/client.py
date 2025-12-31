@@ -1,15 +1,13 @@
 # SPDX-FileCopyrightText: (c) 2024 The Tenzir Contributors
 # SPDX-License-Identifier: BSD-3-Clause
 
-import subprocess
 import time
-from datetime import datetime, timezone
 from enum import Enum
 
-import jwt
 import requests
 import requests.exceptions
 from requests import Response
+
 from tenzir_platform.helpers.environment import PlatformEnvironment
 
 UNAUTHENTICATED = "unauthenticated"
@@ -81,7 +79,7 @@ class AppClient:
             except requests.exceptions.ConnectionError:
                 if i == connection_retry:
                     raise
-                print(f"connection error, retrying in 3s...")
+                print("connection error, retrying in 3s...")
                 time.sleep(3)
                 continue
             break

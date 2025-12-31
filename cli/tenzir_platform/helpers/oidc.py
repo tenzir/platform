@@ -1,15 +1,16 @@
 # SPDX-FileCopyrightText: (c) 2024 The Tenzir Contributors
 # SPDX-License-Identifier: BSD-3-Clause
 
-import hashlib
-import os
-import time
 import base64
+import os
 import sys
+import time
+from typing import Any
+
 import jwt
 import requests
 from jwt import PyJWKClient
-from typing import Optional, Any
+
 from tenzir_platform.helpers.cache import filename_in_cache
 from tenzir_platform.helpers.environment import PlatformEnvironment
 from tenzir_platform.helpers.exceptions import PlatformCliError
@@ -66,7 +67,7 @@ class IdTokenClient:
         )
         self.scope = platform.scope
         if platform.client_secret_file is not None:
-            with open(platform.client_secret_file, "r") as f:
+            with open(platform.client_secret_file) as f:
                 self.client_secret = f.read()
         self.hardcoded_id_token = platform.id_token
         self.verbose = platform.verbose
@@ -130,7 +131,7 @@ class IdTokenClient:
             ]  # Google is not following the spec :/
         else:
             raise PlatformCliError(
-                f"couldn't find verification URL in OIDC provider response"
+                "couldn't find verification URL in OIDC provider response"
             ).add_hint(f"received data {device_code_data}")
 
         print(
@@ -183,7 +184,7 @@ class IdTokenClient:
             "audience": self.client_id,
         }
         credentials = base64.b64encode(
-            f"{self.client_id}:{client_secret}".encode("utf-8")
+            f"{self.client_id}:{client_secret}".encode()
         ).decode("utf-8")
         response = requests.post(
             self.token_endpoint,
@@ -233,7 +234,7 @@ class IdTokenClient:
         with open(filename, "w") as f:
             f.write(token)
 
-    def load_id_token(self, interactive: Optional[bool] = None) -> str:
+    def load_id_token(self, interactive: bool | None = None) -> str:
         # If the user is explicitly passing an id token via
         # environment variable, always use that.
         if self.hardcoded_id_token:
@@ -241,14 +242,14 @@ class IdTokenClient:
                 self.validate_token(self.hardcoded_id_token)
                 return self.hardcoded_id_token
             except Exception as e:
-                raise PlatformCliError(f"invalid JWT").add_context(
+                raise PlatformCliError("invalid JWT").add_context(
                     "while validating TENZIR_PLATFORM_CLI_ID_TOKEN"
                 ).add_hint(f"upstream error: {e}")
         # Otherwise, try to load a valid token from the cache
         # in the filesystem.
         filename = self._filename_in_cache()
         try:
-            with open(filename, "r") as f:
+            with open(filename) as f:
                 token = f.read()
             self.validate_token(token)
             return token

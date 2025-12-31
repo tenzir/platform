@@ -1,41 +1,62 @@
-[tool.poetry]
+[project]
 name = "tenzir-platform"
 version = "1.26.0"
 description = "Tenzir CLI"
 license = "BSD-3-Clause"
-authors = ["Tenzir <engineering@tenzir.com>"]
+authors = [{ name = "Tenzir", email = "engineering@tenzir.com" }]
 readme = "README.md"
-packages = [{ include = "tenzir_platform" }]
+requires-python = ">=3.10"
+dependencies = [
+    "structlog>=23.1.0",
+    "requests>=2.31.0",
+    "docopt>=0.6.2",
+    "types-docopt>=0.6.11.4",
+    "pydantic-settings>=2.2.1",
+    "pyjwt[crypto]>=2.8.0",
+    "pytimeparse2>=1.7.1",
+    "base58>=2.1.1",
+    "cryptography>=44.0.1",
+]
 
-[tool.poetry.scripts]
+[project.scripts]
 tenzir-platform = "tenzir_platform.tenzir_platform:main"
 
-[tool.poetry.dependencies]
-python = "^3.10"
-structlog = "^23.1.0"
-requests = "^2.31.0"
-docopt = "^0.6.2"
-types-docopt = "^0.6.11.4"
-pydantic-settings = "^2.2.1"
-pyjwt = {extras = ["crypto"], version = "^2.8.0"}
-pytimeparse2 = "^1.7.1"
-base58 = "^2.1.1"
-cryptography = "^44.0.1"
-
-[tool.poetry.group.dev.dependencies]
-black = "^24.1.1"
-isort = "^5.12.0"
-mypy = "^1.5.1"
-werkzeug = "^3.1.3"
-
+[dependency-groups]
+dev = [
+    "ruff>=0.8.0",
+    "mypy>=1.5.1",
+    "werkzeug>=3.1.3",
+]
 # Additional type stubs for mypy.
-[tool.poetry.group.types.dependencies]
-types-requests = "^2.31.0.2"
+types = [
+    "types-requests>=2.31.0.2",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = [
+    "B007",  # Unused loop variable (review later)
+    "B904",  # Raise without from inside except (needs careful review)
+    "E501",  # Line too long (address incrementally)
+    "E722",  # Bare except (needs careful review)
+    "SIM108", # Ternary operator (style preference)
+    "SIM115", # Context manager for open (review later)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["tenzir_platform"]
 
 [tool.mypy]
 python_version = "3.10"
 warn_unused_configs = true
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["tenzir_platform"]

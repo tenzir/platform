@@ -18,13 +18,14 @@ Notes:
   automatically based on the presence of a client secret.
 """
 
-from tenzir_platform.helpers.oidc import IdTokenClient
-from tenzir_platform.helpers.environment import PlatformEnvironment
+
 from docopt import docopt
-from typing import Optional
+
+from tenzir_platform.helpers.environment import PlatformEnvironment
+from tenzir_platform.helpers.oidc import IdTokenClient
 
 
-def login(platform: PlatformEnvironment, interactive: Optional[bool]):
+def login(platform: PlatformEnvironment, interactive: bool | None):
     token_client = IdTokenClient(platform)
     token = token_client.load_id_token(interactive=interactive)
     decoded_token = token_client.validate_token(token)

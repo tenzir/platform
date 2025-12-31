@@ -20,22 +20,23 @@ Description:
 
 """
 
-from tenzir_platform.helpers.client import AppClient, TargetApi
-from tenzir_platform.helpers.environment import PlatformEnvironment
-from tenzir_platform.helpers.cache import store_workspace, load_current_workspace
-from tenzir_platform.helpers.oidc import IdTokenClient
-from tenzir_platform.helpers.exceptions import PlatformCliError
-from docopt import docopt
-from typing import List
 import json
 import re
+
+from docopt import docopt
+
+from tenzir_platform.helpers.cache import load_current_workspace, store_workspace
+from tenzir_platform.helpers.client import AppClient, TargetApi
+from tenzir_platform.helpers.environment import PlatformEnvironment
+from tenzir_platform.helpers.exceptions import PlatformCliError
+from tenzir_platform.helpers.oidc import IdTokenClient
 
 
 def _is_workspace_id(identifier: str):
     return bool(re.match(r"^t-[a-z0-9]{8}$", identifier))
 
 
-def _get_workspace_list(client: AppClient, id_token: str) -> List:
+def _get_workspace_list(client: AppClient, id_token: str) -> list:
     resp = client.post(
         "get-login-info",
         json={

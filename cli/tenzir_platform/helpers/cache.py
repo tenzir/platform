@@ -1,10 +1,10 @@
 # SPDX-FileCopyrightText: (c) 2024 The Tenzir Contributors
 # SPDX-License-Identifier: BSD-3-Clause
 
-import os
 import json
+import os
+
 from tenzir_platform.helpers.environment import PlatformEnvironment
-from typing import Optional
 
 
 def filename_in_cache(platform: PlatformEnvironment, filename: str):
@@ -30,7 +30,7 @@ def store_workspace(platform: PlatformEnvironment, workspace_id: str, user_key: 
 
 def load_current_workspace(platform: PlatformEnvironment) -> tuple[str, str]:
     filename = filename_in_cache(platform, "workspace")
-    with open(filename, "r") as f:
+    with open(filename) as f:
         content_str = f.read().rstrip()
         content = json.loads(content_str)
         if platform.verbose:

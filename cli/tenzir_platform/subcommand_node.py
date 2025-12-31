@@ -44,28 +44,28 @@ Description:
     Requires the 'docker compose' binary in the current PATH.
 """
 
+import datetime
+import json
+import os
+import re
+import subprocess
+import tempfile
+import time
+
+from docopt import docopt
+from requests import HTTPError
+
 from tenzir_platform.helpers.cache import load_current_workspace
 from tenzir_platform.helpers.client import AppClient
 from tenzir_platform.helpers.environment import PlatformEnvironment
 from tenzir_platform.helpers.exceptions import PlatformCliError
-from pydantic import BaseModel
-from docopt import docopt
-from typing import Optional, List
-from requests import HTTPError
-import json
-import time
-import tempfile
-import os
-import subprocess
-import re
-import datetime
 
 
 def _is_node_id(identifier: str):
     return bool(re.match(r"^n-[a-z0-9]{8}$", identifier))
 
 
-def _get_node_list(client: AppClient, workspace_id: str) -> List:
+def _get_node_list(client: AppClient, workspace_id: str) -> list:
     resp = client.post(
         "list-nodes",
         json={
@@ -130,7 +130,7 @@ def ping(client: AppClient, workspace_id: str, node: str):
 
 
 def run(
-    client: AppClient, workspace_id: str, node_name: str, container_image: Optional[str]
+    client: AppClient, workspace_id: str, node_name: str, container_image: str | None
 ):
     resp = client.post(
         "generate-client-config",
@@ -178,7 +178,7 @@ def run(
         )
 
 
-def create(client: AppClient, workspace_id: str, node_name: Optional[str]):
+def create(client: AppClient, workspace_id: str, node_name: str | None):
     if node_name is None:
         time_suffix = datetime.datetime.now(datetime.timezone.utc).strftime(
             "%Y%m%dT%H%M%SZ"
@@ -201,7 +201,7 @@ def config(
     workspace_id: str,
     node: str,
     config_format: str,
-    output_file: Optional[str],
+    output_file: str | None,
 ):
     node_id = _resolve_node_identifier(client, workspace_id, node)
     resp = client.post(
@@ -240,7 +240,7 @@ def delete(client: AppClient, workspace_id: str, node: str):
 
 
 def proxy(
-    client: AppClient, workspace_id: str, node: str, endpoint: str, body: Optional[str]
+    client: AppClient, workspace_id: str, node: str, endpoint: str, body: str | None
 ):
     node_id = _resolve_node_identifier(client, workspace_id, node)
     endpoint = endpoint.lstrip("/")
@@ -266,7 +266,7 @@ def node_subcommand(platform: PlatformEnvironment, argv):
     except PlatformCliError as e:
         raise e.add_context("while trying to load current workspace")
     except Exception as e:
-        raise PlatformCliError(f"failed to load current workspace").add_hint(
+        raise PlatformCliError("failed to load current workspace").add_hint(
             f"reason: {e}"
         ).add_hint(
             "run 'tenzir-platform workspace select' to select the current workspace"

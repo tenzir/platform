@@ -14,10 +14,12 @@ contains a set of utility commands that administrators can use to prepare the
 configuration for a self-hosted Tenzir Platform instance.
 """
 
-from tenzir_platform.helpers.environment import PlatformEnvironment
-from docopt import docopt
 import os
+
 import base58
+from docopt import docopt
+
+from tenzir_platform.helpers.environment import PlatformEnvironment
 from tenzir_platform.subcommand_admin import auth_rule_from_arguments
 
 

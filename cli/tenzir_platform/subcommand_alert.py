@@ -23,30 +23,23 @@ Description:
     List all configured alerts.
 """
 
+import json
+import re
+
+from docopt import docopt
+from pytimeparse2 import parse as parse_duration
+
 from tenzir_platform.helpers.cache import load_current_workspace
 from tenzir_platform.helpers.client import AppClient
 from tenzir_platform.helpers.environment import PlatformEnvironment
 from tenzir_platform.helpers.exceptions import PlatformCliError
-from pydantic import BaseModel
-from docopt import docopt
-from typing import Optional, List
-from requests import HTTPError
-from pytimeparse2 import parse as parse_duration
-import json
-import time
-import tempfile
-import os
-import subprocess
-import re
-import random
-import datetime
 
 
 def _is_node_id(identifier: str):
     return bool(re.match(r"^n-[a-z0-9]{8}$", identifier))
 
 
-def _get_node_list(client: AppClient, workspace_id: str) -> List:
+def _get_node_list(client: AppClient, workspace_id: str) -> list:
     resp = client.post(
         "list-nodes",
         json={
@@ -93,7 +86,7 @@ def add(
     try:
         json.loads(webhook_body)
     except:
-        print(f"body must be valid json")
+        print("body must be valid json")
         return
     resp = client.post(
         "alert/add",

@@ -30,21 +30,22 @@ Options:
   --lifetime=<lifetime>             The lifetime of the new node in seconds. [default: 360]
 """
 
+import json
+
+from docopt import docopt
+
+from tenzir_platform.helpers.auth_rule import (
+    AllowAllRule,
+    AuthRule,
+    EmailDomainRule,
+    OrganizationMembershipRule,
+    RoleAndOrganizationRule,
+    UserAuthRule,
+)
 from tenzir_platform.helpers.client import AppClient, TargetApi
-from tenzir_platform.helpers.oidc import IdTokenClient
 from tenzir_platform.helpers.environment import PlatformEnvironment
 from tenzir_platform.helpers.exceptions import PlatformCliError
-from tenzir_platform.helpers.auth_rule import (
-    AuthRule,
-    UserAuthRule,
-    EmailDomainRule,
-    RoleAndOrganizationRule,
-    OrganizationMembershipRule,
-    AllowAllRule,
-)
-from typing import Optional
-from docopt import docopt
-import json
+from tenzir_platform.helpers.oidc import IdTokenClient
 
 
 def _get_global_workspaces(client: AppClient):
@@ -123,11 +124,11 @@ def delete_workspace(client: AppClient, workspace_id: str):
 def update_workspace(
     client: AppClient,
     workspace_id: str,
-    workspace_name: Optional[str],
-    icon_url: Optional[str],
-    owner_namespace: Optional[str],
-    owner_id: Optional[str],
-    workspace_category: Optional[str],
+    workspace_name: str | None,
+    icon_url: str | None,
+    owner_namespace: str | None,
+    owner_id: str | None,
+    workspace_category: str | None,
 ):
     resp = client.post(
         "update-tenant",

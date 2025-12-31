@@ -23,21 +23,22 @@ Commands:
 See 'tenzir-platform <command> --help' for more information on a specific command.
 """
 
-from docopt import docopt
-from requests import HTTPError
-import sys
 import importlib.metadata
+import sys
 import traceback
 
-from tenzir_platform.subcommand_auth import auth_subcommand
-from tenzir_platform.subcommand_alert import alert_subcommand
-from tenzir_platform.subcommand_workspace import workspace_subcommand
-from tenzir_platform.subcommand_node import node_subcommand
-from tenzir_platform.subcommand_admin import admin_subcommand
-from tenzir_platform.subcommand_tools import tools_subcommand
-from tenzir_platform.subcommand_secret import secret_subcommand
+from docopt import docopt
+from requests import HTTPError
+
 from tenzir_platform.helpers.environment import PlatformEnvironment
 from tenzir_platform.helpers.exceptions import PlatformCliError
+from tenzir_platform.subcommand_admin import admin_subcommand
+from tenzir_platform.subcommand_alert import alert_subcommand
+from tenzir_platform.subcommand_auth import auth_subcommand
+from tenzir_platform.subcommand_node import node_subcommand
+from tenzir_platform.subcommand_secret import secret_subcommand
+from tenzir_platform.subcommand_tools import tools_subcommand
+from tenzir_platform.subcommand_workspace import workspace_subcommand
 
 version = importlib.metadata.version("tenzir-platform")
 

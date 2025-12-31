@@ -1,8 +1,9 @@
 # SPDX-FileCopyrightText: (c) 2024 The Tenzir Contributors
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Literal
+
 from pydantic import BaseModel
-from typing import Literal, Optional
 
 
 class RoleAndOrganizationRule(BaseModel):
@@ -11,7 +12,7 @@ class RoleAndOrganizationRule(BaseModel):
     """
 
     auth_fn: Literal["auth_organization_role"] = "auth_organization_role"
-    connection: Optional[str] = None
+    connection: str | None = None
 
     # The required role.
     roles_claim: str
@@ -28,7 +29,7 @@ class OrganizationMembershipRule(BaseModel):
     """
 
     auth_fn: Literal["auth_organization"] = "auth_organization"
-    connection: Optional[str] = None
+    connection: str | None = None
     organization_claim: str
     organization: str
 
@@ -40,7 +41,7 @@ class EmailDomainRule(BaseModel):
     """
 
     auth_fn: Literal["auth_email_suffix"] = "auth_email_suffix"
-    connection: Optional[str] = None
+    connection: str | None = None
     email_domain: str
 
 

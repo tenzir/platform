@@ -1,10 +1,11 @@
 # SPDX-FileCopyrightText: (c) 2024 The Tenzir Contributors
 # SPDX-License-Identifier: BSD-3-Clause
 
+
 from pydantic_settings import BaseSettings
 from pydantic_settings.exceptions import SettingsError
+
 from tenzir_platform.helpers.exceptions import PlatformCliError
-from typing import Optional
 
 API_ENDPOINT = "https://rest.tenzir.app/production-v1"
 ISSUER_URL = "https://tenzir.eu.auth0.com/"
@@ -30,18 +31,18 @@ class PlatformEnvironment(BaseSettings):
     client_id: str = CLIENT_ID
 
     # If provided, skip the login workflow completely.
-    id_token: Optional[str] = None
+    id_token: str | None = None
 
     # A client secret is only necessary for non-interactive logins
     # using the client credentials flow.
-    client_secret: Optional[str] = None
-    client_secret_file: Optional[str] = None
+    client_secret: str | None = None
+    client_secret_file: str | None = None
 
     # Overrides the OIDC audience.
-    audience: Optional[str] = None
+    audience: str | None = None
 
     # Override the default OIDC scopes.
-    scope: Optional[str] = None
+    scope: str | None = None
 
     # Additional headers that should be sent with any request
     # to the Tenzir Platform.

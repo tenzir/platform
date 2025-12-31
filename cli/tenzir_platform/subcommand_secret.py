@@ -49,21 +49,22 @@ Description:
 #   -u, --user                 Set a secret for your user
 #   -v, --visibility string    Set visibility for an organization secret: {all|private|selected} (default "private")
 
+import json
+import os
+from datetime import datetime
+
+from docopt import docopt
+from pydantic import BaseModel
+
 from tenzir_platform.helpers.cache import load_current_workspace
 from tenzir_platform.helpers.client import AppClient
 from tenzir_platform.helpers.environment import PlatformEnvironment
 from tenzir_platform.helpers.exceptions import PlatformCliError
-from datetime import datetime
-from docopt import docopt
-from pydantic import BaseModel
-from typing import Optional, List
-import json
-import os
 
 
 class Secret(BaseModel):
     last_updated: datetime
-    last_accessed: Optional[datetime]
+    last_accessed: datetime | None
     id: str
     name: str
 
@@ -73,7 +74,7 @@ class ListSecretsResponse(BaseModel):
 
 
 def _list_secrets(
-    client: AppClient, workspace_id: str, store_id: Optional[str] = None
+    client: AppClient, workspace_id: str, store_id: str | None = None
 ) -> ListSecretsResponse:
     payload = {"tenant_id": workspace_id}
     if store_id is not None:
@@ -90,7 +91,7 @@ def _resolve_secret_name_or_id(
     client: AppClient,
     workspace_id: str,
     name_or_id: str,
-    store_id: Optional[str] = None,
+    store_id: str | None = None,
 ) -> Secret:
     secrets = _list_secrets(client, workspace_id, store_id).secrets
     matching_by_id = [secret for secret in secrets if secret.id == name_or_id]
@@ -143,8 +144,8 @@ def add(
     client: AppClient,
     workspace_id: str,
     name: str,
-    file: Optional[str],
-    value: Optional[str],
+    file: str | None,
+    value: str | None,
     env: bool = False,
 ):
     if sum(bool(x) for x in [file, value, env]) > 1:
@@ -154,7 +155,7 @@ def add(
 
     secret_value = None
     if file:
-        with open(file, "r") as f:
+        with open(file) as f:
             secret_value = f.read().strip()
     elif value:
         secret_value = value
@@ -184,8 +185,8 @@ def update(
     client: AppClient,
     workspace_id: str,
     name_or_id: str,
-    file: Optional[str],
-    value: Optional[str],
+    file: str | None,
+    value: str | None,
     env: bool = False,
 ):
     if sum(bool(x) for x in [file, value, env]) > 1:
@@ -195,7 +196,7 @@ def update(
 
     secret_value = None
     if file:
-        with open(file, "r") as f:
+        with open(file) as f:
             secret_value = f.read().strip()
     elif value:
         secret_value = value
@@ -234,7 +235,7 @@ def list(
     client: AppClient,
     workspace_id: str,
     json_format: bool,
-    store: Optional[str] = None,
+    store: str | None = None,
 ):
     store_id = None
     if store is not None:
@@ -283,7 +284,7 @@ def delete_store(client: AppClient, workspace_id: str, name_or_id: str):
     )
     if resp.status_code == 400:
         # User tried to delete the default store, or the built-in store.
-        raise PlatformCliError(f"failed to delete secret store").add_context(
+        raise PlatformCliError("failed to delete secret store").add_context(
             f"while trying to delete store {store_id}"
         )
 
@@ -307,7 +308,7 @@ def set_default_store(client, workspace_id, name_or_id):
 def add_store_aws(
     client: AppClient,
     workspace_id: str,
-    name: Optional[str],
+    name: str | None,
     region: str,
     assumed_role_arn: str,
 ):
@@ -332,13 +333,13 @@ def add_store_aws(
 def add_store_vault(
     client: AppClient,
     workspace_id: str,
-    name: Optional[str],
+    name: str | None,
     address: str,
     mount: str,
-    namespace: Optional[str],
-    token: Optional[str],
-    role_id: Optional[str],
-    secret_id: Optional[str],
+    namespace: str | None,
+    token: str | None,
+    role_id: str | None,
+    secret_id: str | None,
 ):
     # Determine auth method based on provided credentials
     if token:
