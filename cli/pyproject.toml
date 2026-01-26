@@ -1,6 +1,6 @@
 [project]
 name = "tenzir-platform"
-version = "1.26.0"
+version = "1.27.0"
 description = "Tenzir CLI"
 license = "BSD-3-Clause"
 authors = [{ name = "Tenzir", email = "engineering@tenzir.com" }]
