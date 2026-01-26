@@ -1,0 +1,19 @@
+{
+	auto_https off
+	admin off
+}
+
+:8333 {
+	reverse_proxy 127.0.0.1:8334 {
+		@forbidden status 403
+		handle_response @forbidden {
+			header Content-Type "application/xml"
+			respond `<?xml version="1.0" encoding="UTF-8"?><Error><Code>AccessDenied</Code><Message>Access Denied</Message></Error>` 403
+		}
+		@notfound status 404
+		handle_response @notfound {
+			header Content-Type "application/xml"
+			respond `<?xml version="1.0" encoding="UTF-8"?><Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message></Error>` 404
+		}
+	}
+}

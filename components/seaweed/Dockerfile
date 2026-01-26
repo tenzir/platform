@@ -4,9 +4,15 @@
 
 FROM chrislusf/seaweedfs:4.03
 
-COPY seaweed.tenzir-entrypoint.sh /tenzir-entrypoint.sh 
-
 USER root
+
+# Install caddy (optional, enabled via TENZIR_ENABLE_CADDY)
+RUN apk add --no-cache caddy
+
+COPY config/seaweed.tenzir-entrypoint.sh /tenzir-entrypoint.sh
+RUN chmod +x /tenzir-entrypoint.sh
+COPY config/Caddyfile /etc/caddy/Caddyfile
+
 RUN mkdir -p /opt/tenzir-seaweed
 RUN chown seaweed:seaweed /opt/tenzir-seaweed
 # Add a soft link for backwards compatibility, since we
@@ -17,6 +23,10 @@ RUN ln -s /opt/tenzir-seaweed/config.json /config.json
 # (https://github.com/docker/compose/issues/3270)
 RUN mkdir -p /var/lib/seaweedfs
 RUN chown seaweed:seaweed /var/lib/seaweedfs
+
+# Create caddy data directories with correct permissions
+RUN mkdir -p /data/caddy /config/caddy
+RUN chown -R seaweed:seaweed /data/caddy /config/caddy
 
 USER seaweed
 ENTRYPOINT ["/tenzir-entrypoint.sh"]

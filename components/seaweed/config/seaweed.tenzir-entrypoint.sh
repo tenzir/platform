@@ -12,7 +12,7 @@ if [ -d /var/lib/seaweedfs ]; then
   fi
 fi
 
-cat <<EOF > /opt/tenzir-seaweed/config.json
+cat <<EOF >/opt/tenzir-seaweed/config.json
 {
   "identities": [
     {
@@ -35,4 +35,22 @@ cat <<EOF > /opt/tenzir-seaweed/config.json
 }
 EOF
 
-exec /entrypoint.sh "$@"
+# Check if caddy should be enabled
+if [ "${TENZIR_ENABLE_CADDY}" = "true" ]; then
+  # Start caddy in the background
+  XDG_DATA_HOME=/data XDG_CONFIG_HOME=/config caddy run --config /etc/caddy/Caddyfile &
+
+  # Modify args to use internal port 8334 for S3
+  # Replace -s3 with -s3 -s3.port=8334
+  args=""
+  for arg in "$@"; do
+    args="$args $arg"
+    if [ "$arg" = "-s3" ]; then
+      args="$args -s3.port=8334"
+    fi
+  done
+
+  exec /entrypoint.sh $args
+else
+  exec /entrypoint.sh "$@"
+fi
