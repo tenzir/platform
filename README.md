@@ -1,20 +1,17 @@
-<div align="center">
-  <a href="https://docs.tenzir.com">
-    <picture>
-      <source
-        media="(prefers-color-scheme: dark)"
-        srcset="./assets/tenzir-white.svg"
-      />
-      <source
-        media="(prefers-color-scheme: light)"
-        srcset="./assets/tenzir-black.svg"
-      />
-      <img alt="Tenzir" src="./assets/tenzir-white.svg" width="400" />
-    </picture>
-  </a>
+<a target="_blank" href="https://docs.tenzir.com">
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/tenzir-white.svg">
+  <source media="(prefers-color-scheme: light)" srcset="./assets/tenzir-black.svg">
+  <img alt="Tenzir" src="./assets/tenzir-white.svg">
+</picture>
+</p>
+</a>
 
-  <h3>The data pipeline engine for security teams.</h3>
-</div>
+<h3 align="center">
+The data pipeline engine for security teams.
+</h3>
+</p>
 
 ## What is Tenzir?
 

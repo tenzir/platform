@@ -745,7 +745,7 @@ wheels = [
 
 [[package]]
 name = "tenzir-platform"
-version = "1.27.1"
+version = "1.28.0"
 source = { editable = "." }
 dependencies = [
     { name = "base58" },
