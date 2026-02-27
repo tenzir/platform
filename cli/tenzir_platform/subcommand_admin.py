@@ -65,6 +65,7 @@ def add_auth_rule(client: AppClient, workspace_id: str, rule: AuthRule):
     )
     resp.raise_for_status()
     print(f"Added {rule.model_dump_json()}")
+    print("Note: It can take up to 5 minutes for this change to be visible in the UI.")
 
 
 def delete_auth_rule(client: AppClient, workspace_id: str, index: int):
@@ -75,6 +76,7 @@ def delete_auth_rule(client: AppClient, workspace_id: str, index: int):
     )
     resp.raise_for_status()
     print(f"Deleted auth function {index} of workspace {workspace_id}")
+    print("Note: It can take up to 5 minutes for this change to be visible in the UI.")
 
 
 def list_auth_rules(client: AppClient, workspace_id: str):
