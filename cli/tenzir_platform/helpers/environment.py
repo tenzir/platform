@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-from pydantic_settings import BaseSettings
-from pydantic_settings.exceptions import SettingsError
+from pydantic_settings import BaseSettings  # type: ignore[import-not-found]
+from pydantic_settings.exceptions import SettingsError  # type: ignore[import-not-found]
 
 from tenzir_platform.helpers.exceptions import PlatformCliError
 

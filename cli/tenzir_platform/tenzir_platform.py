@@ -14,6 +14,7 @@ Options:
 Commands:
    auth       Authenticate the current user.
    workspace  Select the currently used workspace.
+   org        Manage organizations.
    node       Interact with nodes.
    alert      Configure alerts for disconnected nodes.
    admin      Administer local on-prem platform infrastructure.
@@ -36,6 +37,7 @@ from tenzir_platform.subcommand_admin import admin_subcommand
 from tenzir_platform.subcommand_alert import alert_subcommand
 from tenzir_platform.subcommand_auth import auth_subcommand
 from tenzir_platform.subcommand_node import node_subcommand
+from tenzir_platform.subcommand_org import org_subcommand
 from tenzir_platform.subcommand_secret import secret_subcommand
 from tenzir_platform.subcommand_tools import tools_subcommand
 from tenzir_platform.subcommand_workspace import workspace_subcommand
@@ -70,6 +72,8 @@ def main():
             alert_subcommand(platform, argv)
         elif arguments["<command>"] == "workspace":
             workspace_subcommand(platform, argv)
+        elif arguments["<command>"] == "org":
+            org_subcommand(platform, argv)
         elif arguments["<command>"] == "node":
             node_subcommand(platform, argv)
         elif arguments["<command>"] == "admin":

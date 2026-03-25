@@ -7,9 +7,9 @@ import sys
 import time
 from typing import Any
 
-import jwt
+import jwt  # type: ignore[import-not-found]
 import requests
-from jwt import PyJWKClient
+from jwt import PyJWKClient  # type: ignore[import-not-found]
 
 from tenzir_platform.helpers.cache import filename_in_cache
 from tenzir_platform.helpers.environment import PlatformEnvironment
