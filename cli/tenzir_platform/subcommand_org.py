@@ -4,6 +4,7 @@
 """Usage:
 tenzir-platform org info
 tenzir-platform org create <name>
+tenzir-platform org create-workspace [--name=<name>]
 tenzir-platform org delete
 tenzir-platform org invite [--role=<role>] [--label=<label>]
 tenzir-platform org leave
@@ -12,6 +13,8 @@ tenzir-platform org revoke-invitation <invitation_id>
 tenzir-platform org redeem-invitation <token>
 tenzir-platform org remove-member <user_id>
 """
+
+from datetime import datetime, timezone
 
 from docopt import docopt  # type: ignore[import-untyped]
 from requests import HTTPError
@@ -53,6 +56,23 @@ def create(platform: PlatformEnvironment, name: str):
     resp = client.post("org/create", json={"name": name})
     resp.raise_for_status()
     print(f"Created organization {resp.json()['organization_id']}")
+
+
+def create_workspace(platform: PlatformEnvironment, name: str | None):
+    if name is None:
+        time_suffix = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        name = f"workspace-{time_suffix}"
+    client = _authenticate(platform)
+    resp = client.post(
+        "workspace/create",
+        json={
+            "name": name,
+            "org_owned": True,
+        },
+    )
+    resp.raise_for_status()
+    created_workspace = resp.json()["tenant_id"]
+    print(f"Created workspace {created_workspace}")
 
 
 def info(platform: PlatformEnvironment):
@@ -168,6 +188,8 @@ def org_subcommand(platform: PlatformEnvironment, argv):
         info(platform=platform)
     elif args["create"]:
         create(platform=platform, name=args["<name>"])
+    elif args["create-workspace"]:
+        create_workspace(platform=platform, name=args["--name"])
     elif args["delete"]:
         delete(platform=platform)
     elif args["invite"]:

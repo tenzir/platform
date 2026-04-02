@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: (c) 2024 The Tenzir Contributors
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tenzir Platform CLI.
+_USAGE = """Tenzir Platform CLI.
 
 Usage: tenzir-platform [-v|--verbose] <command> [<args>...]
        tenzir-platform [--help] [--version]
@@ -14,8 +14,7 @@ Options:
 Commands:
    auth       Authenticate the current user.
    workspace  Select the currently used workspace.
-   org        Manage organizations.
-   node       Interact with nodes.
+{org_line}   node       Interact with nodes.
    alert      Configure alerts for disconnected nodes.
    admin      Administer local on-prem platform infrastructure.
    tools      Utility commands for configuring the platform.
@@ -24,7 +23,13 @@ Commands:
 See 'tenzir-platform <command> --help' for more information on a specific command.
 """
 
+
+def _build_usage(enable_orgs: bool) -> str:
+    org_line = "   org        Manage organizations.\n" if enable_orgs else ""
+    return _USAGE.format(org_line=org_line)
+
 import importlib.metadata
+import os
 import sys
 import traceback
 
@@ -58,8 +63,13 @@ def _pretty_print_cli_error(e: PlatformCliError, verbose: bool):
 def main():
     if len(sys.argv) == 1:
         sys.argv.append("--help")
+    enable_orgs = os.environ.get(
+        "TENZIR_PLATFORM_CLI_EXPERIMENTAL_ENABLE_ORGS", "false"
+    ).lower() in ("true", "1", "yes")
     arguments = docopt(
-        __doc__, version=f"Tenzir Platform CLI {version}", options_first=True
+        _build_usage(enable_orgs),
+        version=f"Tenzir Platform CLI {version}",
+        options_first=True,
     )
     try:
         platform = PlatformEnvironment.load()
@@ -71,8 +81,14 @@ def main():
         elif arguments["<command>"] == "alert":
             alert_subcommand(platform, argv)
         elif arguments["<command>"] == "workspace":
-            workspace_subcommand(platform, argv)
+            workspace_subcommand(platform, argv, enable_orgs=enable_orgs)
         elif arguments["<command>"] == "org":
+            if not enable_orgs:
+                print(
+                    "Organization commands are experimental and disabled by default.\n"
+                    "Set TENZIR_PLATFORM_CLI_EXPERIMENTAL_ENABLE_ORGS=true to enable them."
+                )
+                exit(1)
             org_subcommand(platform, argv)
         elif arguments["<command>"] == "node":
             node_subcommand(platform, argv)

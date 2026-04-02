@@ -1,16 +1,11 @@
 # SPDX-FileCopyrightText: (c) 2024 The Tenzir Contributors
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""
+_USAGE = """
 Usage:
   tenzir-platform workspace select <workspace>
   tenzir-platform workspace list [--json]
-  tenzir-platform workspace create [--name=<name>]
-  tenzir-platform workspace rename <name>
-  tenzir-platform workspace invite [--role=<role>] [--label=<label>]
-  tenzir-platform workspace list-invitations
-  tenzir-platform workspace revoke-invitation <invitation_id>
-  tenzir-platform workspace redeem-invitation <token>
+{org_usage}  tenzir-platform workspace rename <name>
 
 
 Description:
@@ -20,12 +15,19 @@ Description:
   tenzir-platform workspace list
     Display a list of all workspaces accessible for the current user.
 
-  tenzir-platform workspace create [--name=<name>]
-    Create a new workspace for your organization.
-
-  tenzir-platform workspace rename <name>
+{org_description}  tenzir-platform workspace rename <name>
     Rename the current workspace.
 
+"""
+
+_ORG_USAGE = """\
+  tenzir-platform workspace invite [--role=<role>] [--label=<label>]
+  tenzir-platform workspace list-invitations
+  tenzir-platform workspace revoke-invitation <invitation_id>
+  tenzir-platform workspace redeem-invitation <token>
+"""
+
+_ORG_DESCRIPTION = """\
   tenzir-platform workspace invite [--role=<role>] [--label=<label>]
     Create an invitation for the currently selected workspace.
     Role can be 'member' (default) or 'admin'.
@@ -41,9 +43,15 @@ Description:
 
 """
 
+
+def _build_workspace_usage(enable_orgs: bool) -> str:
+    return _USAGE.format(
+        org_usage=_ORG_USAGE if enable_orgs else "",
+        org_description=_ORG_DESCRIPTION if enable_orgs else "",
+    )
+
 import json
 import re
-from datetime import datetime, timezone
 
 from docopt import docopt  # type: ignore[import-untyped]
 
@@ -108,25 +116,6 @@ def list_workspaces(platform: PlatformEnvironment, print_json: bool) -> None:
     else:
         for i, workspace in enumerate(workspaces):
             print(f"{i}: {workspace['name']} ({workspace['tenant_id']}) ")
-
-
-def create(platform: PlatformEnvironment, name: str | None):
-    if name is None:
-        time_suffix = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        name = f"workspace-{time_suffix}"
-    _, user_key = load_current_workspace(platform)
-    app_cli = AppClient(platform)
-    app_cli.workspace_login(user_key)
-    resp = app_cli.post(
-        "workspace/create",
-        json={
-            "name": name,
-            "org_owned": True,
-        },
-    )
-    resp.raise_for_status()
-    created_workspace = resp.json()["tenant_id"]
-    print(f"Created workspace {created_workspace}")
 
 
 def invite(platform: PlatformEnvironment, role: str, label: str):
@@ -234,27 +223,23 @@ def rename(platform: PlatformEnvironment, workspace_id: str, name: str):
     print(f"Renamed workspace {workspace_id}")
 
 
-def workspace_subcommand(platform: PlatformEnvironment, argv):
-    args = docopt(__doc__, argv=argv)
+def workspace_subcommand(platform: PlatformEnvironment, argv, *, enable_orgs: bool = False):
+    args = docopt(_build_workspace_usage(enable_orgs), argv=argv)
     if args["list"]:
         json = args["--json"]
         list_workspaces(platform, json)
-    if args["create"]:
-        create(
-            platform=platform,
-            name=args["--name"],
-        )
-    if args["invite"]:
-        role = args["--role"] or "member"
-        if role not in ("admin", "member"):
-            raise PlatformCliError("role must be 'admin' or 'member'")
-        invite(platform=platform, role=role, label=args["--label"] or "")
-    if args["list-invitations"]:
-        list_invitations(platform=platform)
-    if args["revoke-invitation"]:
-        revoke_invitation(platform=platform, invitation_id=args["<invitation_id>"])
-    if args["redeem-invitation"]:
-        redeem_invitation(platform=platform, token=args["<token>"])
+    if enable_orgs:
+        if args["invite"]:
+            role = args["--role"] or "member"
+            if role not in ("admin", "member"):
+                raise PlatformCliError("role must be 'admin' or 'member'")
+            invite(platform=platform, role=role, label=args["--label"] or "")
+        if args["list-invitations"]:
+            list_invitations(platform=platform)
+        if args["revoke-invitation"]:
+            revoke_invitation(platform=platform, invitation_id=args["<invitation_id>"])
+        if args["redeem-invitation"]:
+            redeem_invitation(platform=platform, token=args["<token>"])
     if args["select"]:
         workspace_id = args["<workspace>"]
         select(platform, workspace_id)
