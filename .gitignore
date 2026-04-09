@@ -1,0 +1,9 @@
+.env
+__pycache__/
+.DS_Store
+examples/native-tls/ssl/*.pem
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.swp
