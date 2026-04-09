@@ -17,6 +17,7 @@ dependencies = [
     "pytimeparse2>=1.7.1",
     "base58>=2.1.1",
     "cryptography>=44.0.1",
+    "setuptools>=70.0.0",
 ]
 
 [project.scripts]

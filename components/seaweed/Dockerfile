@@ -2,12 +2,12 @@
 # name and access keys via environment variables, by writing a config file
 # to `/config.json`
 
-FROM chrislusf/seaweedfs:4.17
+FROM chrislusf/seaweedfs:4.18.0
 
 USER root
 
 # Install caddy (optional, enabled via TENZIR_ENABLE_CADDY)
-RUN apk add --no-cache caddy
+RUN apk upgrade --no-cache && apk add --no-cache caddy
 
 COPY config/seaweed.tenzir-entrypoint.sh /tenzir-entrypoint.sh
 RUN chmod +x /tenzir-entrypoint.sh
