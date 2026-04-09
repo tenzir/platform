@@ -5,7 +5,11 @@ _USAGE = """
 Usage:
   tenzir-platform workspace select <workspace>
   tenzir-platform workspace list [--json]
-{org_usage}  tenzir-platform workspace rename <name>
+  tenzir-platform workspace invite [--role=<role>] [--label=<label>]
+  tenzir-platform workspace list-invitations
+  tenzir-platform workspace revoke-invitation <invitation_id>
+  tenzir-platform workspace redeem-invitation <token>
+  tenzir-platform workspace rename <name>
 
 
 Description:
@@ -15,19 +19,6 @@ Description:
   tenzir-platform workspace list
     Display a list of all workspaces accessible for the current user.
 
-{org_description}  tenzir-platform workspace rename <name>
-    Rename the current workspace.
-
-"""
-
-_ORG_USAGE = """\
-  tenzir-platform workspace invite [--role=<role>] [--label=<label>]
-  tenzir-platform workspace list-invitations
-  tenzir-platform workspace revoke-invitation <invitation_id>
-  tenzir-platform workspace redeem-invitation <token>
-"""
-
-_ORG_DESCRIPTION = """\
   tenzir-platform workspace invite [--role=<role>] [--label=<label>]
     Create an invitation for the currently selected workspace.
     Role can be 'member' (default) or 'admin'.
@@ -41,14 +32,10 @@ _ORG_DESCRIPTION = """\
   tenzir-platform workspace redeem-invitation <token>
     Redeem a workspace invitation token to gain access to the workspace.
 
+  tenzir-platform workspace rename <name>
+    Rename the current workspace.
+
 """
-
-
-def _build_workspace_usage(enable_orgs: bool) -> str:
-    return _USAGE.format(
-        org_usage=_ORG_USAGE if enable_orgs else "",
-        org_description=_ORG_DESCRIPTION if enable_orgs else "",
-    )
 
 import json
 import re
@@ -223,23 +210,22 @@ def rename(platform: PlatformEnvironment, workspace_id: str, name: str):
     print(f"Renamed workspace {workspace_id}")
 
 
-def workspace_subcommand(platform: PlatformEnvironment, argv, *, enable_orgs: bool = False):
-    args = docopt(_build_workspace_usage(enable_orgs), argv=argv)
+def workspace_subcommand(platform: PlatformEnvironment, argv):
+    args = docopt(_USAGE, argv=argv)
     if args["list"]:
         json = args["--json"]
         list_workspaces(platform, json)
-    if enable_orgs:
-        if args["invite"]:
-            role = args["--role"] or "member"
-            if role not in ("admin", "member"):
-                raise PlatformCliError("role must be 'admin' or 'member'")
-            invite(platform=platform, role=role, label=args["--label"] or "")
-        if args["list-invitations"]:
-            list_invitations(platform=platform)
-        if args["revoke-invitation"]:
-            revoke_invitation(platform=platform, invitation_id=args["<invitation_id>"])
-        if args["redeem-invitation"]:
-            redeem_invitation(platform=platform, token=args["<token>"])
+    if args["invite"]:
+        role = args["--role"] or "member"
+        if role not in ("admin", "member"):
+            raise PlatformCliError("role must be 'admin' or 'member'")
+        invite(platform=platform, role=role, label=args["--label"] or "")
+    if args["list-invitations"]:
+        list_invitations(platform=platform)
+    if args["revoke-invitation"]:
+        revoke_invitation(platform=platform, invitation_id=args["<invitation_id>"])
+    if args["redeem-invitation"]:
+        redeem_invitation(platform=platform, token=args["<token>"])
     if args["select"]:
         workspace_id = args["<workspace>"]
         select(platform, workspace_id)

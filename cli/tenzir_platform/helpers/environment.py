@@ -51,9 +51,6 @@ class PlatformEnvironment(BaseSettings):
     # Enable more verbose print statements.
     verbose: bool = False
 
-    # Enable experimental organization commands.
-    experimental_enable_orgs: bool = False
-
     @staticmethod
     def load():
         try:
