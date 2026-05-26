@@ -3,10 +3,21 @@
 
 """Usage:
   tenzir-platform auth login [--interactive | --non-interactive]
+  tenzir-platform auth token
 
 Options:
-  --interactive       Use device code flow for login.
-  --non-interactive   Use client credentials flow for login.
+  --interactive          Use device code flow for login.
+  --non-interactive      Use client credentials flow for login.
+
+Description:
+  tenzir-platform auth login
+    Authenticate the current user against the platform.
+
+  tenzir-platform auth token
+    Mint a fresh user key for the currently selected workspace and
+    print it to stdout. The key is not written to the workspace cache.
+    If no workspace is selected, a workspace-less user key is minted
+    instead.
 
 Notes:
   When the `--non-interactive` the CLI will attempt to read a client
@@ -19,10 +30,17 @@ Notes:
 """
 
 
+import sys
+
 from docopt import docopt
 
+from tenzir_platform.helpers.cache import load_current_workspace
+from tenzir_platform.helpers.client import AppClient, TargetApi
 from tenzir_platform.helpers.environment import PlatformEnvironment
 from tenzir_platform.helpers.oidc import IdTokenClient
+
+
+_TOKEN_LIFETIME_SECONDS = 15 * 60
 
 
 def login(platform: PlatformEnvironment, interactive: bool | None):
@@ -30,6 +48,35 @@ def login(platform: PlatformEnvironment, interactive: bool | None):
     token = token_client.load_id_token(interactive=interactive)
     decoded_token = token_client.validate_token(token)
     print(f"Logged in as {decoded_token.user_id}")
+
+
+def print_token(platform: PlatformEnvironment):
+    id_token = IdTokenClient(platform).load_id_token()
+    app_cli = AppClient(platform)
+    try:
+        workspace_id, _ = load_current_workspace(platform)
+    except FileNotFoundError:
+        print(
+            "Warning: no workspace selected; minting a workspace-less user key.",
+            file=sys.stderr,
+        )
+        resp = app_cli.post(
+            "authenticate",
+            json={"id_token": id_token},
+            target_api=TargetApi.USER_PUBLIC,
+        )
+    else:
+        resp = app_cli.post(
+            "switch-tenant",
+            json={
+                "id_token": id_token,
+                "tenant_id": workspace_id,
+                "requested_lifetime_seconds": _TOKEN_LIFETIME_SECONDS,
+            },
+            target_api=TargetApi.USER_PUBLIC,
+        )
+    resp.raise_for_status()
+    print(resp.json()["user_key"])
 
 
 def auth_subcommand(platform: PlatformEnvironment, argv):
@@ -44,3 +91,5 @@ def auth_subcommand(platform: PlatformEnvironment, argv):
         else:
             interactive = None
         login(platform, interactive)
+    if args["token"]:
+        print_token(platform)
