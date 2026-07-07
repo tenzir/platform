@@ -12,6 +12,7 @@ services:
   app:
     image: ghcr.io/tenzir/app:${TENZIR_PLATFORM_VERSION:-latest}
     build: ../../../frontend
+    restart: on-failure
     environment:
       - AUTH_TRUST_HOST=true
       - PUBLIC_ENABLE_HIGHLIGHT=false
@@ -31,6 +32,8 @@ services:
       - PRIVATE_DRIZZLE_DATABASE_URL=postgres://${TENZIR_PLATFORM_POSTGRES_USER}:${TENZIR_PLATFORM_POSTGRES_PASSWORD}@${TENZIR_PLATFORM_POSTGRES_HOSTNAME}/${TENZIR_PLATFORM_POSTGRES_DB}
     depends_on:
       postgres:
+        condition: service_healthy
+      platform:
         condition: service_healthy
     ports:
       - "3000:3000"
@@ -69,6 +72,12 @@ services:
       - ./workspaces.yaml:/etc/tenzir/workspaces.yaml
       # Mounting the docker socket is required iff local demo nodes are enabled.
       - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5000/user/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     ports:
       - 3001:5000
     depends_on:
