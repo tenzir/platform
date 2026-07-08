@@ -31,6 +31,7 @@ import traceback
 from docopt import docopt
 from requests import HTTPError
 
+from tenzir_platform.helpers.cache import filename_in_cache
 from tenzir_platform.helpers.environment import PlatformEnvironment
 from tenzir_platform.helpers.exceptions import PlatformCliError
 from tenzir_platform.subcommand_admin import admin_subcommand
@@ -88,9 +89,24 @@ def main():
             print("unknown subcommand, see 'tenzir-platform --help' for usage")
     except HTTPError as e:
         if e.response.status_code == 403:
-            print(
-                "Access denied. Please try re-authenticating by running 'tenzir-platform workspace select'"
-            )
+            detail = None
+            try:
+                detail = e.response.json().get("detail")
+            except Exception:
+                pass
+            if isinstance(detail, dict) and detail.get("error") == "mfa_required":
+                print(
+                    "Access denied. This organization requires multi-factor authentication, "
+                    "but the current session was established without it."
+                )
+                print(
+                    f"Please delete the cached token at {filename_in_cache(platform, 'id_token')} "
+                    "and log in again by running 'tenzir-platform auth login'."
+                )
+            else:
+                print(
+                    "Access denied. Please try re-authenticating by running 'tenzir-platform workspace select'"
+                )
         else:
             detail = ""
             try:

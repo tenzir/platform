@@ -32,6 +32,7 @@ def _authenticate(platform: PlatformEnvironment) -> AppClient:
     to be selected."""
     id_token = IdTokenClient(platform).load_id_token()
     client = AppClient(platform)
+    client.user_login(id_token)
     resp = client.post(
         "authenticate",
         json={"id_token": id_token},
@@ -43,12 +44,16 @@ def _authenticate(platform: PlatformEnvironment) -> AppClient:
 
 
 def _get_current_org_id(client: AppClient) -> str:
-    resp = client.post("org/list", json={})
+    resp = client.post(
+        "get-login-info",
+        json={"id_token": client.id_token},
+        target_api=TargetApi.USER_PUBLIC,
+    )
     resp.raise_for_status()
-    organizations = resp.json().get("organizations", [])
-    if len(organizations) == 0:
+    org = resp.json().get("organization")
+    if not org:
         raise PlatformCliError("you are not a member of any organization")
-    return organizations[0]["organization_id"]
+    return org["organization_id"]
 
 
 def create(platform: PlatformEnvironment, name: str):
