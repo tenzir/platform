@@ -1,4 +1,4 @@
-<a target="_blank" href="https://docs.tenzir.com">
+<a target="_blank" href="https://tenzir.com/docs/">
 <p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./assets/tenzir-white.svg">
@@ -35,7 +35,7 @@ locally by following our [Deploy the platform][guide] setup guide step by step.
 > free, cloud-hosted version of the Tenzir Platform.
 
 [app]: https://app.tenzir.com
-[guide]: https://docs.tenzir.com/guides/platform-setup/
+[guide]: https://tenzir.com/docs/guides/platform-setup/
 
 ## Community
 

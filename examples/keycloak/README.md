@@ -5,7 +5,7 @@ as Identity Provider, it is necessary to do some additional
 manual configuration.
 
 This document is intended to guide you through this process.
-You can also view an [online version](https://docs.tenzir.com/guides/platform-setup/configure-identity-provider/#keycloak).
+You can also view an [online version](https://tenzir.com/docs/guides/platform-setup/configure-identity-provider/#keycloak).
 
 We assume that you already have a Keycloak instance up
 and running that is reachable with a browser, for example
@@ -43,7 +43,7 @@ client should be configured as follows:
 Under "General settings", set the client type to "OpenID Connect" and the
 client id to `tenzir-app`. If you use a different client id,
 remember to update the `TENZIR_PLATFORM_OIDC_PROVIDER_CLIENT_ID` variable
-in your [Tenzir Platform config](https://docs.tenzir.com/installation/deploy-the-platform#configure-the-platform)
+in your [Tenzir Platform config](https://tenzir.com/docs/guides/platform-setup/configure-identity-provider/#create-a-client-for-the-app)
 config accordingly.
 
 ![Configuration 0](images/create_app_client_0.png)

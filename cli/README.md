@@ -2,7 +2,7 @@
 
 This CLI can be used to interact with the APIs exposed by the Tenzir Platform.
 
-See `docs.tenzir.com` for more detailed user-facing documentation.
+See https://tenzir.com/docs for more detailed user-facing documentation.
 
 For interacting with private instances of the platform, set these
 environment variables to their respective local values:
