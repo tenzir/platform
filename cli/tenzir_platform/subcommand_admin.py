@@ -13,10 +13,13 @@
   tenzir-platform admin delete-workspace <workspace_id>
   tenzir-platform admin update-workspace <workspace_id> [--name=<workspace_name>] [--icon-url=<icon_url>] [--owner-namespace=<namespace>] [--owner-id=<owner_id>] [--category=<workspace_category>]
   tenzir-platform admin list-global-workspaces
+  tenzir-platform admin create-user-key <workspace_id> <user_id> [--expiry=<expiry>]
   tenzir-platform admin spawn-node <workspace_id> <image> [--lifetime=<lifetime>]
 
 Options:
   --connection=<connection>         An optional prefix that must be matched by the 'sub' field
+  --expiry=<expiry>                 The lifetime of the minted user key in seconds. Clamped to at
+                                    most one week. Defaults to the platform's standard lifetime.
   --name=<workspace_name>           The user-visible name of the workspace.
   --icon-url=<icon_url>             The image to be used for this workspace in the frontend.
   --owner-id=<owner_id>             The owner id within the given namespace. For the 'user' and
@@ -155,6 +158,22 @@ def list_global_workspaces(client: AppClient):
     print(json.dumps(tenants, indent=4))
 
 
+def create_user_key(
+    client: AppClient, workspace_id: str, user_id: str, expiry: int | None
+):
+    resp = client.post(
+        "create-user-key",
+        target_api=TargetApi.ADMIN,
+        json={
+            "tenant_id": workspace_id,
+            "user_id": user_id,
+            "lifetime": expiry,
+        },
+    )
+    resp.raise_for_status()
+    print(resp.json()["key"])
+
+
 def spawn_node(client: AppClient, workspace_id: str, image: str, lifetime: int):
     resp = client.post(
         "spawn-node",
@@ -279,6 +298,14 @@ def admin_subcommand(platform: PlatformEnvironment, argv):
         workspace_id = arguments["<workspace_id>"]
         client = connect_and_login()
         list_auth_rules(client, workspace_id)
+
+    if arguments["create-user-key"]:
+        workspace_id = arguments["<workspace_id>"]
+        user_id = arguments["<user_id>"]
+        expiry_arg = arguments["--expiry"]
+        expiry = int(expiry_arg) if expiry_arg is not None else None
+        client = connect_and_login()
+        create_user_key(client, workspace_id, user_id, expiry)
 
     if arguments["spawn-node"]:
         workspace_id = arguments["<workspace_id>"]
