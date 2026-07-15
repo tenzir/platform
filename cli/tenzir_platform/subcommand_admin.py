@@ -19,10 +19,12 @@ Options:
   --connection=<connection>         An optional prefix that must be matched by the 'sub' field
   --name=<workspace_name>           The user-visible name of the workspace.
   --icon-url=<icon_url>             The image to be used for this workspace in the frontend.
-  --owner-id=<owner_id>             The owner id of the current namespace. This can be set to
-                                    an arbitrary string that allows the platform administrators
+  --owner-id=<owner_id>             The owner id within the given namespace. For the 'user' and
+                                    'organization' namespaces this should be a valid user or
+                                    organization id, respectively. For the 'team' namespace it can
+                                    be an arbitrary string that allows the platform administrators
                                     to identify the owner of this workspace.
-  --owner-namespace=<namespace>     Must be either 'user' or 'organization'.
+  --owner-namespace=<namespace>     Must be either 'user', 'organization', or 'team'.
   --category=<workspace_category>   An arbitrary string that is used as header when grouping
                                     multiple workspaces from the same owner in the frontend.
                                     Note that currently only workspaces with the same owner id
