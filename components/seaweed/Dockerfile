@@ -2,7 +2,7 @@
 # name and access keys via environment variables, by writing a config file
 # to `/config.json`
 
-FROM chrislusf/seaweedfs:4.40
+FROM chrislusf/seaweedfs:4.41
 
 USER root
 

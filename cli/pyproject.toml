@@ -16,7 +16,7 @@ dependencies = [
     "jaraco.context>=6.1.2",
     "pytimeparse2>=1.7.1",
     "base58>=2.1.1",
-    "cryptography>=44.0.1",
+    "cryptography>=50.0.0",
     "setuptools>=83.0.0",
 ]
 
