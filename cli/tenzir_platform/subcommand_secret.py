@@ -8,6 +8,8 @@
   tenzir-platform secret list [--json] [--store=<store>]
   tenzir-platform secret store add aws --region=<region> --assumed-role-arn=<assumed_role_arn> [--name=<name>] [--access-key-id=<key_id>] [--secret-access-key=<key>]
   tenzir-platform secret store add vault --address=<address> --mount=<mount> (--token=<token> | --role-id=<role_id> --secret-id=<secret_id>) [--name=<name>] [--namespace=<namespace>]
+  tenzir-platform secret store add azure --vault-url=<vault_url> --azure-tenant-id=<azure_tenant_id> --client-id=<client_id> --client-secret=<client_secret> [--name=<name>]
+  tenzir-platform secret store add azure --vault-url=<vault_url> --managed-identity --workspace=<workspace_id> [--managed-identity-client-id=<managed_identity_client_id>] [--name=<name>]
   tenzir-platform secret store set-default <store>
   tenzir-platform secret store delete <store>
   tenzir-platform secret store list [--json]
@@ -40,6 +42,12 @@ Description:
     - Token auth: --token=<token>
     - AppRole auth: --role-id=<role_id> --secret-id=<secret_id>
     Secrets can be accessed with a :<key> suffix to return only a specific key's value.
+
+  tenzir-platform secret store add azure --vault-url=<vault_url> --azure-tenant-id=<azure_tenant_id> --client-id=<client_id> --client-secret=<client_secret>
+    Add a read-only Azure Key Vault secret store using service-principal credentials.
+
+  tenzir-platform secret store add azure --vault-url=<vault_url> --managed-identity --workspace=<workspace_id> [--managed-identity-client-id=<managed_identity_client_id>]
+    Add a read-only Azure Key Vault secret store using a managed identity. This command requires platform administrator access.
 """
 
 # TODO: We probably also want to add the equivalent of these options (from `gh secret`)
@@ -57,9 +65,10 @@ from docopt import docopt
 from pydantic import BaseModel
 
 from tenzir_platform.helpers.cache import load_current_workspace
-from tenzir_platform.helpers.client import AppClient
+from tenzir_platform.helpers.client import AppClient, TargetApi
 from tenzir_platform.helpers.environment import PlatformEnvironment
 from tenzir_platform.helpers.exceptions import PlatformCliError
+from tenzir_platform.helpers.oidc import IdTokenClient
 
 
 class Secret(BaseModel):
@@ -131,9 +140,7 @@ def _resolve_secret_store(client: AppClient, workspace_id: str, name_or_id: str)
     matching_by_name = [store for store in stores if store["name"] == name_or_id]
     if len(matching_by_name) > 1:
         matching_ids = [store["id"] for store in matching_by_name]
-        raise PlatformCliError(
-            f"ambiguous name '{name_or_id}' is shared by stores {matching_ids}"
-        )
+        raise PlatformCliError(f"ambiguous name '{name_or_id}' is shared by stores {matching_ids}")
     if matching_by_name:
         return matching_by_name[0]["id"]
 
@@ -149,9 +156,7 @@ def add(
     env: bool = False,
 ):
     if sum(bool(x) for x in [file, value, env]) > 1:
-        raise PlatformCliError(
-            "Only one of --file, --value, or --env can be specified."
-        )
+        raise PlatformCliError("Only one of --file, --value, or --env can be specified.")
 
     secret_value = None
     if file:
@@ -347,11 +352,9 @@ def add_store_vault(
     elif role_id and secret_id:
         auth_method = "approle"
     else:
-        raise PlatformCliError(
-            "must provide either --token or both --role-id and --secret-id"
-        )
+        raise PlatformCliError("must provide either --token or both --role-id and --secret-id")
 
-    options = {
+    options: dict[str, str | None] = {
         "address": address,
         "mount": mount,
         "auth_method": auth_method,
@@ -385,8 +388,73 @@ def add_store_vault(
     print(f"Added store {store_id}")
 
 
+def add_store_azure(
+    client: AppClient,
+    workspace_id: str,
+    name: str | None,
+    vault_url: str,
+    azure_tenant_id: str | None,
+    client_id: str | None,
+    client_secret: str | None,
+    managed_identity: bool,
+    managed_identity_client_id: str | None,
+) -> None:
+    if managed_identity:
+        resp = client.post(
+            "add-azure-managed-identity-secret-store",
+            json={
+                "tenant_id": workspace_id,
+                "vault_url": vault_url,
+                "managed_identity_client_id": managed_identity_client_id,
+                "name": name,
+            },
+            target_api=TargetApi.ADMIN,
+        )
+    else:
+        assert azure_tenant_id is not None
+        assert client_id is not None
+        assert client_secret is not None
+        resp = client.post(
+            "secrets/add-external-store",
+            json={
+                "tenant_id": workspace_id,
+                "type": "azure",
+                "name": name,
+                "is_writable": False,
+                "options": {
+                    "vault_url": vault_url,
+                    "azure_tenant_id": azure_tenant_id,
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                },
+            },
+        )
+    if resp.status_code == 400:
+        raise PlatformCliError("failed to add Azure Key Vault store").add_hint(
+            f"received upstream error: {resp.json().get('detail', 'unknown error')}"
+        )
+    resp.raise_for_status()
+    store_id = resp.json()["store_id"]
+    print(f"Added store {store_id}")
+
+
 def secret_subcommand(platform: PlatformEnvironment, argv):
     args = docopt(__doc__, argv=argv)
+    if args["--managed-identity"]:
+        client = AppClient(platform=platform)
+        client.user_login(IdTokenClient(platform).load_id_token())
+        add_store_azure(
+            client,
+            args["--workspace"],
+            name=args["--name"],
+            vault_url=args["--vault-url"],
+            azure_tenant_id=None,
+            client_id=None,
+            client_secret=None,
+            managed_identity=True,
+            managed_identity_client_id=args["--managed-identity-client-id"],
+        )
+        return
     try:
         workspace_id, user_key = load_current_workspace(platform)
         client = AppClient(platform=platform)
@@ -401,7 +469,19 @@ def secret_subcommand(platform: PlatformEnvironment, argv):
         if args["add"]:
             name = args["--name"]
             # Determine store type based on provided arguments
-            if args["--address"]:
+            if args["--vault-url"]:
+                add_store_azure(
+                    client,
+                    workspace_id,
+                    name=name,
+                    vault_url=args["--vault-url"],
+                    azure_tenant_id=args["--azure-tenant-id"],
+                    client_id=args["--client-id"],
+                    client_secret=args["--client-secret"],
+                    managed_identity=False,
+                    managed_identity_client_id=None,
+                )
+            elif args["--address"]:
                 # Vault store
                 add_store_vault(
                     client,
