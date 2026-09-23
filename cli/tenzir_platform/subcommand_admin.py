@@ -9,7 +9,7 @@
   tenzir-platform admin add-auth-rule allow-all <workspace_id>
   tenzir-platform admin delete-auth-rule <workspace_id> <auth_rule_index>
   tenzir-platform admin list-auth-rules <workspace_id>
-  tenzir-platform admin create-workspace <owner_namespace> <owner_id> [--name=<workspace_name>] [--category=<workspace_category>]
+  tenzir-platform admin create-workspace <owner_namespace> <owner_id> [--name=<workspace_name>] [--category=<workspace_category>] [--json]
   tenzir-platform admin delete-workspace <workspace_id>
   tenzir-platform admin update-workspace <workspace_id> [--name=<workspace_name>] [--icon-url=<icon_url>] [--owner-namespace=<namespace>] [--owner-id=<owner_id>] [--category=<workspace_category>]
   tenzir-platform admin list-global-workspaces
@@ -22,12 +22,18 @@ Options:
                                     most one week. Defaults to the platform's standard lifetime.
   --name=<workspace_name>           The user-visible name of the workspace.
   --icon-url=<icon_url>             The image to be used for this workspace in the frontend.
-  --owner-id=<owner_id>             The owner id within the given namespace. For the 'user' and
-                                    'organization' namespaces this should be a valid user or
-                                    organization id, respectively. For the 'team' namespace it can
-                                    be an arbitrary string that allows the platform administrators
-                                    to identify the owner of this workspace.
-  --owner-namespace=<namespace>     Must be either 'user', 'organization', or 'team'.
+  --owner-id=<owner_id>             The owner id within the given namespace. For the 'user'
+                                    namespace this is the 'sub' claim of the owner's OIDC token.
+                                    For the 'organization' namespace this must be the id of an
+                                    existing organization, which has the form 'org-xxxxxxxx'.
+                                    For the 'team' namespace it can be an arbitrary string that
+                                    allows the platform administrators to identify the owner of
+                                    this workspace.
+  --owner-namespace=<namespace>     Must be either 'user', 'organization', or 'team'. Use 'team'
+                                    for a free-form owner id, and 'organization' only for an
+                                    organization that already exists in the platform.
+  --json                            Print the created workspace as JSON instead of a human
+                                    readable message.
   --category=<workspace_category>   An arbitrary string that is used as header when grouping
                                     multiple workspaces from the same owner in the frontend.
                                     Note that currently only workspaces with the same owner id
@@ -36,6 +42,7 @@ Options:
 """
 
 import json
+import sys
 
 from docopt import docopt
 
@@ -95,8 +102,25 @@ def list_auth_rules(client: AppClient, workspace_id: str):
             print(json.dumps(t["auth_functions"], indent=4))
 
 
+VALID_OWNER_NAMESPACES = ("user", "team", "organization")
+
+
+def validate_owner_namespace(owner_namespace: str) -> None:
+    if owner_namespace in VALID_OWNER_NAMESPACES:
+        return
+    valid = ", ".join(f"'{ns}'" for ns in VALID_OWNER_NAMESPACES)
+    raise PlatformCliError(f"invalid owner namespace '{owner_namespace}'").add_hint(
+        f"must be one of {valid}"
+    )
+
+
 def create_workspace(
-    client: AppClient, name: str, owner: str, owner_namespace: str, category: str
+    client: AppClient,
+    name: str,
+    owner: str,
+    owner_namespace: str,
+    category: str,
+    json_format: bool = False,
 ):
     resp = client.post(
         "create-tenant",
@@ -112,7 +136,20 @@ def create_workspace(
     )
     resp.raise_for_status()
     tenant_id = resp.json()["tenant_id"]
-    print(f"Created workspace {tenant_id}")
+    if json_format:
+        print(json.dumps({"workspace_id": tenant_id, "name": name}, indent=4))
+    else:
+        print(f"Created workspace {tenant_id}")
+    # Only a 'user' workspace gets a default access rule. Without this note the
+    # workspace looks created but stays invisible, including in
+    # `tenzir-platform workspace list`.
+    if owner_namespace != "user":
+        print(
+            f"Note: Workspace {tenant_id} has no access rules yet and is not "
+            f"visible to any user. Grant access with "
+            f"`tenzir-platform admin add-auth-rule ... {tenant_id} ...`.",
+            file=sys.stderr,
+        )
 
 
 def delete_workspace(client: AppClient, workspace_id: str):
@@ -238,8 +275,9 @@ def admin_subcommand(platform: PlatformEnvironment, argv):
         return client
 
     if arguments["create-workspace"]:
-        client = connect_and_login()
         owner_namespace = arguments["<owner_namespace>"]
+        validate_owner_namespace(owner_namespace)
+        client = connect_and_login()
         owner = arguments["<owner_id>"]
         name: str
         if arguments["--name"] is not None:
@@ -253,6 +291,7 @@ def admin_subcommand(platform: PlatformEnvironment, argv):
             owner=owner,
             owner_namespace=owner_namespace,
             category=category,
+            json_format=arguments["--json"],
         )
 
     if arguments["delete-workspace"]:
@@ -262,8 +301,10 @@ def admin_subcommand(platform: PlatformEnvironment, argv):
 
     if arguments["update-workspace"]:
         workspace_id = arguments["<workspace_id>"]
-        client = connect_and_login()
         owner_namespace = arguments["--owner-namespace"]
+        if owner_namespace is not None:
+            validate_owner_namespace(owner_namespace)
+        client = connect_and_login()
         owner_id = arguments["--owner-id"]
         workspace_category = arguments["--category"]
         workspace_name = arguments["--name"]
