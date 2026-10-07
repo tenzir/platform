@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.10"
 
 [[package]]
@@ -770,7 +770,7 @@ wheels = [
 
 [[package]]
 name = "tenzir-platform"
-version = "1.40.0"
+version = "1.40.1"
 source = { editable = "." }
 dependencies = [
     { name = "base58" },
