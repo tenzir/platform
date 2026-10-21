@@ -6,8 +6,11 @@ FROM chrislusf/seaweedfs:4.41
 
 USER root
 
-# Install caddy (optional, enabled via TENZIR_ENABLE_CADDY)
-RUN apk upgrade --no-cache && apk add --no-cache caddy
+# Install caddy (optional, enabled via TENZIR_ENABLE_CADDY). The ca-certificates
+# floor removes the compromised emSign ECC Root CA - G3 and keeps a stale build
+# cache layer from silently satisfying this step.
+RUN apk upgrade --no-cache && \
+    apk add --no-cache caddy 'ca-certificates-bundle>=20261020-r0'
 
 COPY config/seaweed.tenzir-entrypoint.sh /tenzir-entrypoint.sh
 RUN chmod +x /tenzir-entrypoint.sh
