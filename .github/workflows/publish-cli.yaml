@@ -1,0 +1,72 @@
+# Publishes the Tenzir Platform CLI to PyPI when a release is published here.
+#
+# Releases are created by the `Release` workflow in tenzir/platform-internal,
+# which bumps public/cli/pyproject.toml, syncs it here, tags, and then publishes
+# the GitHub release that triggers this workflow. The version in
+# cli/pyproject.toml is therefore already correct at this point and is only
+# verified below, never rewritten.
+#
+# This file is NOT synced from platform-internal. The sync wipes everything it
+# copies, and exempts .github precisely so that this workflow survives.
+
+name: Publish CLI to PyPI
+
+on:
+  release:
+    types: [published]
+  # For manual recovery when a release did not publish.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish (e.g. v1.39.2)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      # Required for PyPI trusted publishing via OIDC.
+      id-token: write
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.event.release.tag_name }}
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Verify the package version matches the tag
+        env:
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
+        run: |
+          PACKAGE_VERSION="$(uv version --short)"
+          echo "Tag: ${TAG}, cli/pyproject.toml: ${PACKAGE_VERSION}"
+          # Compare as PEP 440 versions rather than strings: tags carry a
+          # leading `v`, and a tag like v1.40.0-rc1 normalises to 1.40.0rc1.
+          uv run --no-project --with packaging python - "${TAG#v}" "${PACKAGE_VERSION}" <<'PY'
+          import sys
+
+          from packaging.version import Version
+
+          tag, package = sys.argv[1], sys.argv[2]
+          if Version(tag) != Version(package):
+              sys.exit(f"Tag {tag} does not match cli/pyproject.toml {package}")
+          PY
+
+      - name: Build the distribution
+        run: uv build
+
+      - name: Publish to PyPI
+        run: uv publish
