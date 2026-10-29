@@ -1,6 +1,6 @@
 [project]
 name = "tenzir-platform"
-version = "1.37.3"
+version = "1.37.4"
 description = "Tenzir CLI"
 license = "BSD-3-Clause"
 authors = [{ name = "Tenzir", email = "engineering@tenzir.com" }]
@@ -12,7 +12,7 @@ dependencies = [
     "docopt>=0.6.2",
     "types-docopt>=0.6.11.4",
     "pydantic-settings>=2.2.1",
-    "pyjwt[crypto]>=2.12.0",
+    "pyjwt[crypto]>=2.14.0",
     "jaraco.context>=6.1.0",
     "pytimeparse2>=1.7.1",
     "base58>=2.1.1",

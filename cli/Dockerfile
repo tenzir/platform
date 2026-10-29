@@ -15,6 +15,10 @@ RUN uv sync --frozen --no-dev --no-group types
 
 FROM python:3.11-slim AS base
 
+# The pip that ships with the base image vendors a certifi bundle that still
+# contains the compromised emSign ECC Root CA - G3.
+RUN python -m pip install --no-cache-dir --root-user-action=ignore --upgrade 'pip>=26.2.2'
+
 COPY --from=builder /app /app
 
 WORKDIR /app
