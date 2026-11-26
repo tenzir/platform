@@ -20,6 +20,7 @@ Commands:
    admin      Administer local on-prem platform infrastructure.
    tools      Utility commands for configuring the platform.
    secret     Manage secrets.
+   dashboard  Manage dashboards.
 
 See 'tenzir-platform <command> --help' for more information on a specific command.
 """
@@ -37,6 +38,7 @@ from tenzir_platform.helpers.exceptions import PlatformCliError
 from tenzir_platform.subcommand_admin import admin_subcommand
 from tenzir_platform.subcommand_alert import alert_subcommand
 from tenzir_platform.subcommand_auth import auth_subcommand
+from tenzir_platform.subcommand_dashboard import dashboard_subcommand
 from tenzir_platform.subcommand_node import node_subcommand
 from tenzir_platform.subcommand_org import org_subcommand
 from tenzir_platform.subcommand_secret import secret_subcommand
@@ -85,6 +87,8 @@ def main():
             tools_subcommand(platform, argv)
         elif arguments["<command>"] == "secret":
             secret_subcommand(platform, argv)
+        elif arguments["<command>"] == "dashboard":
+            dashboard_subcommand(platform, argv)
         else:
             print("unknown subcommand, see 'tenzir-platform --help' for usage")
     except HTTPError as e:
